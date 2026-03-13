@@ -2,8 +2,6 @@
 
 <div align="center">
 
-**VibePlayer** — это современный видеоплеер для Android с поддержкой синхронизации с устройствами для взрослых через **Buttplug API**.
-
 **VibePlayer** is a modern Android video player with support for syncing with adult devices via **Buttplug API**.
 
 [![Platform](https://img.shields.io/badge/platform-Android-green.svg)](https://developer.android.com/)
@@ -12,275 +10,58 @@
 [![Buttplug](https://img.shields.io/badge/Buttplug-API-orange.svg)](https://buttplug.io/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-[English version](#english)
+[🇷🇺 Russian version](README_RU.md)
 
 </div>
 
 ---
 
-## 📱 Скриншоты / Screenshots
+## 📱 Screenshots
 
 <div align="center">
 
-| Главный экран | Галерея |
-|:---:|:---:|
-| <img src="main.png" width="200" alt="Главный экран"/> | <img src="gallery.png" width="200" alt="Галерея"/> |
+|                       Main Screen                        | Gallery |
+|:--------------------------------------------------------:|:---:|
+| <img src="repo/main.png" width="200" alt="Main Screen"/> | <img src="repo/gallery.png" width="200" alt="Gallery"/> |
 
-| Добавление видео | Настройки |
+| Add Video | Settings |
 |:---:|:---:|
-| <img src="AddVideo.png" width="200" alt="Добавление видео"/> | <img src="settings.png" width="200" alt="Настройки"/> |
+| <img src="repo/AddVideo.png" width="200" alt="Add Video"/> | <img src="repo/settings.png" width="200" alt="Settings"/> |
 
 </div>
 
 ---
 
-## ✨ Особенности / Features
+## ✨ Features
 
-### 🇷🇺 Русский
-
-- **🎬 Локальное воспроизведение видео** — поддержка различных форматов видеофайлов через ExoPlayer
-- **📁 Галерея** — управление видеобиблиотекой с переименованием и обложками
-- **🔗 Buttplug API интеграция** — прямая синхронизация с устройствами через Buttplug.io
-- **📡 Bluetooth подключение** — работа с устройствами через Intiface Central
-- **⏱️ Таймер автопереключения** — автоматическое переключение видео по таймеру
-- **🎛️ Скорость воспроизведения** — регулировка от 0.5x до 2.0x
-- **🔒 Защита паролем** — блокировка приложения
-- **🌐 Многоязычность** — русский/английский с автоопределением
-- **📥 Скачивание видео** — загрузка по URL напрямую в приложение
-- **🎨 Material Design 3** — современный UI на Jetpack Compose
-- **💾 Шифрованная БД** — SQLCipher для защиты данных
-
-### 🇬🇧 English
-
-- **🎬 Local video playback** — various video formats support via ExoPlayer
-- **📁 Gallery** — video library management with rename and covers
+- **🎬 Local video playback** — support for various video formats via ExoPlayer
+- **📁 Gallery** — video library management with rename and cover options
 - **🔗 Buttplug API integration** — direct device sync via Buttplug.io
 - **📡 Bluetooth connection** — device support through Intiface Central
 - **⏱️ Auto-switch timer** — automatic video switching by timer
 - **🎛️ Playback speed** — adjustable from 0.5x to 2.0x
-- **🔒 Password protection** — app lock
+- **🔒 Password protection** — app lock with password
 - **🌐 Multi-language** — Russian/English with auto-detection
 - **📥 Video download** — URL download directly to app
 - **🎨 Material Design 3** — modern UI built with Jetpack Compose
-- **💾 Encrypted DB** — SQLCipher for data protection
+- **💾 Encrypted database** — SQLCipher for data protection
 
 ---
 
-## 🔌 Buttplug API Интеграция / Buttplug API Integration
-
-### 🇷🇺 Русский
-
-VibePlayer использует **Buttplug API** для синхронизации с совместимыми устройствами:
-
-#### Поддерживаемые устройства:
-- Lovense (Max, Nora, Lush, Calor, и др.)
-- WeVibe (серии Pivot, Connect, Verge)
-- Kiiroo (Pearl, Keon, Onyx)
-- Satisfyer (Bluetooth модели)
-- Magic Motion
-- Другие устройства с поддержкой Buttplug
-
-#### Как это работает:
-1. **Intiface Central** запускается на ПК/телефоне
-2. VibePlayer подключается через **Bluetooth**
-3. Видео синхронизируется с устройством через **Buttplug Protocol**
-4. Интенсивность регулируется автоматически
-
-#### Преимущества Buttplug API:
-- ✅ Единый протокол для всех устройств
-- ✅ Открытая спецификация
-- ✅ Активное сообщество
-- ✅ Регулярные обновления
-
-### 🇬🇧 English
+## 🔌 Buttplug API Integration
 
 VibePlayer uses **Buttplug API** to sync with compatible devices:
 
-#### Supported Devices:
-- Lovense (Max, Nora, Lush, Calor, etc.)
-- WeVibe (Pivot, Connect, Verge series)
-- Kiiroo (Pearl, Keon, Onyx)
-- Satisfyer (Bluetooth models)
-- Magic Motion
-- Other Buttplug-compatible devices
+### Supported Devices
 
-#### How It Works:
-1. **Intiface Central** runs on PC/phone
-2. VibePlayer connects via **Bluetooth**
-3. Video syncs with device through **Buttplug Protocol**
-4. Intensity adjusts automatically
+- **Lovense** — Max, Nora, Lush, Calor, Ferri, Solace, and more
+- **WeVibe** — Pivot, Connect, Verge, Moxie, Jive series
+- **Kiiroo** — Pearl, Keon, Onyx, Pulse
+- **Satisfyer** — Bluetooth-enabled models
+- **Magic Motion** — Compatible devices
+- **Other** — Any device supported by Buttplug.io
 
-#### Buttplug API Benefits:
-- ✅ Single protocol for all devices
-- ✅ Open specification
-- ✅ Active community
-- ✅ Regular updates
-
----
-
-## 🛠️ Технологии / Tech Stack
-
-### 🇷🇺 Русский
-
-| Категория | Технологии |
-|-----------|------------|
-| **Язык** | Kotlin 2.0.21 |
-| **UI** | Jetpack Compose, Material Design 3 |
-| **Архитектура** | MVVM, Clean Architecture |
-| **DI** | Hilt |
-| **База данных** | Room + SQLCipher |
-| **Асинхронность** | Coroutines, Flow |
-| **Навигация** | Navigation Compose |
-| **Сеть** | OkHttp |
-| **Медиа** | ExoPlayer (Media3) |
-| **Изображения** | Coil |
-| **Buttplug** | Buttplug Android Library |
-
-### 🇬🇧 English
-
-| Category | Technologies |
-|----------|--------------|
-| **Language** | Kotlin 2.0.21 |
-| **UI** | Jetpack Compose, Material Design 3 |
-| **Architecture** | MVVM, Clean Architecture |
-| **DI** | Hilt |
-| **Database** | Room + SQLCipher |
-| **Async** | Coroutines, Flow |
-| **Navigation** | Navigation Compose |
-| **Network** | OkHttp |
-| **Media** | ExoPlayer (Media3) |
-| **Images** | Coil |
-| **Buttplug** | Buttplug Android Library |
-
----
-
-## 📋 Требования / Requirements
-
-### 🇷🇺 Русский
-
-- Android 8.0 (API 26) или выше
-- Android 13 (API 33) рекомендуется для полной поддержки локализации
-- **Для Buttplug синхронизации:**
-  - Intiface Central (ПК или мобильное приложение)
-  - Совместимое Bluetooth устройство
-  - Разрешение на использование Bluetooth
-
-### 🇬🇧 English
-
-- Android 8.0 (API 26) or higher
-- Android 13 (API 33) recommended for full localization support
-- **For Buttplug sync:**
-  - Intiface Central (PC or mobile app)
-  - Compatible Bluetooth device
-  - Bluetooth permission granted
-
----
-
-## 🚀 Установка / Installation
-
-### 🇷🇺 Русский
-
-1. **Скачайте APK** из раздела [Releases](https://github.com/spgsroot/VibePlayer/releases)
-2. **Включите установку из неизвестных источников** в настройках устройства
-3. **Установите APK** и запустите приложение
-4. **Для Buttplug:** установите [Intiface Central](https://intiface.com/central/)
-
-### 🇬🇧 English
-
-1. **Download APK** from [Releases](https://github.com/spgsroot/VibePlayer/releases) section
-2. **Enable installation from unknown sources** in device settings
-3. **Install APK** and launch the app
-4. **For Buttplug:** install [Intiface Central](https://intiface.com/central/)
-
----
-
-## 🔧 Сборка из исходников / Build from Source
-
-### 🇷🇺 Русский
-
-```bash
-# Клонируйте репозиторий
-git clone https://github.com/yourusername/VibePlayer.git
-cd VibePlayer
-
-# Откройте в Android Studio или соберите через командную строку
-./gradlew assembleDebug
-
-# APK будет создан в app/build/outputs/apk/debug/
-```
-
-### 🇬🇧 English
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/VibePlayer.git
-cd VibePlayer
-
-# Open in Android Studio or build via command line
-./gradlew assembleDebug
-
-# APK will be created in app/build/outputs/apk/debug/
-```
-
----
-
-## 📖 Использование / Usage
-
-### 🇷🇺 Русский
-
-#### Быстрый старт с Buttplug:
-
-1. **Настройка Intiface Central:**
-   - Скачайте и установите [Intiface Central](https://intiface.com/central/)
-   - Запустите приложение на ПК
-   - Включите Bluetooth сервер
-
-2. **Подключение устройства:**
-   - Откройте VibePlayer
-   - Перейдите в Настройки → Подключение устройства
-   - Нажмите «Начать сканирование»
-   - Выберите ваше устройство из списка
-
-3. **Воспроизведение:**
-   - Добавьте видео из галереи или по URL
-   - Запустите воспроизведение
-   - Устройство синхронизируется автоматически
-
-4. **Настройка синхронизации:**
-   - Откройте Настройки
-   - Настройте таймер автопереключения
-   - Отрегулируйте скорость воспроизведения
-
-### 🇬🇧 English
-
-#### Quick Start with Buttplug:
-
-1. **Setup Intiface Central:**
-   - Download and install [Intiface Central](https://intiface.com/central/)
-   - Launch the app on PC
-   - Enable Bluetooth server
-
-2. **Connect Device:**
-   - Open VibePlayer
-   - Go to Settings → Device Connection
-   - Tap «Start Scan»
-   - Select your device from the list
-
-3. **Playback:**
-   - Add video from gallery or URL
-   - Start playback
-   - Device will sync automatically
-
-4. **Sync Settings:**
-   - Open Settings
-   - Configure auto-switch timer
-   - Adjust playback speed
-
----
-
-## 🔌 Buttplug API Детали / Buttplug API Details
-
-#### Connection Architecture:
+### How It Works
 
 ```
 ┌─────────────────┐     Bluetooth      ┌─────────────────┐
@@ -296,58 +77,161 @@ cd VibePlayer
 └─────────────────┘
 ```
 
-#### Buttplug Commands:
-- `DeviceScan` — device scanning
-- `DeviceConnect` — connect to device
-- `StopAllDevices` — stop all devices
-- `SingleMotorVibrateCmd` — vibration control
-- `BatteryLevelCmd` — battery level check
+1. **Intiface Central** runs on PC or mobile device
+2. VibePlayer connects via **Bluetooth**
+3. Video syncs with device through **Buttplug Protocol**
+4. Intensity adjusts automatically based on playback
+
+### Buttplug Commands Used
+
+| Command | Description |
+|---------|-------------|
+| `DeviceScan` | Scan for nearby devices |
+| `DeviceConnect` | Connect to selected device |
+| `StopAllDevices` | Stop all device activity |
+| `SingleMotorVibrateCmd` | Control vibration intensity |
+| `BatteryLevelCmd` | Check device battery level |
+
+### Benefits of Buttplug API
+
+- ✅ **Single protocol** for all supported devices
+- ✅ **Open specification** — fully documented
+- ✅ **Active community** — regular updates and support
+- ✅ **Cross-platform** — works on Android, iOS, PC
 
 ---
 
-## 🌐 Языки / Languages
+## 🛠️ Tech Stack
 
-### 🇷🇺 Русский
-
-Приложение поддерживает два языка:
-
-- **Системный** — автоматически определяет язык устройства
-- **Русский** — принудительно русский интерфейс
-- **English** — принудительно английский интерфейс
-
-Изменить язык можно в настройках приложения.
-
-### 🇬🇧 English
-
-The app supports two languages:
-
-- **System** — automatically detects device language
-- **Русский** — force Russian interface
-- **English** — force English interface
-
-Language can be changed in app settings.
+| Category | Technology |
+|----------|------------|
+| **Language** | Kotlin 2.0.21 |
+| **UI Framework** | Jetpack Compose, Material Design 3 |
+| **Architecture** | MVVM, Clean Architecture |
+| **Dependency Injection** | Hilt |
+| **Database** | Room + SQLCipher |
+| **Async Operations** | Coroutines, Flow |
+| **Navigation** | Navigation Compose |
+| **Networking** | OkHttp |
+| **Media Player** | ExoPlayer (Media3) |
+| **Image Loading** | Coil |
+| **Device Protocol** | Buttplug Android Library |
 
 ---
 
-## 🔒 Безопасность / Security
+## 📋 Requirements
 
-### 🇷🇺 Русский
+- **Android 8.0 (API 26)** or higher
+- **Android 13 (API 33)** recommended for full localization support
 
-- **Пароль приложения** — защита от несанкционированного доступа
-- **SQLCipher** — шифрование базы данных
-- **Secure Storage** — безопасное хранение чувствительных данных
-- **Bluetooth разрешения** — минимально необходимые права
+### For Buttplug Sync
 
-### 🇬🇧 English
-
-- **App Password** — protection against unauthorized access
-- **SQLCipher** — database encryption
-- **Secure Storage** — secure storage of sensitive data
-- **Bluetooth permissions** — minimum required permissions
+- **Intiface Central** (PC or mobile app)
+- **Compatible Bluetooth device**
+- **Bluetooth permission** granted
 
 ---
 
-## 📁 Структура проекта / Project Structure
+## 🚀 Installation
+
+### From APK
+
+1. **Download APK** from [Releases](https://github.com/yourusername/VibePlayer/releases)
+2. **Enable installation from unknown sources** in device settings
+3. **Install APK** and launch the app
+4. **For Buttplug:** install [Intiface Central](https://intiface.com/central/)
+
+### From Google Play
+
+> Coming soon...
+
+---
+
+## 🔧 Build from Source
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/VibePlayer.git
+cd VibePlayer
+
+# Open in Android Studio or build via command line
+./gradlew assembleDebug
+
+# APK will be created in app/build/outputs/apk/debug/
+```
+
+### Build Requirements
+
+- Android Studio Hedgehog or newer
+- JDK 11 or higher
+- Android SDK 36
+
+---
+
+## 📖 Usage Guide
+
+### Quick Start with Buttplug
+
+#### 1. Setup Intiface Central
+
+- Download and install [Intiface Central](https://intiface.com/central/)
+- Launch the application on your PC
+- Enable Bluetooth server in settings
+
+#### 2. Connect Your Device
+
+- Open VibePlayer on your Android device
+- Navigate to **Settings → Device Connection**
+- Tap **Start Scan**
+- Select your device from the discovered list
+
+#### 3. Start Playback
+
+- Add a video from gallery or paste URL
+- Tap to start playback
+- Device will sync automatically with video
+
+#### 4. Configure Sync Settings
+
+- Open **Settings** menu
+- Configure **auto-switch timer** for automatic playback
+- Adjust **playback speed** (0.5x - 2.0x)
+- Set your preferred **language**
+
+### Adding Videos
+
+| Method | Description |
+|--------|-------------|
+| **Gallery** | Import videos from device storage |
+| **URL** | Paste direct video link |
+| **Batch Import** | Import multiple URLs at once |
+
+---
+
+## 🌐 Languages
+
+The app supports two languages with automatic detection:
+
+| Language | Option |
+|----------|--------|
+| **System Default** | Follows device language |
+| **Русский** | Force Russian interface |
+| **English** | Force English interface |
+
+Change language in **Settings → Language**.
+
+---
+
+## 🔒 Security
+
+- **🔐 App Password** — PIN code protection against unauthorized access
+- **🔒 SQLCipher** — 256-bit AES database encryption
+- **🛡️ Secure Storage** — Android Keystore for sensitive data
+- **📱 Minimal Permissions** — only required permissions requested
+
+---
+
+## 📁 Project Structure
 
 ```
 VibePlayer/
@@ -355,82 +239,114 @@ VibePlayer/
 │   ├── src/main/
 │   │   ├── java/ru/spgsroot/vibeplayer/
 │   │   │   ├── data/
-│   │   │   │   ├── db/              # Room + SQLCipher
-│   │   │   │   ├── repository/      # Репозитории
-│   │   │   │   └── downloader/      # Загрузка видео
+│   │   │   │   ├── db/              # Room database + SQLCipher
+│   │   │   │   ├── repository/      # Data repositories
+│   │   │   │   ├── downloader/      # Video download service
+│   │   │   │   └── storage/         # File storage management
 │   │   │   ├── device/
-│   │   │   │   └── buttplug/        # Buttplug интеграция
+│   │   │   │   └── buttplug/        # Buttplug API integration
 │   │   │   ├── domain/
-│   │   │   │   └── model/           # Бизнес-модели
+│   │   │   │   └── model/           # Business logic models
 │   │   │   ├── ui/
-│   │   │   │   ├── player/          # Видеоплеер
-│   │   │   │   ├── gallery/         # Галерея
-│   │   │   │   ├── settings/        # Настройки
-│   │   │   │   └── dialog/          # Диалоги
-│   │   │   ├── di/                  # Hilt DI
-│   │   │   ├── locale/              # Локализация
-│   │   │   └── security/            # Безопасность
+│   │   │   │   ├── player/          # Video player screen
+│   │   │   │   ├── gallery/         # Gallery screen
+│   │   │   │   ├── settings/        # Settings screen
+│   │   │   │   ├── auth/            # Authentication screen
+│   │   │   │   ├── dialog/          # Dialog components
+│   │   │   │   └── onboarding/      # Onboarding flow
+│   │   │   ├── di/                  # Hilt dependency injection
+│   │   │   ├── locale/              # Localization manager
+│   │   │   └── security/            # Auth & encryption
 │   │   └── res/
-│   │       ├── values/              # Русские строки
-│   │       └── values-en/           # Английские строки
+│   │       ├── values/              # Russian strings
+│   │       └── values-en/           # English strings
 │   └── build.gradle.kts
 └── build.gradle.kts
 ```
 
 ---
 
-## 🔗 Полезные ссылки / Useful Links
+## 🔗 Useful Links
 
-### 🇷🇺 Русский
+### Buttplug Resources
 
-- [Buttplug.io Official](https://buttplug.io/) — официальная документация
-- [Intiface Central](https://intiface.com/central/) — сервер для подключения
-- [Список устройств](https://buttplug.io/docs/devices/) — поддерживаемые устройства
-- [API Reference](https://buttplug.io/docs/) — документация API
+- [**Buttplug.io Official**](https://buttplug.io/) — Official documentation
+- [**Intiface Central**](https://intiface.com/central/) — Connection server
+- [**Device List**](https://buttplug.io/docs/devices/) — Supported devices
+- [**API Reference**](https://buttplug.io/docs/) — API documentation
+- [**Discord Community**](https://discord.gg/9jRg3qf) — Get help and chat
 
-### 🇬🇧 English
+### Development
 
-- [Buttplug.io Official](https://buttplug.io/) — official documentation
-- [Intiface Central](https://intiface.com/central/) — connection server
-- [Device List](https://buttplug.io/docs/devices/) — supported devices
-- [API Reference](https://buttplug.io/docs/) — API documentation
-
----
-
-## 🤝 Вклад / Contributing
-
-### 🇷🇺 Русский
-
-Вклад в проект приветствуется! Вы можете помочь:
-
-1. Сообщить об ошибке
-2. Предложить новую функцию
-3. Улучшить перевод
-4. Добавить поддержку новых устройств Buttplug
-5. Отправить Pull Request
-
-### 🇬🇧 English
-
-Contributions are welcome! You can help by:
-
-1. Reporting bugs
-2. Suggesting new features
-3. Improving translations
-4. Adding support for new Buttplug devices
-5. Sending Pull Requests
+- [**Jetpack Compose**](https://developer.android.com/jetpack/compose)
+- [**Hilt**](https://developer.android.com/training/dependency-injection/hilt-android)
+- [**Room Database**](https://developer.android.com/training/data-storage/room)
 
 ---
 
-## 📄 Лицензия / License
+## 🤝 Contributing
 
-MIT License — free to use, modify and distribute.
+Contributions are welcome! Here's how you can help:
+
+1. **Report bugs** — Open an issue with detailed description
+2. **Suggest features** — Share your ideas for improvements
+3. **Improve translations** — Help localize the app
+4. **Add device support** — Contribute Buttplug device configurations
+5. **Submit PRs** — Send pull requests for fixes and features
+
+### Development Setup
+
+```bash
+# Fork and clone
+git clone https://github.com/yourusername/VibePlayer.git
+cd VibePlayer
+
+# Create a branch
+git checkout -b feature/your-feature
+
+# Make changes and commit
+git commit -m "Add: your feature description"
+
+# Push and create PR
+git push origin feature/your-feature
+```
+
+---
+
+## 📄 License
+
+**MIT License** — free to use, modify and distribute.
+
+```
+Copyright (c) 2024 VibePlayer
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+```
+
+---
+
+## 📞 Contact
+
+- **GitHub:** [@yourusername](https://github.com/yourusername)
+- **Email:** your.email@example.com
+- **Buttplug Discord:** [Join community](https://discord.gg/9jRg3qf)
 
 ---
 
 <div align="center">
 
-**VibePlayer** © 2026
+**VibePlayer** © 2024
 
-Powered by **Buttplug.io** | Made with ❤️ using Kotlin & Jetpack Compose
+Powered by **[Buttplug.io](https://buttplug.io/)**
+
+Made with ❤️ using Kotlin & Jetpack Compose
 
 </div>
