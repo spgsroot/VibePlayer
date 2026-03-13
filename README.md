@@ -335,15 +335,14 @@ copies or substantial portions of the Software.
 
 ## 📞 Contact
 
-- **GitHub:** [@yourusername](https://github.com/yourusername)
-- **Email:** your.email@example.com
-- **Buttplug Discord:** [Join community](https://discord.gg/9jRg3qf)
+- **GitHub:** [@spgsroot](https://github.com/spgsroot)
+- **Email:** aqu.de@yandex.ru
 
 ---
 
 <div align="center">
 
-**VibePlayer** © 2024
+**VibePlayer** © 2026
 
 Powered by **[Buttplug.io](https://buttplug.io/)**
 
