@@ -31,7 +31,7 @@ fun SettingsDrawer(
 
     val context = LocalContext.current
     val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
-    val tonWallet = "UQCGFymEHFNq1IcIhXBWJJe7Ha7Cx7RU6apvotRs5DcEEaG"
+    val tonWallet = "UQCGFymEHFNq1IcIhXBWJJe7Ha7Cx7RU6apvotRs5DcEEAaG"
 
     ModalDrawerSheet {
         Column(

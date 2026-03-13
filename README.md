@@ -333,6 +333,16 @@ copies or substantial portions of the Software.
 
 ---
 
+## 💖 Support
+
+If you like this project and want to support its development, you can donate via TON:
+
+**TON:** `UQCGFymEHFNq1IcIhXBWJJe7Ha7Cx7RU6apvotRs5DcEEAaG`
+
+Every contribution helps keep this project alive and growing! ❤️
+
+---
+
 ## 📞 Contact
 
 - **GitHub:** [@spgsroot](https://github.com/spgsroot)

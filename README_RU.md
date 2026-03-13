@@ -329,6 +329,16 @@ Copyright (c) 2024 VibePlayer
 
 ---
 
+## 💖 Поддержка
+
+Если вам нравится этот проект и вы хотите поддержать его разработку, вы можете сделать пожертвование через TON:
+
+**TON:** `UQCGFymEHFNq1IcIhXBWJJe7Ha7Cx7RU6apvotRs5DcEEAaG`
+
+Каждый взнос помогает поддерживать и развивать этот проект! ❤️
+
+---
+
 ## 📞 Контакты
 
 - **GitHub:** [@spgsroot](https://github.com/spgsroot)
