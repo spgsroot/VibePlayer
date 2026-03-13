@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">VibePlayer</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="timer_label">Auto-switch timer</string>
+    <string name="timer_full_video">Full video</string>
+    <string name="timer_seconds">%ds</string>
+    <string name="playback_speed_label">Playback speed</string>
+    <string name="playback_speed_x">%.1fx</string>
+    <string name="dsp_settings_title">DSP Settings</string>
+    <string name="bass_range" formatted="false">Bass range: %d-%d Hz</string>
+    <string name="smoothing">Smoothing: %.1f</string>
+
+    <!-- Buttons -->
+    <string name="btn_app_password">🔒 App Password</string>
+    <string name="btn_device_connect">🔗 Device Connection</string>
+
+    <!-- Support -->
+    <string name="support_title">❤ Support</string>
+    <string name="support_ton">TON:</string>
+
+    <!-- Language -->
+    <string name="language_label">Language</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_english">English</string>
+    <string name="language_system">System</string>
+
+    <!-- Onboarding -->
+    <string name="welcome_title">Welcome to VibePlayer</string>
+    <string name="onboarding_step_1">1. Add video from gallery or URL</string>
+    <string name="onboarding_step_2">2. Connect device via Intiface Central</string>
+    <string name="onboarding_step_3">3. Configure timer and speed</string>
+    <string name="btn_start">Start</string>
+
+    <!-- Gallery -->
+    <string name="gallery_selected">Selected: %d</string>
+    <string name="gallery_title">Gallery</string>
+    <string name="menu_rename">Rename</string>
+    <string name="menu_change_cover">Change Cover</string>
+    <string name="menu_delete">Delete</string>
+
+    <!-- Edit Video Dialog -->
+    <string name="dialog_rename_video">Rename Video</string>
+    <string name="label_title">Title</string>
+    <string name="btn_save">Save</string>
+    <string name="btn_cancel">Cancel</string>
+
+    <!-- URL Input Dialog -->
+    <string name="dialog_download">Download from URL</string>
+    <string name="error_invalid_url">Enter a valid http/https URL</string>
+    <string name="label_url">URL</string>
+    <string name="downloading">Downloading…</string>
+    <string name="download_in_progress">Downloading video and adding to library…</string>
+    <string name="download_success">Video successfully added to library</string>
+    <string name="error_download_failed">Failed to download video</string>
+    <string name="btn_download">Download</string>
+    <string name="btn_close">Close</string>
+
+    <!-- Password Dialog -->
+    <string name="dialog_set_password">Set Password</string>
+    <string name="password_hint">Password will be used to protect the app</string>
+    <string name="label_password">Password</string>
+    <string name="label_confirm_password">Confirm Password</string>
+    <string name="error_password_min_length">Minimum 4 characters</string>
+    <string name="error_passwords_mismatch">Passwords do not match</string>
+    <string name="btn_set">Set</string>
+
+    <!-- Device Scan Dialog -->
+    <string name="dialog_device_connect">Device Connection</string>
+    <string name="device_connect_hint">Make sure Intiface Central is running and device is enabled</string>
+    <string name="searching_devices">Searching devices…</string>
+    <string name="found_devices">Found devices:</string>
+    <string name="btn_start_scan">Start Scan</string>
+
+    <!-- Batch Import Dialog -->
+    <string name="dialog_import_list">Import List</string>
+    <string name="import_hint">Paste URLs, one per line.</string>
+    <string name="import_url_placeholder">https://example.com/video1.mp4\nhttps://example.com/video2.mp4</string>
+    <string name="error_no_urls">Add at least one valid http/https URL</string>
+    <string name="importing">Importing…</string>
+    <string name="import_processed" formatted="false">Processed %d of %d</string>
+    <string name="import_current">Current URL: %s</string>
+    <string name="import_success_failed" formatted="false">Success: %d, Failed: %d</string>
+    <string name="import_last_error">Last error: %s</string>
+    <string name="import_complete">Import Complete</string>
+    <string name="import_total">Total: %d</string>
+    <string name="import_succeeded">Succeeded: %d</string>
+    <string name="import_failed">Failed: %d</string>
+    <string name="import_failed_list">Failed to import:</string>
+    <string name="error_import_failed">Failed to import</string>
+    <string name="btn_import">Import</string>
+    <string name="btn_ready">Ready</string>
+
+    <!-- Add Video Dialog -->
+    <string name="add_video">Add Video</string>
+    <string name="add_from_gallery">Select from Gallery</string>
+    <string name="add_from_url">Paste URL</string>
+    <string name="add_batch">Import List</string>
+
+    <!-- Auth Screen -->
+    <string name="auth_enter_password">Enter password</string>
+    <string name="auth_wrong_password">Wrong password</string>
+    <string name="btn_login">Login</string>
+
+    <!-- Content Descriptions -->
+    <string name="content_description_back">Back</string>
+    <string name="content_description_delete_selected">Delete selected</string>
+
+    <!-- Empty State -->
+    <string name="empty_playlist">Playlist is empty</string>
+    <string name="empty_add_first">Add First Video</string>
+
+    <!-- Notifications -->
+    <string name="notification_download_title">Downloading video</string>
+    <string name="notification_connecting">Connecting…</string>
+    <string name="notification_downloaded" formatted="false">Downloaded %d%%</string>
+    <string name="notification_saved">Video successfully saved</string>
+    <string name="notification_download_error">Download error</string>
+    <string name="notification_download_complete">Download complete</string>
+    <string name="error_empty_response">Empty server response</string>
+</resources>

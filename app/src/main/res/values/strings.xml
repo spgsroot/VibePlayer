@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">VibePlayer</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Настройки</string>
+    <string name="timer_label">Таймер автопереключения</string>
+    <string name="timer_full_video">Полное видео</string>
+    <string name="timer_seconds">%dс</string>
+    <string name="playback_speed_label">Скорость воспроизведения</string>
+    <string name="playback_speed_x">%.1fx</string>
+    <string name="dsp_settings_title">DSP Настройки</string>
+    <string name="bass_range" formatted="false">Bass range: %d-%d Hz</string>
+    <string name="smoothing">Smoothing: %.1f</string>
+
+    <!-- Buttons -->
+    <string name="btn_app_password">🔒 Пароль приложения</string>
+    <string name="btn_device_connect">🔗 Подключение устройства</string>
+
+    <!-- Support -->
+    <string name="support_title">❤ Support</string>
+    <string name="support_ton">TON:</string>
+
+    <!-- Language -->
+    <string name="language_label">Язык</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_english">English</string>
+    <string name="language_system">Системный</string>
+
+    <!-- Onboarding -->
+    <string name="welcome_title">Добро пожаловать в VibePlayer</string>
+    <string name="onboarding_step_1">1. Добавьте видео из галереи или по URL</string>
+    <string name="onboarding_step_2">2. Подключите устройство через Intiface Central</string>
+    <string name="onboarding_step_3">3. Настройте таймер и скорость</string>
+    <string name="btn_start">Начать</string>
+
+    <!-- Gallery -->
+    <string name="gallery_selected">Выбрано: %d</string>
+    <string name="gallery_title">Галерея</string>
+    <string name="menu_rename">Переименовать</string>
+    <string name="menu_change_cover">Изменить обложку</string>
+    <string name="menu_delete">Удалить</string>
+
+    <!-- Edit Video Dialog -->
+    <string name="dialog_rename_video">Переименовать видео</string>
+    <string name="label_title">Название</string>
+    <string name="btn_save">Сохранить</string>
+    <string name="btn_cancel">Отмена</string>
+
+    <!-- URL Input Dialog -->
+    <string name="dialog_download">Скачать по ссылке</string>
+    <string name="error_invalid_url">Введите корректный http/https URL</string>
+    <string name="label_url">URL</string>
+    <string name="downloading">Скачивание…</string>
+    <string name="download_in_progress">Скачиваю видео и добавляю его в библиотеку…</string>
+    <string name="download_success">Видео успешно добавлено в библиотеку</string>
+    <string name="error_download_failed">Не удалось скачать видео</string>
+    <string name="btn_download">Скачать</string>
+    <string name="btn_close">Закрыть</string>
+
+    <!-- Password Dialog -->
+    <string name="dialog_set_password">Установить пароль</string>
+    <string name="password_hint">Пароль будет использоваться для защиты приложения</string>
+    <string name="label_password">Пароль</string>
+    <string name="label_confirm_password">Подтвердите пароль</string>
+    <string name="error_password_min_length">Минимум 4 символа</string>
+    <string name="error_passwords_mismatch">Пароли не совпадают</string>
+    <string name="btn_set">Установить</string>
+
+    <!-- Device Scan Dialog -->
+    <string name="dialog_device_connect">Подключение устройства</string>
+    <string name="device_connect_hint">Убедитесь, что Intiface Central запущен и устройство включено</string>
+    <string name="searching_devices">Поиск устройств…</string>
+    <string name="found_devices">Найденные устройства:</string>
+    <string name="btn_start_scan">Начать сканирование</string>
+
+    <!-- Batch Import Dialog -->
+    <string name="dialog_import_list">Импорт списка</string>
+    <string name="import_hint">Вставьте URL-адреса, по одному на строку.</string>
+    <string name="import_url_placeholder">https://example.com/video1.mp4\nhttps://example.com/video2.mp4</string>
+    <string name="error_no_urls">Добавьте хотя бы один корректный http/https URL</string>
+    <string name="importing">Импорт…</string>
+    <string name="import_processed" formatted="false">Обработано %d из %d</string>
+    <string name="import_current">Текущий URL: %s</string>
+    <string name="import_success_failed" formatted="false">Успешно: %d, ошибок: %d</string>
+    <string name="import_last_error">Последняя ошибка: %s</string>
+    <string name="import_complete">Импорт завершён</string>
+    <string name="import_total">Всего: %d</string>
+    <string name="import_succeeded">Успешно: %d</string>
+    <string name="import_failed">Ошибок: %d</string>
+    <string name="import_failed_list">Не удалось импортировать:</string>
+    <string name="error_import_failed">Не удалось выполнить импорт</string>
+    <string name="btn_import">Импортировать</string>
+    <string name="btn_ready">Готово</string>
+
+    <!-- Add Video Dialog -->
+    <string name="add_video">Добавить видео</string>
+    <string name="add_from_gallery">Выбрать из галереи</string>
+    <string name="add_from_url">Вставить ссылку</string>
+    <string name="add_batch">Импорт списка</string>
+
+    <!-- Auth Screen -->
+    <string name="auth_enter_password">Введите пароль</string>
+    <string name="auth_wrong_password">Неверный пароль</string>
+    <string name="btn_login">Войти</string>
+
+    <!-- Content Descriptions -->
+    <string name="content_description_back">Назад</string>
+    <string name="content_description_delete_selected">Удалить выбранное</string>
+
+    <!-- Empty State -->
+    <string name="empty_playlist">Плейлист пуст</string>
+    <string name="empty_add_first">Добавить первое видео</string>
+
+    <!-- Notifications -->
+    <string name="notification_download_title">Скачивание видео</string>
+    <string name="notification_connecting">Подключение…</string>
+    <string name="notification_downloaded" formatted="false">Загружено %d%%</string>
+    <string name="notification_saved">Видео успешно сохранено</string>
+    <string name="notification_download_error">Ошибка скачивания</string>
+    <string name="notification_download_complete">Скачивание завершено</string>
+    <string name="error_empty_response">Пустой ответ сервера</string>
+</resources>
