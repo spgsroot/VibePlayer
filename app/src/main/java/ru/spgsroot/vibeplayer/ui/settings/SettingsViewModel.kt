@@ -23,6 +23,9 @@ class SettingsViewModel @Inject constructor(
     val settings: StateFlow<Settings?> = settingsRepository.getSettings()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
+    val isPasswordSet: StateFlow<Boolean> = authManager.isPasswordSetFlow()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     fun updateTimer(timerMs: Long) {
         viewModelScope.launch {
             settingsRepository.updateTimer(timerMs)
@@ -71,6 +74,17 @@ class SettingsViewModel @Inject constructor(
     fun setPassword(password: String) {
         viewModelScope.launch {
             authManager.setPassword(password)
+        }
+    }
+
+    fun changePassword(currentPassword: String, newPassword: String, onSuccess: () -> Unit, onError: () -> Unit) {
+        viewModelScope.launch {
+            val success = authManager.changePassword(currentPassword, newPassword)
+            if (success) {
+                onSuccess()
+            } else {
+                onError()
+            }
         }
     }
 

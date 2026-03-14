@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">VibePlayer</string>
-
+    <!-- Auth -->
+    <string name="enter_pin">Enter PIN-code</string>
+    <string name="verifying">Verifying...</string>
+    <string name="invalid_pin">Invalid PIN</string>
+    <string name="enter_4_digits">Enter 4 digits</string>
+    <string name="delete">Delete</string>
+    <string name="btn_set_password">Set password</string>
     <!-- Settings -->
     <string name="settings_title">Settings</string>
     <string name="timer_label">Auto-switch timer</string>
@@ -14,7 +20,8 @@
     <string name="smoothing">Smoothing: %.1f</string>
 
     <!-- Buttons -->
-    <string name="btn_app_password">🔒 App Password</string>
+    <string name="btn_app_password_set">🔒 Set Password</string>
+    <string name="btn_app_password_change">🔒 Change Password</string>
     <string name="btn_device_connect">🔗 Device Connection</string>
 
     <!-- Support -->
@@ -60,12 +67,16 @@
 
     <!-- Password Dialog -->
     <string name="dialog_set_password">Set Password</string>
+    <string name="dialog_change_password">Change Password</string>
     <string name="password_hint">Password will be used to protect the app</string>
+    <string name="label_current_password">Current Password</string>
     <string name="label_password">Password</string>
     <string name="label_confirm_password">Confirm Password</string>
     <string name="error_password_min_length">Minimum 4 characters</string>
     <string name="error_passwords_mismatch">Passwords do not match</string>
+    <string name="error_current_password_wrong">Wrong current password</string>
     <string name="btn_set">Set</string>
+    <string name="btn_change">Change</string>
 
     <!-- Device Scan Dialog -->
     <string name="dialog_device_connect">Device Connection</string>

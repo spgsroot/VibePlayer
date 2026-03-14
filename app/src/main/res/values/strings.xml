@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">VibePlayer</string>
-
+    <!-- Auth -->
+    <string name="enter_pin">Введите PIN-код</string>
+    <string name="verifying">Проверка...</string>
+    <string name="invalid_pin">Неверный пароль</string>
+    <string name="enter_4_digits">Введите 4 цифры</string>
+    <string name="delete">Удалить</string>
+    <string name="btn_set_password">Установить пароль</string>
     <!-- Settings -->
     <string name="settings_title">Настройки</string>
     <string name="timer_label">Таймер автопереключения</string>
@@ -14,7 +20,8 @@
     <string name="smoothing">Smoothing: %.1f</string>
 
     <!-- Buttons -->
-    <string name="btn_app_password">🔒 Пароль приложения</string>
+    <string name="btn_app_password_set">🔒 Установить пароль</string>
+    <string name="btn_app_password_change">🔒 Сменить пароль</string>
     <string name="btn_device_connect">🔗 Подключение устройства</string>
 
     <!-- Support -->
@@ -60,12 +67,16 @@
 
     <!-- Password Dialog -->
     <string name="dialog_set_password">Установить пароль</string>
+    <string name="dialog_change_password">Сменить пароль</string>
     <string name="password_hint">Пароль будет использоваться для защиты приложения</string>
+    <string name="label_current_password">Текущий пароль</string>
     <string name="label_password">Пароль</string>
     <string name="label_confirm_password">Подтвердите пароль</string>
     <string name="error_password_min_length">Минимум 4 символа</string>
     <string name="error_passwords_mismatch">Пароли не совпадают</string>
+    <string name="error_current_password_wrong">Неверный текущий пароль</string>
     <string name="btn_set">Установить</string>
+    <string name="btn_change">Сменить</string>
 
     <!-- Device Scan Dialog -->
     <string name="dialog_device_connect">Подключение устройства</string>

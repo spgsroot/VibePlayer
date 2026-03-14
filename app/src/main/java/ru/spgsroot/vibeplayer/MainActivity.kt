@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.*
 import androidx.core.os.LocaleListCompat
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -18,7 +19,10 @@ import ru.spgsroot.vibeplayer.locale.LocaleManager
 import ru.spgsroot.vibeplayer.security.AuthManager
 import ru.spgsroot.vibeplayer.ui.auth.AuthScreen
 import ru.spgsroot.vibeplayer.ui.gallery.GalleryScreen
+import ru.spgsroot.vibeplayer.ui.gallery.GalleryViewModel
+import ru.spgsroot.vibeplayer.ui.onboarding.OnboardingScreen
 import ru.spgsroot.vibeplayer.ui.player.PlayerScreen
+import ru.spgsroot.vibeplayer.ui.player.PlayerViewModel
 import ru.spgsroot.vibeplayer.ui.theme.VibePlayerTheme
 import javax.inject.Inject
 
@@ -65,14 +69,42 @@ fun AppNavigation(authManager: AuthManager) {
     var startDestination by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
+    // 💡 Preload (подгружаем данные в фоне до открытия экранов)
+    val playerViewModel: PlayerViewModel = hiltViewModel()
+    val galleryViewModel: GalleryViewModel = hiltViewModel()
+
     LaunchedEffect(Unit) {
         scope.launch {
-            startDestination = if (authManager.isPasswordSet()) "auth" else "player"
+            if (!authManager.isOnboardingCompleted()) {
+                startDestination = "onboarding"
+            } else {
+                startDestination = if (authManager.isPasswordSet()) "auth" else "player"
+            }
         }
     }
 
     startDestination?.let { start ->
         NavHost(navController = navController, startDestination = start) {
+            composable("onboarding") {
+                OnboardingScreen(
+                    onComplete = {
+                        scope.launch {
+                            authManager.skipOnboarding()
+                            navController.navigate("player") {
+                                popUpTo("onboarding") { inclusive = true }
+                            }
+                        }
+                    },
+                    onPasswordSet = { password ->
+                        scope.launch {
+                            authManager.setPassword(password)
+                            navController.navigate("player") {
+                                popUpTo("onboarding") { inclusive = true }
+                            }
+                        }
+                    }
+                )
+            }
             composable("auth") {
                 AuthScreen(
                     onVerifyPassword = { password ->
@@ -86,10 +118,12 @@ fun AppNavigation(authManager: AuthManager) {
                 )
             }
             composable("player") {
-                PlayerScreen(navController = navController)
+                // Передаем предварительно загруженные viewmodels
+                PlayerScreen(navController = navController, viewModel = playerViewModel)
             }
             composable("gallery") {
-                GalleryScreen(navController = navController)
+                // Передаем предварительно загруженные viewmodels
+                GalleryScreen(navController = navController, viewModel = galleryViewModel)
             }
         }
     }
