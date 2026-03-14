@@ -20,32 +20,37 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      # Добавлен шаг для выдачи прав на исполнение
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build AAB and APK (Play Flavor)
-        run: ./gradlew bundlePlayRelease assemblePlayRelease
+      # Заменили команды сборки на стандартные
+      - name: Build AAB and APK
+        run: ./gradlew bundleRelease assembleRelease
 
       - name: Sign AAB for Google Play
         uses: r0adkll/sign-android-release@v1
         id: sign_aab
         with:
-          releaseDirectory: app/build/outputs/bundle/playRelease
+          releaseDirectory: app/build/outputs/bundle/release
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
           alias: ${{ secrets.ALIAS }}
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
+        env: 
+          BUILD_TOOLS_VERSION: "34.0.0"
 
       - name: Sign APK for RuStore & GitHub
         uses: r0adkll/sign-android-release@v1
         id: sign_apk
         with:
-          releaseDirectory: app/build/outputs/apk/play/release
+          releaseDirectory: app/build/outputs/apk/release
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
           alias: ${{ secrets.ALIAS }}
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: "34.0.0"
+
 
       - name: Upload Release to GitHub
         uses: softprops/action-gh-release@v2
