@@ -1,0 +1,57 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+
+    <!-- Background rect with rounded corners -->
+    <path
+        android:fillColor="#1C1B1F"
+        android:pathData="M0,112
+                          a112,112 0 0 1 112,-112
+                          h288
+                          a112,112 0 0 1 112,112
+                          v288
+                          a112,112 0 0 1 -112,112
+                          h-288
+                          a112,112 0 0 1 -112,-112
+                          z" />
+
+    <!-- Outer Vibration Wave -->
+    <path
+        android:pathData="M256,76 a180,180 0 1,0 0,360 a180,180 0 1,0 0,-360"
+        android:fillColor="#00000000"
+        android:strokeColor="#8E2DE2"
+        android:strokeWidth="16"
+        android:strokeAlpha="0.4" />
+
+    <!-- Inner Vibration Wave -->
+    <path
+        android:pathData="M256,126 a130,130 0 1,0 0,260 a130,130 0 1,0 0,-260"
+        android:fillColor="#00000000"
+        android:strokeColor="#8E2DE2"
+        android:strokeWidth="24"
+        android:strokeAlpha="0.8" />
+
+    <!-- Play Button Base -->
+    <path
+        android:fillColor="#FF0080"
+        android:pathData="M190,150 L370,256 L190,362 Z" />
+
+    <!-- DSP Equalizer Rects (как в SVG, просто заливка #1C1B1F) -->
+    <path
+        android:fillColor="#1C1B1F"
+        android:pathData="M220,220 h16 v72 h-16 z"
+        android:strokeWidth="0"
+        android:strokeColor="#00000000" />
+    <path
+        android:fillColor="#1C1B1F"
+        android:pathData="M250,190 h16 v132 h-16 z"
+        android:strokeWidth="0"
+        android:strokeColor="#00000000" />
+    <path
+        android:fillColor="#1C1B1F"
+        android:pathData="M280,235 h16 v42 h-16 z"
+        android:strokeWidth="0"
+        android:strokeColor="#00000000" />
+</vector>
