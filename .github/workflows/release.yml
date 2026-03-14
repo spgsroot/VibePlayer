@@ -6,7 +6,6 @@ on:
       - 'v*'
   workflow_dispatch:
 
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,6 +19,10 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: gradle
+
+      # Добавлен шаг для выдачи прав на исполнение
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
       - name: Build AAB and APK (Play Flavor)
         run: ./gradlew bundlePlayRelease assemblePlayRelease
