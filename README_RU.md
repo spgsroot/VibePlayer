@@ -136,7 +136,7 @@ VibePlayer использует **Buttplug API** для синхронизаци
 
 ### Из APK
 
-1. **Скачайте APK** из раздела [Releases](https://github.com/yourusername/VibePlayer/releases)
+1. **Скачайте APK** из раздела [Releases](https://github.com/spgsroot/VibePlayer/releases)
 2. **Включите установку из неизвестных источников** в настройках устройства
 3. **Установите APK** и запустите приложение
 4. **Для Buttplug:** установите [Intiface Central](https://intiface.com/central/)
@@ -151,7 +151,7 @@ VibePlayer использует **Buttplug API** для синхронизаци
 
 ```bash
 # Клонируйте репозиторий
-git clone https://github.com/yourusername/VibePlayer.git
+git clone https://github.com/spgsroot/VibePlayer.git
 cd VibePlayer
 
 # Откройте в Android Studio или соберите через командную строку
@@ -298,7 +298,7 @@ VibePlayer/
 
 ```bash
 # Форкните и клонируйте
-git clone https://github.com/yourusername/VibePlayer.git
+git clone https://github.com/spgsroot/VibePlayer.git
 cd VibePlayer
 
 # Создайте ветку
