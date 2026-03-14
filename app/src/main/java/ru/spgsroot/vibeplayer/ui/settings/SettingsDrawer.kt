@@ -17,6 +17,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.spgsroot.vibeplayer.R
 import ru.spgsroot.vibeplayer.locale.LocaleManager
 import ru.spgsroot.vibeplayer.ui.dialog.DeviceScanDialog
+import ru.spgsroot.vibeplayer.ui.dialog.PasswordChangeDialog
 import ru.spgsroot.vibeplayer.ui.dialog.PasswordSetupDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -26,7 +27,9 @@ fun SettingsDrawer(
     onClose: () -> Unit = {}
 ) {
     val settings = viewModel.settings.collectAsStateWithLifecycle().value
+    val isPasswordSet by viewModel.isPasswordSet.collectAsStateWithLifecycle()
     var showPasswordDialog by remember { mutableStateOf(false) }
+    var showChangePasswordDialog by remember { mutableStateOf(false) }
     var showDeviceDialog by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
@@ -86,10 +89,24 @@ fun SettingsDrawer(
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = { showPasswordDialog = true },
+                onClick = {
+                    if (isPasswordSet) {
+                        showChangePasswordDialog = true
+                    } else {
+                        showPasswordDialog = true
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(stringResource(R.string.btn_app_password))
+                Text(
+                    stringResource(
+                        if (isPasswordSet) {
+                            R.string.btn_app_password_change
+                        } else {
+                            R.string.btn_app_password_set
+                        }
+                    )
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -123,6 +140,29 @@ fun SettingsDrawer(
             onDismiss = { showPasswordDialog = false },
             onSetPassword = { password ->
                 viewModel.setPassword(password)
+            }
+        )
+    }
+
+    if (showChangePasswordDialog) {
+        var passwordError by remember { mutableStateOf(false) }
+        PasswordChangeDialog(
+            onDismiss = {
+                showChangePasswordDialog = false
+                passwordError = false
+            },
+            currentPasswordError = passwordError,
+            onChangePassword = { currentPassword, newPassword ->
+                viewModel.changePassword(
+                    currentPassword = currentPassword,
+                    newPassword = newPassword,
+                    onSuccess = {
+                        showChangePasswordDialog = false
+                    },
+                    onError = {
+                        passwordError = true
+                    }
+                )
             }
         )
     }
