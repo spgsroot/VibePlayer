@@ -9,6 +9,7 @@
 [![Compose](https://img.shields.io/badge/Jetpack%20Compose-2024.09.00-blue.svg)](https://developer.android.com/jetpack/compose)
 [![Buttplug](https://img.shields.io/badge/Buttplug-API-orange.svg)](https://buttplug.io/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![justforfunnoreally.dev badge](https://img.shields.io/badge/justforfunnoreally-dev-9ff)](https://justforfunnoreally.dev)
 
 [🇷🇺 Russian version](README_RU.md)
 
