@@ -11,6 +11,10 @@ import javax.inject.Singleton
 @Singleton
 class ButtplugConnectionManager @Inject constructor() {
 
+    companion object {
+        const val DEFAULT_URL = "ws://127.0.0.1:12345"
+    }
+
     private val _state = MutableStateFlow<DeviceState>(DeviceState.Disconnected)
     val state: StateFlow<DeviceState> = _state.asStateFlow()
 
@@ -21,9 +25,9 @@ class ButtplugConnectionManager @Inject constructor() {
     private val client = OkHttpClient()
     private val json = Json { ignoreUnknownKeys = true }
 
-    fun connect() {
+    fun connect(url: String = DEFAULT_URL) {
         val request = Request.Builder()
-            .url("ws://127.0.0.1:12345")
+            .url(url)
             .build()
 
         webSocket = client.newWebSocket(request, object : WebSocketListener() {

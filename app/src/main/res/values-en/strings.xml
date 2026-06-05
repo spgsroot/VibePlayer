@@ -81,6 +81,8 @@
     <!-- Device Scan Dialog -->
     <string name="dialog_device_connect">Device Connection</string>
     <string name="device_connect_hint">Make sure Intiface Central is running and device is enabled</string>
+    <string name="label_server_url">Intiface Server URL</string>
+    <string name="device_connect_url_placeholder">ws://127.0.0.1:12345</string>
     <string name="searching_devices">Searching devices…</string>
     <string name="found_devices">Found devices:</string>
     <string name="btn_start_scan">Start Scan</string>

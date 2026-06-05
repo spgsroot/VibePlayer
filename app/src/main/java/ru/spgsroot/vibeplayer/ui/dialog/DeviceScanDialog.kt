@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.spgsroot.vibeplayer.R
@@ -23,6 +24,7 @@ fun DeviceScanDialog(
 ) {
     val deviceState by connectionManager.state.collectAsStateWithLifecycle()
     val devices by connectionManager.devices.collectAsStateWithLifecycle()
+    var serverUrl by remember { mutableStateOf(TextFieldValue(ButtplugConnectionManager.DEFAULT_URL)) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -32,6 +34,18 @@ fun DeviceScanDialog(
                 Text(
                     stringResource(R.string.device_connect_hint),
                     style = MaterialTheme.typography.bodyMedium
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = serverUrl,
+                    onValueChange = { serverUrl = it },
+                    label = { Text(stringResource(R.string.label_server_url)) },
+                    placeholder = { Text(stringResource(R.string.device_connect_url_placeholder)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = deviceState is DeviceState.Disconnected
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -50,7 +64,7 @@ fun DeviceScanDialog(
                     }
                     is DeviceState.Disconnected -> {
                         Button(
-                            onClick = { connectionManager.connect() },
+                            onClick = { connectionManager.connect(serverUrl.text) },
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(Icons.Default.Bluetooth, contentDescription = null)

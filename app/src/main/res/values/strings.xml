@@ -81,6 +81,8 @@
     <!-- Device Scan Dialog -->
     <string name="dialog_device_connect">Подключение устройства</string>
     <string name="device_connect_hint">Убедитесь, что Intiface Central запущен и устройство включено</string>
+    <string name="label_server_url">URL сервера Intiface</string>
+    <string name="device_connect_url_placeholder">ws://127.0.0.1:12345</string>
     <string name="searching_devices">Поиск устройств…</string>
     <string name="found_devices">Найденные устройства:</string>
     <string name="btn_start_scan">Начать сканирование</string>
