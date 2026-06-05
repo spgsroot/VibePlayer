@@ -86,6 +86,17 @@
     <string name="searching_devices">Поиск устройств…</string>
     <string name="found_devices">Найденные устройства:</string>
     <string name="btn_start_scan">Начать сканирование</string>
+    <string name="btn_device_disconnect">Отключить устройство</string>
+    <string name="btn_device_change">Сменить устройство</string>
+    <string name="btn_rescan">Повторить поиск</string>
+    <string name="device_status_active">Активно: %s</string>
+    <string name="device_status_connected">Найдено: %s</string>
+    <string name="device_status_disconnected">Устройство не подключено</string>
+    <string name="device_status_error">Ошибка устройства</string>
+    <string name="device_status_on">ВКЛ</string>
+    <string name="device_status_off">ВЫКЛ</string>
+    <string name="device_status_select">Выбрать</string>
+    <string name="device_selected">Выбрано</string>
 
     <!-- Batch Import Dialog -->
     <string name="dialog_import_list">Импорт списка</string>
@@ -133,4 +144,5 @@
     <string name="notification_download_error">Ошибка скачивания</string>
     <string name="notification_download_complete">Скачивание завершено</string>
     <string name="error_empty_response">Пустой ответ сервера</string>
+    <string name="error_file_too_large">Файл слишком большой</string>
 </resources>

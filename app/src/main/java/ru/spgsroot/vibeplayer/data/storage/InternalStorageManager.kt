@@ -22,35 +22,59 @@ class InternalStorageManager @Inject constructor(
         inputStream: InputStream,
         fileName: String,
         onProgress: ((Int) -> Unit)? = null,
-        totalBytes: Long = -1L
+        totalBytes: Long = -1L,
+        maxBytes: Long = DEFAULT_MAX_VIDEO_BYTES
     ): File {
-        val file = File(videosDir, fileName)
-        inputStream.use { input ->
-            file.outputStream().use { output ->
-                if (onProgress == null || totalBytes <= 0) {
-                    input.copyTo(output)
-                } else {
-                    val buffer = ByteArray(8192)
+        require(maxBytes > 0) { "maxBytes must be positive" }
+        if (totalBytes > maxBytes) {
+            throw IllegalArgumentException("File is too large: $totalBytes bytes")
+        }
+        if (totalBytes > 0 && totalBytes + MIN_FREE_BYTES > getAvailableSpace()) {
+            throw IllegalStateException("Not enough free space to save file")
+        }
+
+        val file = File(videosDir, File(fileName).name)
+        return try {
+            inputStream.use { input ->
+                file.outputStream().use { output ->
+                    val buffer = ByteArray(COPY_BUFFER_SIZE)
                     var bytesCopied = 0L
                     var read: Int
                     var lastProgressUpdate = 0L
+
                     while (input.read(buffer).also { read = it } >= 0) {
-                        output.write(buffer, 0, read)
+                        if (read == 0) continue
+
                         bytesCopied += read
-                        val currentTime = System.currentTimeMillis()
-                        // Обновляем прогресс не чаще раза в 500 мс, чтобы не спамить UI и нотификации
-                        if (currentTime - lastProgressUpdate > 500) {
-                            lastProgressUpdate = currentTime
-                            val progress = ((bytesCopied * 100) / totalBytes).toInt()
-                            onProgress(progress)
+                        if (bytesCopied > maxBytes) {
+                            throw IllegalArgumentException("File is too large: $bytesCopied bytes")
+                        }
+
+                        output.write(buffer, 0, read)
+
+                        if (onProgress != null && totalBytes > 0) {
+                            val currentTime = System.currentTimeMillis()
+                            // Обновляем прогресс не чаще раза в 500 мс, чтобы не спамить UI и нотификации
+                            if (currentTime - lastProgressUpdate > PROGRESS_UPDATE_INTERVAL_MS) {
+                                lastProgressUpdate = currentTime
+                                val progress = ((bytesCopied * 100) / totalBytes).toInt().coerceIn(0, 100)
+                                onProgress(progress)
+                            }
                         }
                     }
-                    onProgress(100) // Гарантированно отдаём 100% в конце
+
+                    if (onProgress != null && totalBytes > 0) {
+                        onProgress(100) // Гарантированно отдаём 100% в конце
+                    }
                 }
             }
+            file
+        } catch (e: Exception) {
+            file.delete()
+            throw e
         }
-        return file
     }
+
     fun saveThumbnail(inputStream: InputStream, videoId: Long): String {
         val fileName = "$videoId.jpg"
         val file = File(thumbnailsDir, fileName)
@@ -115,5 +139,12 @@ class InternalStorageManager @Inject constructor(
     fun cleanup() {
         videosDir.listFiles()?.forEach { it.delete() }
         thumbnailsDir.listFiles()?.forEach { it.delete() }
+    }
+
+    companion object {
+        const val DEFAULT_MAX_VIDEO_BYTES = 2L * 1024L * 1024L * 1024L
+        private const val MIN_FREE_BYTES = 50L * 1024L * 1024L
+        private const val COPY_BUFFER_SIZE = 8192
+        private const val PROGRESS_UPDATE_INTERVAL_MS = 500L
     }
 }

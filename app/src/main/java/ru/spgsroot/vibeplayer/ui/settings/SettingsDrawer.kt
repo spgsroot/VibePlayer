@@ -4,17 +4,24 @@ import android.content.Context
 import android.os.Build
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BluetoothConnected
+import androidx.compose.material.icons.filled.BluetoothDisabled
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
-import androidx.core.os.LocaleListCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.spgsroot.vibeplayer.R
+import ru.spgsroot.vibeplayer.device.buttplug.ButtplugDevice
+import ru.spgsroot.vibeplayer.device.buttplug.DeviceState
 import ru.spgsroot.vibeplayer.locale.LocaleManager
 import ru.spgsroot.vibeplayer.ui.dialog.DeviceScanDialog
 import ru.spgsroot.vibeplayer.ui.dialog.PasswordChangeDialog
@@ -23,11 +30,13 @@ import ru.spgsroot.vibeplayer.ui.dialog.PasswordSetupDialog
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsDrawer(
-    viewModel: SettingsViewModel = hiltViewModel(),
-    onClose: () -> Unit = {}
+    viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val settings = viewModel.settings.collectAsStateWithLifecycle().value
     val isPasswordSet by viewModel.isPasswordSet.collectAsStateWithLifecycle()
+    val deviceState by viewModel.deviceState.collectAsStateWithLifecycle()
+    val devices by viewModel.devices.collectAsStateWithLifecycle()
+    val activeDeviceIndex by viewModel.activeDeviceIndex.collectAsStateWithLifecycle()
     var showPasswordDialog by remember { mutableStateOf(false) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
     var showDeviceDialog by remember { mutableStateOf(false) }
@@ -111,11 +120,37 @@ fun SettingsDrawer(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            DeviceConnectionStatus(
+                deviceState = deviceState,
+                devices = devices,
+                activeDeviceIndex = activeDeviceIndex
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             Button(
                 onClick = { showDeviceDialog = true },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(stringResource(R.string.btn_device_connect))
+                Text(
+                    stringResource(
+                        if (devices.isNotEmpty()) {
+                            R.string.btn_device_change
+                        } else {
+                            R.string.btn_device_connect
+                        }
+                    )
+                )
+            }
+
+            if (deviceState !is DeviceState.Disconnected || activeDeviceIndex != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = viewModel::disconnectDevice,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.btn_device_disconnect))
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -170,12 +205,64 @@ fun SettingsDrawer(
     if (showDeviceDialog) {
         DeviceScanDialog(
             connectionManager = viewModel.connectionManager,
+            activeDeviceIndex = activeDeviceIndex,
+            onDisconnect = viewModel::disconnectDevice,
             onDismiss = { showDeviceDialog = false },
             onDeviceSelected = { deviceIndex ->
-                viewModel.connectDevice(deviceIndex.toString())
-                showDeviceDialog = false
+                viewModel.connectDevice(deviceIndex)
             }
         )
+    }
+}
+
+@Composable
+private fun DeviceConnectionStatus(
+    deviceState: DeviceState,
+    devices: List<ButtplugDevice>,
+    activeDeviceIndex: Int?
+) {
+    val activeDevice = activeDeviceIndex?.let { index -> devices.firstOrNull { it.index == index } }
+    val firstDevice = devices.firstOrNull()
+    val (text, icon, color) = when {
+        activeDevice != null -> Triple(
+            stringResource(R.string.device_status_active, activeDevice.name),
+            Icons.Default.BluetoothConnected,
+            Color(0xFF4CAF50)
+        )
+        deviceState is DeviceState.Connected && firstDevice != null -> Triple(
+            stringResource(R.string.device_status_connected, firstDevice.name),
+            Icons.Default.BluetoothConnected,
+            Color(0xFFFFA000)
+        )
+        deviceState is DeviceState.Scanning -> Triple(
+            stringResource(R.string.searching_devices),
+            Icons.Default.Sync,
+            MaterialTheme.colorScheme.primary
+        )
+        deviceState is DeviceState.Error -> Triple(
+            (deviceState.reason).takeIf { it.isNotBlank() } ?: stringResource(R.string.device_status_error),
+            Icons.Default.Error,
+            MaterialTheme.colorScheme.error
+        )
+        else -> Triple(
+            stringResource(R.string.device_status_disconnected),
+            Icons.Default.BluetoothDisabled,
+            MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(icon, contentDescription = null, tint = color)
+            Text(text, style = MaterialTheme.typography.bodyMedium)
+        }
     }
 }
 

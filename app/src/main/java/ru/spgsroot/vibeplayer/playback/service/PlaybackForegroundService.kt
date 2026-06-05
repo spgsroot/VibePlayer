@@ -12,10 +12,15 @@ import androidx.core.app.NotificationCompat
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import ru.spgsroot.vibeplayer.R
 import ru.spgsroot.vibeplayer.data.repository.PlaybackStateRepository
 import ru.spgsroot.vibeplayer.domain.model.PlaybackState
@@ -42,14 +47,24 @@ class PlaybackForegroundService : Service() {
         super.onCreate()
         createNotificationChannel()
         observePlayerState()
+        observePeriodicPlaybackStateSave()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_PLAY -> exoPlayerWrapper.play()
-            ACTION_PAUSE -> exoPlayerWrapper.pause()
-            ACTION_NEXT -> playlistManager.next()?.let { exoPlayerWrapper.play(it) }
-            ACTION_STOP -> stopSelf()
+            ACTION_PAUSE -> {
+                exoPlayerWrapper.pause()
+                savePlaybackStateAsync()
+            }
+            ACTION_NEXT -> playlistManager.next()?.let {
+                exoPlayerWrapper.play(it)
+                savePlaybackStateAsync()
+            }
+            ACTION_STOP -> {
+                savePlaybackStateAsync()
+                stopSelf()
+            }
         }
         startForeground(NOTIFICATION_ID, buildNotification(exoPlayerWrapper.state.value))
         return START_STICKY
@@ -58,7 +73,7 @@ class PlaybackForegroundService : Service() {
     override fun onBind(intent: Intent?): IBinder = binder
 
     override fun onDestroy() {
-        savePlaybackState()
+        savePlaybackStateAsync()
         exoPlayerWrapper.release()
         serviceScope.cancel()
         super.onDestroy()
@@ -68,6 +83,15 @@ class PlaybackForegroundService : Service() {
         exoPlayerWrapper.state.onEach { state ->
             updateNotification(state)
         }.launchIn(serviceScope)
+    }
+
+    private fun observePeriodicPlaybackStateSave() {
+        serviceScope.launch {
+            while (isActive) {
+                delay(PLAYBACK_STATE_SAVE_INTERVAL_MS)
+                savePlaybackStateAsync()
+            }
+        }
     }
 
     private fun createNotificationChannel() {
@@ -117,25 +141,34 @@ class PlaybackForegroundService : Service() {
         getSystemService(NotificationManager::class.java)?.notify(NOTIFICATION_ID, notification)
     }
 
-    private fun savePlaybackState() {
-        val currentVideo = playlistManager.current() ?: return
+    private fun savePlaybackStateAsync() {
+        val playbackState = buildPlaybackState() ?: return
+
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            withContext(NonCancellable) {
+                runCatching {
+                    playbackStateRepository.saveState(playbackState)
+                }
+            }
+        }
+    }
+
+    private fun buildPlaybackState(): PlaybackState? {
+        val currentVideo = playlistManager.current() ?: return null
         val position = exoPlayerWrapper.getCurrentPosition()
         val playlistOrder = playlistManager.getPlaylistOrder()
 
-        kotlinx.coroutines.runBlocking {
-            playbackStateRepository.saveState(
-                PlaybackState(
-                    currentVideoId = currentVideo.id,
-                    positionMs = position,
-                    playlistOrder = playlistOrder
-                )
-            )
-        }
+        return PlaybackState(
+            currentVideoId = currentVideo.id,
+            positionMs = position,
+            playlistOrder = playlistOrder
+        )
     }
 
     companion object {
         private const val CHANNEL_ID = "playback_channel"
         private const val NOTIFICATION_ID = 1
+        private const val PLAYBACK_STATE_SAVE_INTERVAL_MS = 10_000L
         const val ACTION_PLAY = "ACTION_PLAY"
         const val ACTION_PAUSE = "ACTION_PAUSE"
         const val ACTION_NEXT = "ACTION_NEXT"

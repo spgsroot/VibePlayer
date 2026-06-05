@@ -6,6 +6,7 @@ import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import ru.spgsroot.vibeplayer.playback.player.ExoPlayerWrapper
 import ru.spgsroot.vibeplayer.playback.queue.PlaylistManager
@@ -49,7 +50,7 @@ class TimerController @OptIn(UnstableApi::class)
 
     private fun startFixedTimerMode(scope: CoroutineScope) {
         timerJob = scope.launch {
-            while (true) {
+            while (isActive) {
                 delay(timerMs)
                 playNext()
             }
@@ -60,7 +61,7 @@ class TimerController @OptIn(UnstableApi::class)
     private fun startFullVideoMode() {
         val player = exoPlayerWrapper.getPlayer()
 
-        fullVideoListener = object : Player.Listener {
+        val listener = object : Player.Listener {
             override fun onMediaItemTransition(
                 mediaItem: androidx.media3.common.MediaItem?,
                 reason: Int
@@ -71,7 +72,8 @@ class TimerController @OptIn(UnstableApi::class)
             }
         }
 
-        player.addListener(fullVideoListener!!)
+        fullVideoListener = listener
+        player.addListener(listener)
     }
 
     @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)

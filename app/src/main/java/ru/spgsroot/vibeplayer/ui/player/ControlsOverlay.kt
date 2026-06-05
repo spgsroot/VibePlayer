@@ -18,9 +18,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import ru.spgsroot.vibeplayer.R
+import ru.spgsroot.vibeplayer.device.buttplug.ButtplugDevice
+import ru.spgsroot.vibeplayer.device.buttplug.DeviceState
 import ru.spgsroot.vibeplayer.playback.player.PlayerState
 
 @OptIn(UnstableApi::class)
@@ -37,7 +42,10 @@ fun ControlsOverlay(
     onSeek: (Long) -> Unit,
     onZoomChange: (Float) -> Unit,
     onPanChange: (Offset) -> Unit,
-    onResetZoom: () -> Unit
+    onResetZoom: () -> Unit,
+    deviceState: DeviceState,
+    devices: List<ButtplugDevice>,
+    activeDeviceIndex: Int?
 ) {
     var controlsVisible by remember { mutableStateOf(true) }
     var lastInteraction by remember { mutableLongStateOf(System.currentTimeMillis()) }
@@ -48,10 +56,12 @@ fun ControlsOverlay(
     }
 
     // Автоматическое скрытие контролов через 3 секунды бездействия
-    LaunchedEffect(controlsVisible, lastInteraction, playerState) {
-        if (controlsVisible) {
-            delay(3000)
-            controlsVisible = false
+    LaunchedEffect(Unit) {
+        while (isActive) {
+            delay(250)
+            if (controlsVisible && System.currentTimeMillis() - lastInteraction >= 3000) {
+                controlsVisible = false
+            }
         }
     }
 
@@ -115,7 +125,11 @@ fun ControlsOverlay(
                         showControls()
                     }
                 )
-                DeviceStatusBar()
+                DeviceStatusBar(
+                    deviceState = deviceState,
+                    devices = devices,
+                    activeDeviceIndex = activeDeviceIndex
+                )
             }
         }
     }
@@ -136,7 +150,7 @@ private fun SeekBar(
     var dragPosition by remember { mutableLongStateOf(0L) }
 
     LaunchedEffect(Unit) {
-        while (true) {
+        while (isActive) {
             if (!isDragging) {
                 position = exoPlayerWrapper.getCurrentPosition()
                 duration = exoPlayerWrapper.getPlayer().duration
@@ -259,7 +273,46 @@ private fun PlaybackControls(
 }
 
 @Composable
-private fun DeviceStatusBar() {
+private fun DeviceStatusBar(
+    deviceState: DeviceState,
+    devices: List<ButtplugDevice>,
+    activeDeviceIndex: Int?
+) {
+    val activeDevice = activeDeviceIndex?.let { index -> devices.firstOrNull { it.index == index } }
+    val firstDevice = devices.firstOrNull()
+    val (statusText, trailingText, icon, iconColor) = when {
+        activeDevice != null -> Quadruple(
+            stringResource(R.string.device_status_active, activeDevice.name),
+            stringResource(R.string.device_status_on),
+            Icons.Default.CheckCircle,
+            Color(0xFF4CAF50)
+        )
+        deviceState is DeviceState.Connected && firstDevice != null -> Quadruple(
+            stringResource(R.string.device_status_connected, firstDevice.name),
+            stringResource(R.string.device_status_select),
+            Icons.Default.BluetoothConnected,
+            Color(0xFFFFC107)
+        )
+        deviceState is DeviceState.Scanning -> Quadruple(
+            stringResource(R.string.searching_devices),
+            "…",
+            Icons.Default.Sync,
+            Color(0xFF64B5F6)
+        )
+        deviceState is DeviceState.Error -> Quadruple(
+            stringResource(R.string.device_status_error),
+            "!",
+            Icons.Default.Error,
+            MaterialTheme.colorScheme.error
+        )
+        else -> Quadruple(
+            stringResource(R.string.device_status_disconnected),
+            stringResource(R.string.device_status_off),
+            Icons.Default.BluetoothDisabled,
+            Color.White
+        )
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -281,13 +334,13 @@ private fun DeviceStatusBar() {
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(
-                    Icons.Default.Bluetooth,
+                    icon,
                     "Device",
-                    tint = Color.White,
+                    tint = iconColor,
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
-                    "No device connected",
+                    statusText,
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White
                 )
@@ -298,13 +351,13 @@ private fun DeviceStatusBar() {
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Icon(
-                    Icons.Default.BatteryFull,
-                    "Battery",
-                    tint = Color.White,
+                    Icons.Default.RadioButtonChecked,
+                    "Status",
+                    tint = iconColor,
                     modifier = Modifier.size(16.dp)
                 )
                 Text(
-                    "--",
+                    trailingText,
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White
                 )
@@ -312,6 +365,13 @@ private fun DeviceStatusBar() {
         }
     }
 }
+
+private data class Quadruple<A, B, C, D>(
+    val first: A,
+    val second: B,
+    val third: C,
+    val fourth: D
+)
 
 private fun formatTime(ms: Long): String {
     val totalSeconds = ms / 1000

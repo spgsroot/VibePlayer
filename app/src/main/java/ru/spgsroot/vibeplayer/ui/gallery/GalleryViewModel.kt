@@ -131,6 +131,15 @@ class GalleryViewModel @Inject constructor(
     }
 
     fun playVideo(video: Video) {
+        if (!playlistManager.selectVideo(video)) {
+            val playlist = if (_videos.value.any { it.id == video.id }) {
+                _videos.value
+            } else {
+                _videos.value + video
+            }
+            playlistManager.setPlaylist(playlist)
+            playlistManager.selectVideo(video)
+        }
         exoPlayerWrapper.play(video)
     }
 }

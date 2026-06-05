@@ -86,6 +86,17 @@
     <string name="searching_devices">Searching devices…</string>
     <string name="found_devices">Found devices:</string>
     <string name="btn_start_scan">Start Scan</string>
+    <string name="btn_device_disconnect">Disconnect Device</string>
+    <string name="btn_device_change">Change Device</string>
+    <string name="btn_rescan">Rescan</string>
+    <string name="device_status_active">Active: %s</string>
+    <string name="device_status_connected">Found: %s</string>
+    <string name="device_status_disconnected">No device connected</string>
+    <string name="device_status_error">Device error</string>
+    <string name="device_status_on">ON</string>
+    <string name="device_status_off">OFF</string>
+    <string name="device_status_select">Select</string>
+    <string name="device_selected">Selected</string>
 
     <!-- Batch Import Dialog -->
     <string name="dialog_import_list">Import List</string>
@@ -133,4 +144,5 @@
     <string name="notification_download_error">Download error</string>
     <string name="notification_download_complete">Download complete</string>
     <string name="error_empty_response">Empty server response</string>
+    <string name="error_file_too_large">File is too large</string>
 </resources>

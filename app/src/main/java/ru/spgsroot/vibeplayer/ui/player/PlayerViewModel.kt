@@ -62,9 +62,9 @@ class PlayerViewModel @Inject constructor(
     }
 
     private fun setupCurrentVideoRemovedListener() {
-        playlistManager.setOnCurrentVideoRemovedListener {
+        playlistManager.setOnCurrentVideoRemovedListener { nextVideo ->
             viewModelScope.launch {
-                playlistManager.next()?.let { nextVideo ->
+                nextVideo?.let {
                     exoPlayerWrapper.play(nextVideo)
                     startTimer()
                 } ?: run {
@@ -151,6 +151,7 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun playVideo(video: Video) {
+        playlistManager.selectVideo(video)
         exoPlayerWrapper.play(video)
         startTimer()
     }

@@ -4,10 +4,6 @@ import androidx.media3.common.C
 import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.audio.BaseAudioProcessor
 import androidx.media3.common.util.UnstableApi
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import ru.spgsroot.vibeplayer.domain.dsp.AudioAnalyzer
 import ru.spgsroot.vibeplayer.domain.dsp.HapticMapper
 import java.nio.ByteBuffer
@@ -50,7 +46,12 @@ class DspAudioProcessor(
             val sampleCount = minOf(shortBuffer.remaining(), tempSamples.size)
             shortBuffer.get(tempSamples, 0, sampleCount)
 
-            val amplitude = audioAnalyzer.analyze(tempSamples.copyOf(sampleCount))
+            val samples = if (sampleCount == tempSamples.size) {
+                tempSamples
+            } else {
+                tempSamples.copyOf(sampleCount)
+            }
+            val amplitude = audioAnalyzer.analyze(samples)
             hapticMapper.emitNonBlocking(amplitude)
             lastAnalysisMs = now
         }

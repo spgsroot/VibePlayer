@@ -28,5 +28,6 @@ class HapticMapper @Inject constructor() {
 
     fun reset() {
         emaValue = 0f
+        _intensity.tryEmit(0f)
     }
 }

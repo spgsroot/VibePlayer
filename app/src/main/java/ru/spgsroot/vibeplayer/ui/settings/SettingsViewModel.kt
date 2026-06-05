@@ -8,7 +8,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ru.spgsroot.vibeplayer.data.repository.SettingsRepository
+import ru.spgsroot.vibeplayer.device.buttplug.ButtplugDevice
 import ru.spgsroot.vibeplayer.device.buttplug.ButtplugConnectionManager
+import ru.spgsroot.vibeplayer.device.buttplug.CommandSender
+import ru.spgsroot.vibeplayer.device.buttplug.DeviceState
 import ru.spgsroot.vibeplayer.domain.model.Settings
 import ru.spgsroot.vibeplayer.security.AuthManager
 import javax.inject.Inject
@@ -17,7 +20,8 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val authManager: AuthManager,
-    val connectionManager: ButtplugConnectionManager
+    val connectionManager: ButtplugConnectionManager,
+    private val commandSender: CommandSender
 ) : ViewModel() {
 
     val settings: StateFlow<Settings?> = settingsRepository.getSettings()
@@ -25,6 +29,10 @@ class SettingsViewModel @Inject constructor(
 
     val isPasswordSet: StateFlow<Boolean> = authManager.isPasswordSetFlow()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val deviceState: StateFlow<DeviceState> = connectionManager.state
+    val devices: StateFlow<List<ButtplugDevice>> = connectionManager.devices
+    val activeDeviceIndex: StateFlow<Int?> = commandSender.activeDeviceIndex
 
     fun updateTimer(timerMs: Long) {
         viewModelScope.launch {
@@ -88,17 +96,18 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun startDeviceScan() {
-        viewModelScope.launch {
-            connectionManager.connect()
-            connectionManager.startScanning()
-        }
+    fun connectDevice(deviceIndex: Int) {
+        android.util.Log.d("SettingsViewModel", "Device selected: $deviceIndex")
+        commandSender.start(viewModelScope, deviceIndex)
     }
 
-    fun connectDevice(deviceName: String) {
-        viewModelScope.launch {
-            // Device connection is handled automatically when user selects from DeviceScanDialog
-            android.util.Log.d("SettingsViewModel", "Device selected: $deviceName")
-        }
+    fun disconnectDevice() {
+        commandSender.stop()
+        connectionManager.disconnect()
+    }
+
+    override fun onCleared() {
+        commandSender.stop()
+        super.onCleared()
     }
 }

@@ -1,6 +1,5 @@
 package ru.spgsroot.vibeplayer.ui.player
 
-import android.view.View
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -10,10 +9,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
+import ru.spgsroot.vibeplayer.device.buttplug.ButtplugDevice
+import ru.spgsroot.vibeplayer.device.buttplug.DeviceState
 import ru.spgsroot.vibeplayer.playback.player.ExoPlayerWrapper
 import ru.spgsroot.vibeplayer.playback.player.PlayerState
 
@@ -34,10 +34,11 @@ fun PlayerContent(
     panY: Float,
     onZoomChange: (Float) -> Unit,
     onPanChange: (Offset) -> Unit,
-    onResetZoom: () -> Unit
+    onResetZoom: () -> Unit,
+    deviceState: DeviceState,
+    devices: List<ButtplugDevice>,
+    activeDeviceIndex: Int?
 ) {
-    val context = LocalContext.current
-
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -52,13 +53,6 @@ fun PlayerContent(
                     keepScreenOn = true
                     setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
                     resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT
-
-                    addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
-                        override fun onViewAttachedToWindow(v: View) {
-                            player?.play()
-                        }
-                        override fun onViewDetachedFromWindow(v: View) {}
-                    })
                 }
             },
             update = { playerView ->
@@ -87,7 +81,10 @@ fun PlayerContent(
             onSeek = onSeek,
             onZoomChange = onZoomChange,
             onPanChange = onPanChange,
-            onResetZoom = onResetZoom
+            onResetZoom = onResetZoom,
+            deviceState = deviceState,
+            devices = devices,
+            activeDeviceIndex = activeDeviceIndex
         )
     }
 }

@@ -4,10 +4,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.BluetoothConnected
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -19,12 +22,15 @@ import ru.spgsroot.vibeplayer.device.buttplug.DeviceState
 @Composable
 fun DeviceScanDialog(
     connectionManager: ButtplugConnectionManager,
+    activeDeviceIndex: Int?,
+    onDisconnect: () -> Unit,
     onDismiss: () -> Unit,
     onDeviceSelected: (Int) -> Unit
 ) {
     val deviceState by connectionManager.state.collectAsStateWithLifecycle()
     val devices by connectionManager.devices.collectAsStateWithLifecycle()
     var serverUrl by remember { mutableStateOf(TextFieldValue(ButtplugConnectionManager.DEFAULT_URL)) }
+    val canEditServerUrl = deviceState is DeviceState.Disconnected || deviceState is DeviceState.Error
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -45,7 +51,7 @@ fun DeviceScanDialog(
                     placeholder = { Text(stringResource(R.string.device_connect_url_placeholder)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = deviceState is DeviceState.Disconnected
+                    enabled = canEditServerUrl
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -62,20 +68,55 @@ fun DeviceScanDialog(
                             Text(stringResource(R.string.searching_devices))
                         }
                     }
-                    is DeviceState.Disconnected -> {
-                        Button(
-                            onClick = { connectionManager.connect(serverUrl.text) },
-                            modifier = Modifier.fillMaxWidth()
+                    is DeviceState.Disconnected -> ConnectButton(
+                        onClick = { connectionManager.connect(serverUrl.text) }
+                    )
+                    is DeviceState.Connected -> {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(Icons.Default.Bluetooth, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.btn_start_scan))
+                            Icon(
+                                Icons.Default.BluetoothConnected,
+                                contentDescription = null,
+                                tint = Color(0xFF4CAF50)
+                            )
+                            Text(
+                                text = stringResource(
+                                    R.string.device_status_connected,
+                                    (deviceState as DeviceState.Connected).deviceName
+                                ),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = onDisconnect,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(stringResource(R.string.btn_device_disconnect))
+                            }
+                            Button(
+                                onClick = { connectionManager.startScanning() },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(stringResource(R.string.btn_rescan))
+                            }
                         }
                     }
                     is DeviceState.Error -> {
                         Text(
                             (deviceState as DeviceState.Error).reason,
                             color = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        ConnectButton(
+                            onClick = { connectionManager.connect(serverUrl.text) }
                         )
                     }
                     else -> {}
@@ -87,14 +128,37 @@ fun DeviceScanDialog(
                     Text(stringResource(R.string.found_devices), style = MaterialTheme.typography.titleSmall)
                     Spacer(modifier = Modifier.height(8.dp))
                     devices.forEach { device ->
+                        val isSelected = activeDeviceIndex == device.index
                         ListItem(
                             headlineContent = { Text(device.name) },
+                            supportingContent = if (isSelected) {
+                                { Text(stringResource(R.string.device_selected)) }
+                            } else {
+                                null
+                            },
                             leadingContent = { Icon(Icons.Default.Bluetooth, null) },
+                            trailingContent = if (isSelected) {
+                                {
+                                    Icon(
+                                        Icons.Default.CheckCircle,
+                                        contentDescription = stringResource(R.string.device_selected),
+                                        tint = Color(0xFF4CAF50)
+                                    )
+                                }
+                            } else {
+                                null
+                            },
+                            colors = ListItemDefaults.colors(
+                                containerColor = if (isSelected) {
+                                    MaterialTheme.colorScheme.primaryContainer
+                                } else {
+                                    Color.Transparent
+                                }
+                            ),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
                                     onDeviceSelected(device.index)
-                                    onDismiss()
                                 }
                         )
                     }
@@ -107,4 +171,16 @@ fun DeviceScanDialog(
             }
         }
     )
+}
+
+@Composable
+private fun ConnectButton(onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Icon(Icons.Default.Bluetooth, contentDescription = null)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(stringResource(R.string.btn_start_scan))
+    }
 }

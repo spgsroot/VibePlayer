@@ -23,6 +23,8 @@ import coil.compose.AsyncImage
 import coil.decode.VideoFrameDecoder
 import coil.request.ImageRequest
 import coil.request.videoFrameMicros
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import ru.spgsroot.vibeplayer.R
 import ru.spgsroot.vibeplayer.domain.model.Video
 import java.io.File
@@ -39,6 +41,15 @@ fun GalleryItemCard(
     onDeleteClick: () -> Unit
 ) {
     var showDropdown by remember { mutableStateOf(false) }
+    val imageData by produceState(
+        initialValue = video.filePath,
+        video.thumbnailPath,
+        video.filePath
+    ) {
+        value = withContext(Dispatchers.IO) {
+            video.thumbnailPath?.takeIf { File(it).exists() } ?: video.filePath
+        }
+    }
 
     Box {
         Card(
@@ -57,13 +68,7 @@ fun GalleryItemCard(
                 // Thumbnail
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(
-                            if (video.thumbnailPath != null && File(video.thumbnailPath).exists()) {
-                                video.thumbnailPath
-                            } else {
-                                video.filePath
-                            }
-                        )
+                        .data(imageData)
                         .decoderFactory(VideoFrameDecoder.Factory()) // Обязательно для извлечения кадра
                         .videoFrameMicros(3000000) // Берем кадр с 3-й секунды (3 000 000 микросекунд)
                         .crossfade(true)

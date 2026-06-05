@@ -14,6 +14,7 @@ import ru.spgsroot.vibeplayer.data.storage.InternalStorageManager
 import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -53,7 +54,7 @@ class ExternalDownloader @Inject constructor(
         fileName: String,
         onProgress: (Int) -> Unit = {}
     ): Result<File> {
-        val notificationId = url.hashCode()
+        val notificationId = nextNotificationId.getAndIncrement()
 
         val builder = NotificationCompat.Builder(context, channelId)
             .setContentTitle(context.getString(R.string.notification_download_title))
@@ -103,12 +104,26 @@ class ExternalDownloader @Inject constructor(
                 }
 
                 val totalBytes = body.contentLength()
+                if (totalBytes > InternalStorageManager.DEFAULT_MAX_VIDEO_BYTES) {
+                    val message = context.getString(R.string.error_file_too_large)
+
+                    builder.setContentTitle(context.getString(R.string.notification_download_error))
+                        .setContentText(message)
+                        .setProgress(0, 0, false)
+                        .setOngoing(false)
+                        .setSmallIcon(android.R.drawable.stat_notify_error)
+
+                    notificationManager.notify(notificationId, builder.build())
+                    _downloadProgress.value = DownloadProgress.Error(message)
+                    return Result.failure(IllegalStateException(message))
+                }
 
                 val file = body.byteStream().use { inputStream ->
                     storageManager.save(
                         inputStream = inputStream,
                         fileName = fileName,
                         totalBytes = totalBytes,
+                        maxBytes = InternalStorageManager.DEFAULT_MAX_VIDEO_BYTES,
                         onProgress = { progress ->
                             builder.setProgress(100, progress, false)
                                 .setContentText(context.getString(R.string.notification_downloaded, progress))
@@ -154,6 +169,10 @@ class ExternalDownloader @Inject constructor(
             }
         }
         return digest.digest().joinToString("") { "%02x".format(it) }
+    }
+
+    companion object {
+        private val nextNotificationId = AtomicInteger(10_000)
     }
 }
 

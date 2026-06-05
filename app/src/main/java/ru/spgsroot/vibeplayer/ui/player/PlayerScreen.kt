@@ -24,15 +24,20 @@ import ru.spgsroot.vibeplayer.ui.dialog.AddVideoDialog
 import ru.spgsroot.vibeplayer.ui.dialog.BatchImportDialog
 import ru.spgsroot.vibeplayer.ui.dialog.UrlInputDialog
 import ru.spgsroot.vibeplayer.ui.settings.SettingsDrawer
+import ru.spgsroot.vibeplayer.ui.settings.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlayerScreen(
     navController: NavController,
-    viewModel: PlayerViewModel = hiltViewModel()
+    viewModel: PlayerViewModel = hiltViewModel(),
+    settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val playerState by viewModel.playerState.collectAsStateWithLifecycle()
+    val deviceState by settingsViewModel.deviceState.collectAsStateWithLifecycle()
+    val devices by settingsViewModel.devices.collectAsStateWithLifecycle()
+    val activeDeviceIndex by settingsViewModel.activeDeviceIndex.collectAsStateWithLifecycle()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var showAddDialog by remember { mutableStateOf(false) }
@@ -78,7 +83,7 @@ fun PlayerScreen(
 
     ModalNavigationDrawer(
         drawerState = drawerState,
-        drawerContent = { SettingsDrawer() }
+        drawerContent = { SettingsDrawer(viewModel = settingsViewModel) }
     ) {
         Scaffold(
             topBar = {
@@ -146,7 +151,10 @@ fun PlayerScreen(
                             zoomScale = 1f
                             panX = 0f
                             panY = 0f
-                        }
+                        },
+                        deviceState = deviceState,
+                        devices = devices,
+                        activeDeviceIndex = activeDeviceIndex
                     )
 
                     if (!isFullscreen) {

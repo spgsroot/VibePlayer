@@ -165,7 +165,6 @@ fun UrlInputDialog(
 }
 
 private fun isValidUrl(url: String): Boolean {
-    return url.startsWith("http://") ||
-            url.startsWith("https://") &&
+    return (url.startsWith("http://") || url.startsWith("https://")) &&
             Patterns.WEB_URL.matcher(url).matches()
 }
