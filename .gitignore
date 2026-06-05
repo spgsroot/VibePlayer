@@ -13,6 +13,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+build/
 
 /.idea/
 /.claude/

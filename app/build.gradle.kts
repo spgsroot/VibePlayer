@@ -99,6 +99,10 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("io.coil-kt:coil-video:2.6.0")
 
+    // Buttplug
+    implementation(project(":buttplug-core"))
+    implementation(project(":buttplug-compose"))
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

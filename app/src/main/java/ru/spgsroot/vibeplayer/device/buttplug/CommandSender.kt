@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ru.spgsroot.vibeplayer.domain.dsp.HapticMapper
-import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.abs
@@ -25,10 +24,12 @@ class CommandSender @Inject constructor(
     private var watchdogJob: Job? = null
     private var lastIntensity = 0f
     private var lastSignalMs = 0L
-    private val messageIdCounter = AtomicInteger(1)
     private var currentDeviceIndex = 0
     private val _activeDeviceIndex = MutableStateFlow<Int?>(null)
     val activeDeviceIndex: StateFlow<Int?> = _activeDeviceIndex.asStateFlow()
+
+    // Scope for fire-and-forget stop commands
+    private var scope: CoroutineScope? = null
 
     fun start(scope: CoroutineScope, deviceIndex: Int = 0) {
         stop(sendStopCommand = job != null)
@@ -36,6 +37,7 @@ class CommandSender @Inject constructor(
         lastIntensity = 0f
         lastSignalMs = SystemClock.elapsedRealtime()
         _activeDeviceIndex.value = deviceIndex
+        this.scope = scope
         job = scope.launch {
             hapticMapper.intensity.collectLatest { intensity ->
                 lastSignalMs = SystemClock.elapsedRealtime()
@@ -56,9 +58,18 @@ class CommandSender @Inject constructor(
         watchdogJob?.cancel()
         watchdogJob = null
         if (sendStopCommand) {
-            sendStopDeviceCommand()
+            val s = scope
+            if (s != null) {
+                s.launch { sendStopDeviceCommand() }
+            } else {
+                // Fallback: create a one-shot scope for the stop
+                CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                    sendStopDeviceCommand()
+                }
+            }
         }
         _activeDeviceIndex.value = null
+        scope = null
     }
 
     private fun startSilenceWatchdog(scope: CoroutineScope) {
@@ -73,7 +84,7 @@ class CommandSender @Inject constructor(
         }
     }
 
-    private fun applyIntensity(intensity: Float) {
+    private suspend fun applyIntensity(intensity: Float) {
         val normalizedIntensity = intensity.coerceIn(0f, 1f)
         val targetIntensity = if (normalizedIntensity <= SILENCE_THRESHOLD) 0f else normalizedIntensity
 
@@ -100,17 +111,17 @@ class CommandSender @Inject constructor(
         }
     }
 
-    private fun sendScalarCommand(intensity: Float) {
-        val id = messageIdCounter.getAndIncrement()
+    private suspend fun sendScalarCommand(intensity: Float) {
         val normalizedIntensity = intensity.coerceIn(0f, 1f)
-        val command = """{"ScalarCmd":{"Id":$id,"DeviceIndex":$currentDeviceIndex,"Scalars":[{"Index":0,"Scalar":$normalizedIntensity,"ActuatorType":"Vibrate"}]}}"""
-        connectionManager.sendCommand(command)
+        connectionManager.sendVibrate(
+            deviceIndex = currentDeviceIndex,
+            featureIndex = 0,
+            speed = normalizedIntensity.toDouble()
+        )
     }
 
-    private fun sendStopDeviceCommand() {
-        val id = messageIdCounter.getAndIncrement()
-        val command = """{"StopDeviceCmd":{"Id":$id,"DeviceIndex":$currentDeviceIndex}}"""
-        connectionManager.sendCommand(command)
+    private suspend fun sendStopDeviceCommand() {
+        connectionManager.sendStop(deviceIndex = currentDeviceIndex)
         lastIntensity = 0f
     }
 

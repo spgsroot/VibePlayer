@@ -21,4 +21,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "VibePlayer"
 include(":app")
+include(":buttplug-core")
+include(":buttplug-compose")
  
