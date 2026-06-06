@@ -6,6 +6,7 @@ import io.github.spgsroot.buttplug.ButtplugClientConfig
 import io.github.spgsroot.buttplug.ButtplugClientState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +22,7 @@ class ButtplugConnectionManager @Inject constructor() {
         const val DEFAULT_URL = "ws://192.168.10.221:12345"
         private const val TAG = "ButtplugConnection"
         private const val CLIENT_NAME = "VibePlayer"
-        private const val MESSAGE_VERSION = 3
+        private const val PROTOCOL_VERSION = 3
     }
 
     private val _state = MutableStateFlow<DeviceState>(DeviceState.Disconnected)
@@ -33,21 +34,20 @@ class ButtplugConnectionManager @Inject constructor() {
     private var client: ButtplugClient? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    /** Exposed for use by compose components like DeviceScanner. */
-    internal val buttplugClient: ButtplugClient?
-        get() = client
+    // Track collection jobs to cancel on reconnect
+    private var stateCollectionJob: Job? = null
+    private var deviceCollectionJob: Job? = null
+    private var connectionJob: Job? = null
 
-    // Map ButtplugClientState to our DeviceState
-    private fun updateState(bs: ButtplugClientState) {
-        _state.value = when (bs) {
-            is ButtplugClientState.Disconnected -> DeviceState.Disconnected
-            is ButtplugClientState.Connecting -> DeviceState.Scanning
-            is ButtplugClientState.Handshaking -> DeviceState.Scanning
-            is ButtplugClientState.Connected -> DeviceState.Connected(bs.serverName)
-            is ButtplugClientState.Scanning -> DeviceState.Scanning
-            is ButtplugClientState.Reconnecting -> DeviceState.Scanning
-            is ButtplugClientState.Error -> DeviceState.Error(bs.reason)
-        }
+    // Map library ButtplugClientState to our DeviceState
+    private fun mapState(bs: ButtplugClientState): DeviceState = when (bs) {
+        is ButtplugClientState.Disconnected -> DeviceState.Disconnected
+        is ButtplugClientState.Connecting -> DeviceState.Scanning
+        is ButtplugClientState.Handshaking -> DeviceState.Scanning
+        is ButtplugClientState.Connected -> DeviceState.Connected(bs.serverName)
+        is ButtplugClientState.Scanning -> DeviceState.Scanning
+        is ButtplugClientState.Reconnecting -> DeviceState.Scanning
+        is ButtplugClientState.Error -> DeviceState.Error(bs.reason)
     }
 
     // Map library ButtplugDevice to our ButtplugDevice
@@ -63,27 +63,36 @@ class ButtplugConnectionManager @Inject constructor() {
     }
 
     fun connect(url: String = DEFAULT_URL) {
+        // Cancel previous collection coroutines to prevent leaks
+        stateCollectionJob?.cancel()
+        deviceCollectionJob?.cancel()
+        connectionJob?.cancel()
+
+        // Disconnect old client
         client?.disconnect()
+
         val cfg = ButtplugClientConfig(
             serverUrl = url.trim(),
             clientName = CLIENT_NAME,
-            protocolVersionMajor = MESSAGE_VERSION
+            protocolVersionMajor = PROTOCOL_VERSION
         )
         val newClient = ButtplugClient(cfg)
         client = newClient
 
         // Collect state changes from the library client
-        scope.launch {
-            newClient.state.collect { bs -> updateState(bs) }
+        stateCollectionJob = scope.launch {
+            newClient.state.collect { bs -> _state.value = mapState(bs) }
         }
+
         // Collect device list changes
-        scope.launch {
+        deviceCollectionJob = scope.launch {
             newClient.devices.collect { libDevices ->
                 _devices.value = libDevices.map { mapDevice(it) }
             }
         }
+
         // Initiate connection
-        scope.launch {
+        connectionJob = scope.launch {
             try {
                 newClient.connect()
                 newClient.requestDeviceList()
@@ -96,6 +105,13 @@ class ButtplugConnectionManager @Inject constructor() {
     }
 
     fun disconnect() {
+        stateCollectionJob?.cancel()
+        deviceCollectionJob?.cancel()
+        connectionJob?.cancel()
+        stateCollectionJob = null
+        deviceCollectionJob = null
+        connectionJob = null
+
         client?.disconnect()
         client = null
         _state.value = DeviceState.Disconnected
@@ -110,11 +126,6 @@ class ButtplugConnectionManager @Inject constructor() {
                 Log.e(TAG, "Scan failed: ${e.message}", e)
             }
         }
-    }
-
-    /** Kept for backward compatibility; no-op with new API. */
-    fun sendCommand(command: String) {
-        // No-op: command sending is now done via sendVibrate/sendStop
     }
 
     /** Send a vibrate command through the underlying ButtplugClient. */
