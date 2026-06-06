@@ -4,6 +4,7 @@ import android.util.Log
 import io.github.spgsroot.buttplug.ButtplugClient
 import io.github.spgsroot.buttplug.ButtplugClientConfig
 import io.github.spgsroot.buttplug.ButtplugClientState
+import io.github.spgsroot.buttplug.device.ActuatorType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -22,7 +23,8 @@ class ButtplugConnectionManager @Inject constructor() {
         const val DEFAULT_URL = "ws://192.168.10.221:12345"
         private const val TAG = "ButtplugConnection"
         private const val CLIENT_NAME = "VibePlayer"
-        private const val PROTOCOL_VERSION = 3
+        private const val PROTOCOL_VERSION_MAJOR = 4
+        private const val PROTOCOL_VERSION_MINOR = 0
     }
 
     private val _state = MutableStateFlow<DeviceState>(DeviceState.Disconnected)
@@ -30,6 +32,10 @@ class ButtplugConnectionManager @Inject constructor() {
 
     private val _devices = MutableStateFlow<List<ButtplugDevice>>(emptyList())
     val devices: StateFlow<List<ButtplugDevice>> = _devices.asStateFlow()
+
+    /** Raw library device list with full feature information. */
+    private val _rawDevices = MutableStateFlow<List<io.github.spgsroot.buttplug.device.ButtplugDevice>>(emptyList())
+    val rawDevices: List<io.github.spgsroot.buttplug.device.ButtplugDevice> get() = _rawDevices.value
 
     private var client: ButtplugClient? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -63,35 +69,32 @@ class ButtplugConnectionManager @Inject constructor() {
     }
 
     fun connect(url: String = DEFAULT_URL) {
-        // Cancel previous collection coroutines to prevent leaks
+        Log.d(TAG, "connect() called with URL: $url")
         stateCollectionJob?.cancel()
         deviceCollectionJob?.cancel()
         connectionJob?.cancel()
 
-        // Disconnect old client
         client?.disconnect()
 
         val cfg = ButtplugClientConfig(
             serverUrl = url.trim(),
             clientName = CLIENT_NAME,
-            protocolVersionMajor = PROTOCOL_VERSION
+            protocolVersionMajor = PROTOCOL_VERSION_MAJOR,
+            protocolVersionMinor = PROTOCOL_VERSION_MINOR,
+            maxReconnectAttempts = 0
         )
         val newClient = ButtplugClient(cfg)
         client = newClient
 
-        // Collect state changes from the library client
         stateCollectionJob = scope.launch {
             newClient.state.collect { bs -> _state.value = mapState(bs) }
         }
-
-        // Collect device list changes
         deviceCollectionJob = scope.launch {
             newClient.devices.collect { libDevices ->
+                _rawDevices.value = libDevices
                 _devices.value = libDevices.map { mapDevice(it) }
             }
         }
-
-        // Initiate connection
         connectionJob = scope.launch {
             try {
                 newClient.connect()
@@ -120,21 +123,34 @@ class ButtplugConnectionManager @Inject constructor() {
 
     fun startScanning() {
         scope.launch {
-            try {
-                client?.startScanning()
-            } catch (e: Exception) {
+            try { client?.startScanning() } catch (e: Exception) {
                 Log.e(TAG, "Scan failed: ${e.message}", e)
             }
         }
     }
 
-    /** Send a vibrate command through the underlying ButtplugClient. */
-    internal suspend fun sendVibrate(deviceIndex: Int, featureIndex: Int, speed: Double) {
-        client?.sendVibrate(deviceIndex, featureIndex, speed)
+    /**
+     * Send a scalar actuator command through the underlying ButtplugClient.
+     * Generic method supporting all actuator types (Vibrate, Rotate, Oscillate, etc.).
+     */
+    internal suspend fun sendActuator(
+        deviceIndex: Int, featureIndex: Int, actuator: ActuatorType, speed: Double
+    ) {
+        try {
+            client?.sendActuatorCommand(deviceIndex, featureIndex, actuator, speed)
+        } catch (e: Exception) {
+            Log.w(TAG, "sendActuator($actuator) failed: ${e.message}")
+        }
     }
 
-    /** Send a stop command through the underlying ButtplugClient. */
+    /**
+     * Send a stop command through the underlying ButtplugClient.
+     */
     internal suspend fun sendStop(deviceIndex: Int?) {
-        client?.sendStop(deviceIndex)
+        try {
+            client?.sendStop(deviceIndex)
+        } catch (e: Exception) {
+            Log.w(TAG, "sendStop failed: ${e.message}")
+        }
     }
 }

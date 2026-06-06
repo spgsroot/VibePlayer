@@ -8,11 +8,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
-import kotlinx.serialization.json.putJsonObject
+import kotlinx.serialization.json.*
 import kotlin.test.*
 
 /**
@@ -241,26 +237,25 @@ class ProtocolTests {
 
     @Test
     fun `DeviceList with DeviceFeatures round-trip`() {
-        val features = mapOf(
-            "Vibrate" to DeviceFeatureV4(
-                FeatureDescription = "Main vibrator",
-                FeatureIndex = 0,
-                Output = buildJsonObject { put("Strength", 0) }
-            ),
-            "Rotate" to DeviceFeatureV4(
-                FeatureDescription = "Rotation motor",
-                FeatureIndex = 1
-            )
-        )
-        val devices = listOf(
-            DeviceInfoV4(
-                DeviceName = "Lovense Hush",
-                DeviceIndex = 0,
-                DeviceDisplayName = "Hush",
-                DeviceMessageTimingGap = 50,
-                DeviceFeatures = features
-            )
-        )
+        val devices = buildJsonObject {
+            put("0", buildJsonObject {
+                put("DeviceName", JsonPrimitive("Lovense Hush"))
+                put("DeviceIndex", JsonPrimitive(0))
+                put("DeviceDisplayName", JsonPrimitive("Hush"))
+                put("DeviceMessageTimingGap", JsonPrimitive(50))
+                put("DeviceFeatures", buildJsonObject {
+                    put("Vibrate", buildJsonObject {
+                        put("FeatureDescription", JsonPrimitive("Main vibrator"))
+                        put("FeatureIndex", JsonPrimitive(0))
+                        put("Output", buildJsonObject { put("Strength", JsonPrimitive(0)) })
+                    })
+                    put("Rotate", buildJsonObject {
+                        put("FeatureDescription", JsonPrimitive("Rotation motor"))
+                        put("FeatureIndex", JsonPrimitive(1))
+                    })
+                })
+            })
+        }
         val original = DeviceList(Id = 2, Devices = devices)
 
         val jsonStr = json.encodeToString(DeviceList.serializer(), original)
@@ -282,7 +277,7 @@ class ProtocolTests {
     @Test
     fun `OutputCmd with Vibrate round-trip`() {
         val command = OutputCommandValue(
-            Vibrate = ScalarCommand(Value = 0.75)
+            Vibrate = ScalarCommand(Value = 10)
         )
         val original = OutputCmd(
             Id = 3,
@@ -295,15 +290,15 @@ class ProtocolTests {
         val deserialized = json.decodeFromString(OutputCmd.serializer(), jsonStr)
 
         assertEquals(original, deserialized)
-        assertEquals(0.75, deserialized.Command.Vibrate?.Value)
+        assertEquals(10, deserialized.Command.Vibrate?.Value)
     }
 
     @Test
     fun `OutputCmd with multiple scalar types round-trip`() {
         val command = OutputCommandValue(
-            Vibrate = ScalarCommand(Value = 0.5),
-            Rotate = ScalarCommand(Value = 0.3),
-            Oscillate = ScalarCommand(Value = 0.8)
+            Vibrate = ScalarCommand(Value = 10),
+            Rotate = ScalarCommand(Value = 10),
+            Oscillate = ScalarCommand(Value = 10)
         )
         val original = OutputCmd(
             Id = 4,

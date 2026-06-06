@@ -34,6 +34,15 @@ class SettingsViewModel @Inject constructor(
     val devices: StateFlow<List<ButtplugDevice>> = connectionManager.devices
     val activeDeviceIndex: StateFlow<Int?> = commandSender.activeDeviceIndex
 
+    init {
+        // Sync powerBoost from settings to CommandSender
+        viewModelScope.launch {
+            settingsRepository.getSettings().collect { s ->
+                s?.let { commandSender.powerBoost = it.dspConfig.powerBoost }
+            }
+        }
+    }
+
     fun updateTimer(timerMs: Long) {
         viewModelScope.launch {
             settingsRepository.updateTimer(timerMs)
@@ -73,6 +82,12 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun updateDspPowerBoost(powerBoost: Float) {
+        viewModelScope.launch {
+            settingsRepository.updateDspPowerBoost(powerBoost)
+        }
+    }
+
     fun updateLanguage(languageCode: String) {
         viewModelScope.launch {
             settingsRepository.updateLanguage(languageCode)
@@ -98,7 +113,29 @@ class SettingsViewModel @Inject constructor(
 
     fun connectDevice(deviceIndex: Int) {
         android.util.Log.d("SettingsViewModel", "Device selected: $deviceIndex")
-        commandSender.start(viewModelScope, deviceIndex)
+        // Collect all actuator features of the selected device
+        val libDevice = connectionManager.rawDevices.firstOrNull { it.index == deviceIndex }
+        val targets = if (libDevice != null) {
+            libDevice.features.flatMap { feature ->
+                feature.outputTypes.map { actuator ->
+                    ru.spgsroot.vibeplayer.device.buttplug.ActuatorTarget(
+                        deviceIndex = deviceIndex,
+                        featureIndex = feature.index,
+                        actuatorType = actuator
+                    )
+                }
+            }
+        } else {
+            // Fallback: default single Vibrate on feature 0
+            listOf(
+                ru.spgsroot.vibeplayer.device.buttplug.ActuatorTarget(
+                    deviceIndex = deviceIndex,
+                    featureIndex = 0,
+                    actuatorType = io.github.spgsroot.buttplug.device.ActuatorType.Vibrate
+                )
+            )
+        }
+        commandSender.start(viewModelScope, targets)
     }
 
     fun disconnectDevice() {

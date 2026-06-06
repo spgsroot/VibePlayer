@@ -11,7 +11,7 @@ import net.sqlcipher.database.SupportFactory
 
 @Database(
     entities = [VideoEntity::class, SettingsEntity::class, PlaybackStateEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -28,11 +28,17 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE settings ADD COLUMN dspPowerBoost REAL NOT NULL DEFAULT 1.0")
+            }
+        }
+
         fun create(context: Context, passphrase: ByteArray): AppDatabase {
             val factory = SupportFactory(passphrase)
             return Room.databaseBuilder(context, AppDatabase::class.java, DB_NAME)
                 .openHelperFactory(factory)
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
         }
     }

@@ -41,6 +41,9 @@ interface SettingsDao {
     @Query("UPDATE settings SET dspSmoothingAlpha = :smoothing WHERE id = 1")
     suspend fun updateDspSmoothing(smoothing: Float)
 
+    @Query("UPDATE settings SET dspPowerBoost = :powerBoost WHERE id = 1")
+    suspend fun updateDspPowerBoost(powerBoost: Float)
+
     @Query("UPDATE settings SET languageCode = :languageCode WHERE id = 1")
     suspend fun updateLanguage(languageCode: String)
 }

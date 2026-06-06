@@ -9,6 +9,15 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+private fun testDevicesJson(vararg devices: Pair<Int, String>): JsonObject = buildJsonObject {
+    devices.forEach { (index, name) ->
+        put(index.toString(), buildJsonObject {
+            put("DeviceName", JsonPrimitive(name))
+            put("DeviceIndex", JsonPrimitive(index))
+        })
+    }
+}
+
 // =============================================================================
 // DeviceManager Tests
 // =============================================================================
@@ -27,10 +36,7 @@ class DeviceManagerTests {
         val manager = DeviceManager()
         val deviceList = DeviceList(
             Id = 1,
-            Devices = listOf(
-                DeviceInfoV4(DeviceName = "TestDevice1", DeviceIndex = 0),
-                DeviceInfoV4(DeviceName = "TestDevice2", DeviceIndex = 1)
-            )
+            Devices = testDevicesJson(0 to "TestDevice1", 1 to "TestDevice2")
         )
         manager.handleDeviceList(deviceList)
 
@@ -45,16 +51,11 @@ class DeviceManagerTests {
         val manager = DeviceManager()
         val first = DeviceList(
             Id = 1,
-            Devices = listOf(
-                DeviceInfoV4(DeviceName = "DeviceA", DeviceIndex = 0)
-            )
+            Devices = testDevicesJson(0 to "DeviceA")
         )
         val second = DeviceList(
             Id = 2,
-            Devices = listOf(
-                DeviceInfoV4(DeviceName = "DeviceB", DeviceIndex = 5),
-                DeviceInfoV4(DeviceName = "DeviceC", DeviceIndex = 3)
-            )
+            Devices = testDevicesJson(5 to "DeviceB", 3 to "DeviceC")
         )
 
         manager.handleDeviceList(first)
@@ -72,12 +73,12 @@ class DeviceManagerTests {
         val manager = DeviceManager()
         val deviceList = DeviceList(
             Id = 1,
-            Devices = listOf(
-                DeviceInfoV4(DeviceName = "Third", DeviceIndex = 3),
-                DeviceInfoV4(DeviceName = "First", DeviceIndex = 0),
-                DeviceInfoV4(DeviceName = "Second", DeviceIndex = 2),
-                DeviceInfoV4(DeviceName = "Fifth", DeviceIndex = 5),
-                DeviceInfoV4(DeviceName = "Fourth", DeviceIndex = 4)
+            Devices = testDevicesJson(
+                3 to "Third",
+                0 to "First",
+                2 to "Second",
+                5 to "Fifth",
+                4 to "Fourth"
             )
         )
         manager.handleDeviceList(deviceList)
@@ -93,7 +94,7 @@ class DeviceManagerTests {
         manager.handleDeviceList(
             DeviceList(
                 Id = 1,
-                Devices = listOf(DeviceInfoV4(DeviceName = "Existing", DeviceIndex = 0))
+                Devices = testDevicesJson(0 to "Existing")
             )
         )
 
@@ -117,7 +118,7 @@ class DeviceManagerTests {
         manager.handleDeviceList(
             DeviceList(
                 Id = 1,
-                Devices = listOf(DeviceInfoV4(DeviceName = "Existing", DeviceIndex = 3))
+                Devices = testDevicesJson(3 to "Existing")
             )
         )
 
@@ -154,11 +155,7 @@ class DeviceManagerTests {
         manager.handleDeviceList(
             DeviceList(
                 Id = 1,
-                Devices = listOf(
-                    DeviceInfoV4(DeviceName = "DeviceA", DeviceIndex = 0),
-                    DeviceInfoV4(DeviceName = "DeviceB", DeviceIndex = 1),
-                    DeviceInfoV4(DeviceName = "DeviceC", DeviceIndex = 2)
-                )
+                Devices = testDevicesJson(0 to "DeviceA", 1 to "DeviceB", 2 to "DeviceC")
             )
         )
 
@@ -176,7 +173,7 @@ class DeviceManagerTests {
         manager.handleDeviceList(
             DeviceList(
                 Id = 1,
-                Devices = listOf(DeviceInfoV4(DeviceName = "Only", DeviceIndex = 0))
+                Devices = testDevicesJson(0 to "Only")
             )
         )
 
@@ -192,10 +189,7 @@ class DeviceManagerTests {
         manager.handleDeviceList(
             DeviceList(
                 Id = 1,
-                Devices = listOf(
-                    DeviceInfoV4(DeviceName = "Device1", DeviceIndex = 0),
-                    DeviceInfoV4(DeviceName = "Device2", DeviceIndex = 1)
-                )
+                Devices = testDevicesJson(0 to "Device1", 1 to "Device2")
             )
         )
         assertFalse(manager.isEmpty())
@@ -212,11 +206,7 @@ class DeviceManagerTests {
         manager.handleDeviceList(
             DeviceList(
                 Id = 1,
-                Devices = listOf(
-                    DeviceInfoV4(DeviceName = "Zero", DeviceIndex = 0),
-                    DeviceInfoV4(DeviceName = "One", DeviceIndex = 1),
-                    DeviceInfoV4(DeviceName = "Five", DeviceIndex = 5)
-                )
+                Devices = testDevicesJson(0 to "Zero", 1 to "One", 5 to "Five")
             )
         )
 
@@ -298,7 +288,7 @@ class DeviceManagerTests {
         manager.handleDeviceAdded(DeviceAddedV3(DeviceName = "Test", DeviceIndex = 0))
         assertFalse(manager.isEmpty())
 
-        manager.handleDeviceList(DeviceList(Id = 1, Devices = emptyList()))
+        manager.handleDeviceList(DeviceList(Id = 1, Devices = buildJsonObject { }))
         assertTrue(manager.isEmpty())
     }
 }

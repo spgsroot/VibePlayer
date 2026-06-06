@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BluetoothConnected
 import androidx.compose.material.icons.filled.BluetoothDisabled
@@ -46,130 +47,180 @@ fun SettingsDrawer(
     val tonWallet = "UQCGFymEHFNq1IcIhXBWJJe7Ha7Cx7RU6apvotRs5DcEEAaG"
 
     ModalDrawerSheet {
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxHeight()
                 .padding(16.dp)
         ) {
-            Text(
-                text = stringResource(R.string.settings_title),
-                style = MaterialTheme.typography.headlineSmall
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            settings?.let { s ->
-                TimerSlider(
-                    timerMs = s.timerMs,
-                    onTimerChange = viewModel::updateTimer
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                PlaybackSpeedSlider(
-                    speed = s.playbackSpeed,
-                    onSpeedChange = viewModel::updatePlaybackSpeed
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                DspSettings(
-                    lowFreq = s.dspConfig.lowFreqHz,
-                    highFreq = s.dspConfig.highFreqHz,
-                    smoothing = s.dspConfig.smoothingAlpha,
-                    onLowFreqChange = viewModel::updateDspLowFreq,
-                    onHighFreqChange = viewModel::updateDspHighFreq,
-                    onSmoothingChange = viewModel::updateDspSmoothing
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                LanguageSelector(
-                    currentLanguage = s.languageCode,
-                    onLanguageChange = { language ->
-                        viewModel.updateLanguage(language)
-                        applyLocale(context, language)
-                    }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = {
-                    if (isPasswordSet) {
-                        showChangePasswordDialog = true
-                    } else {
-                        showPasswordDialog = true
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            // ═══════════════════════════════════════════
+            // DEVICE CONNECTION SECTION (at top)
+            // ═══════════════════════════════════════════
+            item {
                 Text(
-                    stringResource(
-                        if (isPasswordSet) {
-                            R.string.btn_app_password_change
-                        } else {
-                            R.string.btn_app_password_set
-                        }
-                    )
+                    text = "Device",
+                    style = MaterialTheme.typography.headlineSmall
                 )
-            }
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            DeviceConnectionStatus(
-                deviceState = deviceState,
-                devices = devices,
-                activeDeviceIndex = activeDeviceIndex
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Button(
-                onClick = { showDeviceDialog = true },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    stringResource(
-                        if (devices.isNotEmpty()) {
-                            R.string.btn_device_change
-                        } else {
-                            R.string.btn_device_connect
-                        }
-                    )
+                DeviceConnectionStatus(
+                    deviceState = deviceState,
+                    devices = devices,
+                    activeDeviceIndex = activeDeviceIndex
                 )
-            }
 
-            if (deviceState !is DeviceState.Disconnected || activeDeviceIndex != null) {
                 Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(
-                    onClick = viewModel::disconnectDevice,
+
+                Button(
+                    onClick = { showDeviceDialog = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(stringResource(R.string.btn_device_disconnect))
+                    Text(
+                        stringResource(
+                            if (devices.isNotEmpty()) {
+                                R.string.btn_device_change
+                            } else {
+                                R.string.btn_device_connect
+                            }
+                        )
+                    )
+                }
+
+                if (deviceState !is DeviceState.Disconnected || activeDeviceIndex != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = viewModel::disconnectDevice,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.btn_device_disconnect))
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(16.dp))
+            // Divider
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
-            Text(stringResource(R.string.support_title), style = MaterialTheme.typography.titleMedium)
+            // ═══════════════════════════════════════════
+            // SETTINGS SECTION (below device)
+            // ═══════════════════════════════════════════
+            item {
+                Text(
+                    text = stringResource(R.string.settings_title),
+                    style = MaterialTheme.typography.headlineSmall
+                )
+            }
 
-            Text(
-                text = "${stringResource(R.string.support_ton)} $tonWallet",
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.clickable {
-                    clipboardManager.setText(AnnotatedString(tonWallet))
+            settings?.let { s ->
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TimerSlider(
+                        timerMs = s.timerMs,
+                        onTimerChange = viewModel::updateTimer
+                    )
                 }
-            )
 
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    PlaybackSpeedSlider(
+                        speed = s.playbackSpeed,
+                        onSpeedChange = viewModel::updatePlaybackSpeed
+                    )
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    DspSettings(
+                        lowFreq = s.dspConfig.lowFreqHz,
+                        highFreq = s.dspConfig.highFreqHz,
+                        smoothing = s.dspConfig.smoothingAlpha,
+                        onLowFreqChange = viewModel::updateDspLowFreq,
+                        onHighFreqChange = viewModel::updateDspHighFreq,
+                        onSmoothingChange = viewModel::updateDspSmoothing
+                    )
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    PowerBoostSlider(
+                        powerBoost = s.dspConfig.powerBoost,
+                        onPowerBoostChange = viewModel::updateDspPowerBoost
+                    )
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    LanguageSelector(
+                        currentLanguage = s.languageCode,
+                        onLanguageChange = { language ->
+                            viewModel.updateLanguage(language)
+                            applyLocale(context, language)
+                        }
+                    )
+                }
+            }
+
+            // Divider
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            // Password button
+            item {
+                Button(
+                    onClick = {
+                        if (isPasswordSet) {
+                            showChangePasswordDialog = true
+                        } else {
+                            showPasswordDialog = true
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        stringResource(
+                            if (isPasswordSet) {
+                                R.string.btn_app_password_change
+                            } else {
+                                R.string.btn_app_password_set
+                            }
+                        )
+                    )
+                }
+            }
+
+            // Divider
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            // ═══════════════════════════════════════════
+            // SUPPORT SECTION (TON wallet)
+            // ═══════════════════════════════════════════
+            item {
+                Text(stringResource(R.string.support_title), style = MaterialTheme.typography.titleMedium)
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "${stringResource(R.string.support_ton)} $tonWallet",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.clickable {
+                        clipboardManager.setText(AnnotatedString(tonWallet))
+                    }
+                )
+            }
         }
     }
 
+    // Dialogs remain OUTSIDE LazyColumn, at ModalNavigationDrawer level
     if (showPasswordDialog) {
         PasswordSetupDialog(
             onDismiss = { showPasswordDialog = false },
@@ -211,6 +262,30 @@ fun SettingsDrawer(
             onDeviceSelected = { deviceIndex ->
                 viewModel.connectDevice(deviceIndex)
             }
+        )
+    }
+}
+
+@Composable
+fun PowerBoostSlider(
+    powerBoost: Float,
+    onPowerBoostChange: (Float) -> Unit
+) {
+    Column {
+        Text("Power Boost", style = MaterialTheme.typography.titleSmall)
+        Slider(
+            value = powerBoost,
+            onValueChange = onPowerBoostChange,
+            valueRange = 0.5f..3.0f,
+            steps = 24,
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.tertiary,
+                activeTrackColor = MaterialTheme.colorScheme.tertiary
+            )
+        )
+        Text(
+            "${(powerBoost * 100).toInt()}%",
+            style = MaterialTheme.typography.bodySmall
         )
     }
 }

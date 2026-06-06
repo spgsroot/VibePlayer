@@ -3,6 +3,7 @@ package io.github.spgsroot.buttplug
 import io.github.spgsroot.buttplug.connection.ButtplugTransport
 import io.github.spgsroot.buttplug.connection.TransportListener
 import io.github.spgsroot.buttplug.connection.WebSocketTransport
+import io.github.spgsroot.buttplug.device.ActuatorType
 import io.github.spgsroot.buttplug.device.ButtplugDevice
 import io.github.spgsroot.buttplug.device.DeviceManager
 import io.github.spgsroot.buttplug.protocol.*
@@ -279,8 +280,8 @@ class ButtplugClient(
         val deviceList = json.decodeFromJsonElement<DeviceList>(payload)
         deviceManager.handleDeviceList(deviceList)
         if (_state.value is ButtplugClientState.Connected || _state.value is ButtplugClientState.Scanning) {
-            val firstDevice = deviceList.Devices.firstOrNull()
-            if (firstDevice != null) {
+            val hasDevices = deviceList.Devices.isNotEmpty()
+            if (hasDevices) {
                 _state.value = ButtplugClientState.Scanning
             }
         }
@@ -430,59 +431,97 @@ class ButtplugClient(
     // --- Device Commands ---
 
     /**
-     * Send a vibration command to a device feature.
-     * @param speed 0.0 to 1.0
+     * Generic method to send any scalar actuator command (Vibrate, Rotate, Oscillate, etc.).
+     * @param actuator the actuator type
+     * @param speed 0.0 to 1.0 (converted to integer step for v4 protocol)
      */
-    suspend fun sendVibrate(deviceIndex: Int, featureIndex: Int, speed: Double) {
+    suspend fun sendActuatorCommand(
+        deviceIndex: Int, featureIndex: Int, actuator: ActuatorType, speed: Double
+    ) {
         requireConnected()
         requireDevice(deviceIndex)
+        val stepCount = getStepCount(deviceIndex, featureIndex, actuator)
+        val step = (speed.coerceIn(0.0, 1.0) * stepCount).toInt().coerceIn(0, stepCount)
+        val command = buildActuatorCommand(actuator, step)
         val cmd = OutputCmd(
             Id = idGenerator.nextId(),
             DeviceIndex = deviceIndex,
             FeatureIndex = featureIndex,
-            Command = OutputCommandValue(Vibrate = ScalarCommand(Value = speed.coerceIn(0.0, 1.0)))
+            Command = command
         )
         sendAndAwaitOk(cmd)
     }
 
-    /**
-     * Send a rotation command to a device feature.
-     * @param speed 0.0 to 1.0
-     * @param clockwise direction
-     */
-    suspend fun sendRotate(deviceIndex: Int, featureIndex: Int, speed: Double, clockwise: Boolean = true) {
-        requireConnected()
-        requireDevice(deviceIndex)
-        val cmd = OutputCmd(
-            Id = idGenerator.nextId(),
-            DeviceIndex = deviceIndex,
-            FeatureIndex = featureIndex,
-            Command = OutputCommandValue(Rotate = ScalarCommand(Value = speed.coerceIn(0.0, 1.0)))
-        )
-        sendAndAwaitOk(cmd)
-        // Note: clockwise is not a separate field in OutputCmd; the device interprets the value
+    /** Build OutputCommandValue for a specific actuator type and step. */
+    private fun buildActuatorCommand(actuator: ActuatorType, step: Int): OutputCommandValue = when (actuator) {
+        ActuatorType.Vibrate -> OutputCommandValue(Vibrate = ScalarCommand(Value = step))
+        ActuatorType.Rotate -> OutputCommandValue(Rotate = ScalarCommand(Value = step))
+        ActuatorType.Oscillate -> OutputCommandValue(Oscillate = ScalarCommand(Value = step))
+        ActuatorType.Constrict -> OutputCommandValue(Constrict = ScalarCommand(Value = step))
+        ActuatorType.Spray -> OutputCommandValue(Spray = ScalarCommand(Value = step))
+        ActuatorType.Temperature -> OutputCommandValue(Temperature = ScalarCommand(Value = step))
+        ActuatorType.Led -> OutputCommandValue(Led = ScalarCommand(Value = step))
+        ActuatorType.Position -> OutputCommandValue(Position = ScalarCommand(Value = step))
+        ActuatorType.HwPositionWithDuration ->
+            OutputCommandValue(HwPositionWithDuration = PositionWithDurationCommand(Value = step, Duration = 500))
     }
+
+    /**
+     * Send a vibration command. Convenience wrapper over sendActuatorCommand.
+     */
+    suspend fun sendVibrate(deviceIndex: Int, featureIndex: Int, speed: Double) =
+        sendActuatorCommand(deviceIndex, featureIndex, ActuatorType.Vibrate, speed)
+
+    /**
+     * Send a rotation command. Convenience wrapper over sendActuatorCommand.
+     */
+    suspend fun sendRotate(deviceIndex: Int, featureIndex: Int, speed: Double) =
+        sendActuatorCommand(deviceIndex, featureIndex, ActuatorType.Rotate, speed)
+
+    /**
+     * Send an oscillation command.
+     */
+    suspend fun sendOscillate(deviceIndex: Int, featureIndex: Int, speed: Double) =
+        sendActuatorCommand(deviceIndex, featureIndex, ActuatorType.Oscillate, speed)
+
+    /**
+     * Send a constriction command.
+     */
+    suspend fun sendConstrict(deviceIndex: Int, featureIndex: Int, speed: Double) =
+        sendActuatorCommand(deviceIndex, featureIndex, ActuatorType.Constrict, speed)
 
     /**
      * Send a linear position command to a device feature.
+     * Uses HwPositionWithDuration for timed movement.
      * @param position 0.0 to 1.0
      * @param durationMs movement time in milliseconds
      */
     suspend fun sendLinear(deviceIndex: Int, featureIndex: Int, position: Double, durationMs: Int) {
         requireConnected()
         requireDevice(deviceIndex)
+        val stepCount = getStepCount(deviceIndex, featureIndex, ActuatorType.HwPositionWithDuration)
+        val step = (position.coerceIn(0.0, 1.0) * stepCount).toInt().coerceIn(0, stepCount)
         val cmd = OutputCmd(
             Id = idGenerator.nextId(),
             DeviceIndex = deviceIndex,
             FeatureIndex = featureIndex,
             Command = OutputCommandValue(
-                HwPositionWithDuration = PositionWithDurationCommand(
-                    Value = (position.coerceIn(0.0, 1.0) * 100).toInt(),
-                    Duration = durationMs
-                )
+                HwPositionWithDuration = PositionWithDurationCommand(Value = step, Duration = durationMs)
             )
         )
         sendAndAwaitOk(cmd)
+    }
+
+    /** Look up the step count for a device feature's actuator, or return DEFAULT_STEP_COUNT. */
+    private fun getStepCount(deviceIndex: Int, featureIndex: Int, actuator: ActuatorType): Int {
+        return deviceManager.getDevice(deviceIndex)
+            ?.features?.firstOrNull { it.index == featureIndex }
+            ?.stepCount?.get(actuator)
+            ?.takeIf { it > 0 } ?: DEFAULT_STEP_COUNT
+    }
+
+    companion object {
+        const val DEFAULT_STEP_COUNT = 20
     }
 
     /**

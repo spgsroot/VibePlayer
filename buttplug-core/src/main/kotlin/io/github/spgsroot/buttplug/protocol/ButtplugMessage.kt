@@ -138,7 +138,7 @@ data class DeviceFeatureV4(
 @SerialName("DeviceList")
 data class DeviceList(
     override val Id: Int,
-    val Devices: List<DeviceInfoV4> = emptyList()
+    val Devices: JsonObject = JsonObject(emptyMap()) // v3 sends array, v4 sends object
 ) : ButtplugServerMessage
 
 // =============================================================================
@@ -179,7 +179,7 @@ data class OutputCommandValue(
 
 @Serializable
 data class ScalarCommand(
-    val Value: Double
+    val Value: Int  // v4 spec: integer step index (0 to stepCount)
 )
 
 @Serializable
