@@ -27,10 +27,11 @@ interface SettingsDao {
         UPDATE settings
         SET dspLowFreq = :lowFreq,
             dspHighFreq = :highFreq,
-            dspSmoothingAlpha = :smoothing
+            dspSmoothingAlpha = :smoothing,
+            dspThreshold = :threshold
         WHERE id = 1
     """)
-    suspend fun updateDspConfig(lowFreq: Int, highFreq: Int, smoothing: Float)
+    suspend fun updateDspConfig(lowFreq: Int, highFreq: Int, smoothing: Float, threshold: Float)
 
     @Query("UPDATE settings SET dspLowFreq = :lowFreq WHERE id = 1")
     suspend fun updateDspLowFreq(lowFreq: Int)
@@ -43,6 +44,9 @@ interface SettingsDao {
 
     @Query("UPDATE settings SET dspPowerBoost = :powerBoost WHERE id = 1")
     suspend fun updateDspPowerBoost(powerBoost: Float)
+
+    @Query("UPDATE settings SET dspThreshold = :threshold WHERE id = 1")
+    suspend fun updateDspThreshold(threshold: Float)
 
     @Query("UPDATE settings SET languageCode = :languageCode WHERE id = 1")
     suspend fun updateLanguage(languageCode: String)

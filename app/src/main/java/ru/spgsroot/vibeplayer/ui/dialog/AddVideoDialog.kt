@@ -18,7 +18,8 @@ fun AddVideoDialog(
     onDismiss: () -> Unit,
     onGalleryClick: () -> Unit,
     onUrlClick: () -> Unit,
-    onBatchClick: () -> Unit
+    onBatchClick: () -> Unit,
+    onWebViewClick: () -> Unit
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -62,6 +63,17 @@ fun AddVideoDialog(
                     .fillMaxWidth()
                     .clickable {
                         onBatchClick()
+                        onDismiss()
+                    }
+            )
+
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.add_open_webview)) },
+                leadingContent = { Icon(Icons.Default.Language, null) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        onWebViewClick()
                         onDismiss()
                     }
             )

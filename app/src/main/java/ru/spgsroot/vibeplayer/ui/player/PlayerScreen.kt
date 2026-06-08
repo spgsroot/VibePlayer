@@ -1,5 +1,6 @@
 package ru.spgsroot.vibeplayer.ui.player
 
+import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -23,8 +24,10 @@ import ru.spgsroot.vibeplayer.playback.player.PlayerState
 import ru.spgsroot.vibeplayer.ui.dialog.AddVideoDialog
 import ru.spgsroot.vibeplayer.ui.dialog.BatchImportDialog
 import ru.spgsroot.vibeplayer.ui.dialog.UrlInputDialog
+import ru.spgsroot.vibeplayer.ui.dialog.WebViewUrlDialog
 import ru.spgsroot.vibeplayer.ui.settings.SettingsDrawer
 import ru.spgsroot.vibeplayer.ui.settings.SettingsViewModel
+import ru.spgsroot.vibeplayer.ui.webview.WebViewActivity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,6 +46,7 @@ fun PlayerScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var showUrlDialog by remember { mutableStateOf(false) }
     var showBatchDialog by remember { mutableStateOf(false) }
+    var showWebViewDialog by remember { mutableStateOf(false) }
 
     // Состояние полноэкранного режима
     var isFullscreen by rememberSaveable { mutableStateOf(false) }
@@ -180,7 +184,8 @@ fun PlayerScreen(
                 )
             },
             onUrlClick = { showUrlDialog = true },
-            onBatchClick = { showBatchDialog = true }
+            onBatchClick = { showBatchDialog = true },
+            onWebViewClick = { showWebViewDialog = true }
         )
     }
 
@@ -198,6 +203,20 @@ fun PlayerScreen(
             onDismiss = { showBatchDialog = false },
             onImport = { urls, progressCallback ->
                 viewModel.importVideosFromUrls(urls, progressCallback)
+            }
+        )
+    }
+
+    if (showWebViewDialog) {
+        WebViewUrlDialog(
+            onDismiss = { showWebViewDialog = false },
+            onOpen = { url ->
+                viewModel.pauseForWebView()
+                context.startActivity(
+                    Intent(context, WebViewActivity::class.java).apply {
+                        putExtra(WebViewActivity.EXTRA_URL, url)
+                    }
+                )
             }
         )
     }

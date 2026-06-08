@@ -12,6 +12,7 @@ import ru.spgsroot.vibeplayer.device.buttplug.ButtplugDevice
 import ru.spgsroot.vibeplayer.device.buttplug.ButtplugConnectionManager
 import ru.spgsroot.vibeplayer.device.buttplug.CommandSender
 import ru.spgsroot.vibeplayer.device.buttplug.DeviceState
+import ru.spgsroot.vibeplayer.domain.dsp.HapticRuntimeConfig
 import ru.spgsroot.vibeplayer.domain.model.Settings
 import ru.spgsroot.vibeplayer.security.AuthManager
 import javax.inject.Inject
@@ -21,6 +22,7 @@ class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val authManager: AuthManager,
     val connectionManager: ButtplugConnectionManager,
+    private val hapticRuntimeConfig: HapticRuntimeConfig,
     private val commandSender: CommandSender
 ) : ViewModel() {
 
@@ -35,10 +37,10 @@ class SettingsViewModel @Inject constructor(
     val activeDeviceIndex: StateFlow<Int?> = commandSender.activeDeviceIndex
 
     init {
-        // Sync powerBoost from settings to CommandSender
+        // Keep one shared DSP runtime config for all haptic sources (Player and WebView).
         viewModelScope.launch {
             settingsRepository.getSettings().collect { s ->
-                s?.let { commandSender.powerBoost = it.dspConfig.powerBoost }
+                s?.let { hapticRuntimeConfig.update(it.dspConfig) }
             }
         }
     }
@@ -88,6 +90,12 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun updateDspThreshold(threshold: Float) {
+        viewModelScope.launch {
+            settingsRepository.updateDspThreshold(threshold)
+        }
+    }
+
     fun updateLanguage(languageCode: String) {
         viewModelScope.launch {
             settingsRepository.updateLanguage(languageCode)
@@ -115,17 +123,16 @@ class SettingsViewModel @Inject constructor(
         android.util.Log.d("SettingsViewModel", "Device selected: $deviceIndex")
         // Collect all actuator features of the selected device
         val libDevice = connectionManager.rawDevices.firstOrNull { it.index == deviceIndex }
-        val targets = if (libDevice != null) {
-            libDevice.features.flatMap { feature ->
-                feature.outputTypes.map { actuator ->
-                    ru.spgsroot.vibeplayer.device.buttplug.ActuatorTarget(
-                        deviceIndex = deviceIndex,
-                        featureIndex = feature.index,
-                        actuatorType = actuator
-                    )
-                }
+        val discoveredTargets = libDevice?.features?.flatMap { feature ->
+            feature.outputTypes.map { actuator ->
+                ru.spgsroot.vibeplayer.device.buttplug.ActuatorTarget(
+                    deviceIndex = deviceIndex,
+                    featureIndex = feature.index,
+                    actuatorType = actuator
+                )
             }
-        } else {
+        }.orEmpty()
+        val targets = discoveredTargets.ifEmpty {
             // Fallback: default single Vibrate on feature 0
             listOf(
                 ru.spgsroot.vibeplayer.device.buttplug.ActuatorTarget(
@@ -135,6 +142,10 @@ class SettingsViewModel @Inject constructor(
                 )
             )
         }
+        android.util.Log.d(
+            "SettingsViewModel",
+            "Starting CommandSender with ${targets.size} target(s); discovered=${discoveredTargets.size} features=${libDevice?.features?.size ?: 0}"
+        )
         commandSender.start(viewModelScope, targets)
     }
 

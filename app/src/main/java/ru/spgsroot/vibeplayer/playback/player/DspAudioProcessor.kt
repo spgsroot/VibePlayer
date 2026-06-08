@@ -1,5 +1,7 @@
 package ru.spgsroot.vibeplayer.playback.player
 
+import android.os.SystemClock
+import android.util.Log
 import androidx.media3.common.C
 import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.audio.BaseAudioProcessor
@@ -16,6 +18,7 @@ class DspAudioProcessor(
 ) : BaseAudioProcessor() {
 
     private var lastAnalysisMs = 0L
+    private var lastLogMs = 0L
     private var tempSamples = ShortArray(2048)
 
 
@@ -36,7 +39,7 @@ class DspAudioProcessor(
         outputBuffer.put(inputBuffer.duplicate())
         outputBuffer.flip()
 
-        val now = android.os.SystemClock.elapsedRealtime()
+        val now = SystemClock.elapsedRealtime()
         if (now - lastAnalysisMs >= 33) {
             val analysisBuffer = inputBuffer.asReadOnlyBuffer().apply {
                 order(ByteOrder.LITTLE_ENDIAN)
@@ -51,8 +54,10 @@ class DspAudioProcessor(
             } else {
                 tempSamples.copyOf(sampleCount)
             }
-            val amplitude = audioAnalyzer.analyze(samples)
-            hapticMapper.emitNonBlocking(amplitude)
+            val rawAmplitude = audioAnalyzer.analyze(samples)
+            val mappedAmplitude = mapPlayerAmplitude(rawAmplitude)
+            logAmplitude(rawAmplitude, mappedAmplitude, now)
+            hapticMapper.emitNonBlocking(mappedAmplitude)
             lastAnalysisMs = now
         }
 
@@ -61,5 +66,25 @@ class DspAudioProcessor(
 
     override fun onReset() {
         hapticMapper.reset()
+    }
+
+    private fun mapPlayerAmplitude(rawAmplitude: Float): Float {
+        if (!rawAmplitude.isFinite()) return 0f
+        return ((rawAmplitude - PLAYER_NOISE_FLOOR).coerceAtLeast(0f) * PLAYER_GAIN)
+            .coerceIn(0f, 1f)
+    }
+
+    private fun logAmplitude(rawAmplitude: Float, mappedAmplitude: Float, now: Long) {
+        if (now - lastLogMs >= LOG_INTERVAL_MS) {
+            Log.d(TAG, "Player DSP amplitude raw=$rawAmplitude mapped=$mappedAmplitude")
+            lastLogMs = now
+        }
+    }
+
+    companion object {
+        private const val TAG = "DspAudioProcessor"
+        private const val PLAYER_NOISE_FLOOR = 0.004f
+        private const val PLAYER_GAIN = 12f
+        private const val LOG_INTERVAL_MS = 1_000L
     }
 }

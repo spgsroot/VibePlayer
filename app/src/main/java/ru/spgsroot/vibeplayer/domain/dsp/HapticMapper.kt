@@ -8,7 +8,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class HapticMapper @Inject constructor() {
+class HapticMapper @Inject constructor(
+    private val runtimeConfig: HapticRuntimeConfig
+) {
 
     private val _intensity = MutableSharedFlow<Float>(
         replay = 0,
@@ -18,16 +20,21 @@ class HapticMapper @Inject constructor() {
     val intensity: SharedFlow<Float> = _intensity.asSharedFlow()
 
     private var emaValue = 0f
-    private val alpha = 0.3f
+    private val lock = Any()
 
     fun emitNonBlocking(rawAmplitude: Float) {
-        emaValue = alpha * rawAmplitude + (1 - alpha) * emaValue
-        val clamped = emaValue.coerceIn(0f, 1f)
+        val clamped = synchronized(lock) {
+            val alpha = runtimeConfig.smoothingAlpha
+            emaValue = alpha * rawAmplitude + (1 - alpha) * emaValue
+            emaValue.coerceIn(0f, 1f)
+        }
         _intensity.tryEmit(clamped)
     }
 
     fun reset() {
-        emaValue = 0f
+        synchronized(lock) {
+            emaValue = 0f
+        }
         _intensity.tryEmit(0f)
     }
 }

@@ -1,6 +1,7 @@
 package ru.spgsroot.vibeplayer.device.buttplug
 
 import android.os.SystemClock
+import android.util.Log
 import io.github.spgsroot.buttplug.device.ActuatorType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ru.spgsroot.vibeplayer.domain.dsp.HapticMapper
+import ru.spgsroot.vibeplayer.domain.dsp.HapticRuntimeConfig
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.abs
@@ -28,12 +30,15 @@ data class ActuatorTarget(
 @Singleton
 class CommandSender @Inject constructor(
     private val hapticMapper: HapticMapper,
+    private val runtimeConfig: HapticRuntimeConfig,
     private val connectionManager: ButtplugConnectionManager
 ) {
     private var job: Job? = null
     private var watchdogJob: Job? = null
     private var lastIntensity = 0f
     private var lastSignalMs = 0L
+    private var lastLogMs = 0L
+    private var lastSendLogMs = 0L
 
     /** Current actuator targets. Empty list = nothing to control. */
     private var targets: List<ActuatorTarget> = emptyList()
@@ -63,10 +68,12 @@ class CommandSender @Inject constructor(
         lastSignalMs = SystemClock.elapsedRealtime()
         _activeDeviceIndex.value = targets.firstOrNull()?.deviceIndex
         this.scope = scope
+        Log.d(TAG, "CommandSender started with ${targets.size} target(s): $targets")
 
         job = scope.launch {
             hapticMapper.intensity.collectLatest { intensity ->
                 lastSignalMs = SystemClock.elapsedRealtime()
+                logIntensity(intensity)
                 applyIntensity(intensity)
             }
         }
@@ -92,6 +99,9 @@ class CommandSender @Inject constructor(
                     sendStopToAll()
                 }
             }
+        }
+        if (job != null || targets.isNotEmpty()) {
+            Log.d(TAG, "CommandSender stopped")
         }
         _activeDeviceIndex.value = null
         scope = null
@@ -125,7 +135,8 @@ class CommandSender @Inject constructor(
 
     private suspend fun applyIntensity(intensity: Float) {
         val normalizedIntensity = intensity.coerceIn(0f, 1f)
-        val targetIntensity = if (normalizedIntensity <= SILENCE_THRESHOLD) 0f else normalizedIntensity
+        val threshold = runtimeConfig.threshold
+        val targetIntensity = if (normalizedIntensity <= threshold) 0f else normalizedIntensity
 
         if (targetIntensity == 0f) {
             if (lastIntensity > 0f) {
@@ -150,12 +161,10 @@ class CommandSender @Inject constructor(
         }
     }
 
-    /** Power boost multiplier: 1.0 = 100%, 2.0 = 200%. Applied to all intensities. */
-    @Volatile var powerBoost: Float = 1.0f
-
     /** Send intensity to ALL configured actuator targets with power boost applied. */
     private suspend fun sendScalarToAll(intensity: Float) {
-        val boosted = (intensity * powerBoost).coerceIn(0f, 1f)
+        val boosted = (intensity * runtimeConfig.powerBoost).coerceIn(0f, 1f)
+        logSend(intensity, boosted)
         targets.forEach { target ->
             connectionManager.sendActuator(
                 deviceIndex = target.deviceIndex,
@@ -166,11 +175,39 @@ class CommandSender @Inject constructor(
         }
     }
 
+    private fun logSend(intensity: Float, boosted: Float) {
+        val now = SystemClock.elapsedRealtime()
+        if (targets.isEmpty()) {
+            if (now - lastSendLogMs >= LOG_INTERVAL_MS) {
+                Log.w(TAG, "No actuator targets; intensity=$intensity boosted=$boosted was not sent")
+                lastSendLogMs = now
+            }
+            return
+        }
+        if (boosted > 0f && now - lastSendLogMs >= LOG_INTERVAL_MS) {
+            Log.d(TAG, "Sending haptic intensity=$intensity boosted=$boosted to ${targets.size} target(s)")
+            lastSendLogMs = now
+        }
+    }
+
+    private fun logIntensity(intensity: Float) {
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastLogMs >= LOG_INTERVAL_MS) {
+            val boosted = (intensity * runtimeConfig.powerBoost).coerceIn(0f, 1f)
+            Log.d(
+                TAG,
+                "Collected haptic intensity=$intensity boosted=$boosted threshold=${runtimeConfig.threshold} targets=${targets.size}"
+            )
+            lastLogMs = now
+        }
+    }
+
     companion object {
+        private const val TAG = "CommandSender"
         private const val TEST_PULSE_INTENSITY = 0.35f
         private const val TEST_PULSE_MS = 250L
         private const val CHANGE_THRESHOLD = 0.02f
-        private const val SILENCE_THRESHOLD = 0.03f
         private const val SILENCE_TIMEOUT_MS = 350L
+        private const val LOG_INTERVAL_MS = 1_000L
     }
 }

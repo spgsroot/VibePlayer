@@ -25,7 +25,8 @@ class SettingsRepository @Inject constructor(
         settingsDao.updateDspConfig(
             lowFreq = config.lowFreqHz,
             highFreq = config.highFreqHz,
-            smoothing = config.smoothingAlpha
+            smoothing = config.smoothingAlpha,
+            threshold = config.threshold
         )
     }
 
@@ -45,6 +46,10 @@ class SettingsRepository @Inject constructor(
         settingsDao.updateDspPowerBoost(powerBoost)
     }
 
+    suspend fun updateDspThreshold(threshold: Float) {
+        settingsDao.updateDspThreshold(threshold)
+    }
+
     suspend fun updateLanguage(languageCode: String) {
         settingsDao.updateLanguage(languageCode)
     }
@@ -58,6 +63,7 @@ class SettingsRepository @Inject constructor(
                 dspHighFreq = 200,
                 dspSmoothingAlpha = 0.3f,
                 dspPowerBoost = 1.0f,
+                dspThreshold = 0.03f,
                 autoLockTimeoutMs = 30000L,
                 languageCode = "system"
             )
@@ -67,7 +73,13 @@ class SettingsRepository @Inject constructor(
     private fun SettingsEntity.toDomain() = Settings(
         timerMs = timerMs,
         playbackSpeed = playbackSpeed,
-        dspConfig = DspConfig(dspLowFreq, dspHighFreq, dspSmoothingAlpha, dspPowerBoost),
+        dspConfig = DspConfig(
+            lowFreqHz = dspLowFreq,
+            highFreqHz = dspHighFreq,
+            smoothingAlpha = dspSmoothingAlpha,
+            powerBoost = dspPowerBoost,
+            threshold = dspThreshold
+        ),
         autoLockTimeoutMs = autoLockTimeoutMs,
         languageCode = languageCode
     )

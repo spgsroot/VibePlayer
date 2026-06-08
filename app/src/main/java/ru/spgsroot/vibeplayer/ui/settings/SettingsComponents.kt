@@ -48,9 +48,11 @@ fun DspSettings(
     lowFreq: Int,
     highFreq: Int,
     smoothing: Float,
+    threshold: Float,
     onLowFreqChange: (Int) -> Unit,
     onHighFreqChange: (Int) -> Unit,
-    onSmoothingChange: (Float) -> Unit
+    onSmoothingChange: (Float) -> Unit,
+    onThresholdChange: (Float) -> Unit
 ) {
     Column {
         Text(stringResource(R.string.dsp_settings_title), style = MaterialTheme.typography.titleSmall)
@@ -64,6 +66,15 @@ fun DspSettings(
             value = smoothing,
             onValueChange = onSmoothingChange,
             valueRange = 0.1f..0.5f
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(stringResource(R.string.dsp_threshold, threshold * 100f), style = MaterialTheme.typography.bodySmall)
+        Slider(
+            value = threshold,
+            onValueChange = onThresholdChange,
+            valueRange = 0.0f..0.15f,
+            steps = 29
         )
     }
 }

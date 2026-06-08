@@ -18,6 +18,7 @@
     <string name="dsp_settings_title">DSP Настройки</string>
     <string name="bass_range" formatted="false">Bass range: %d-%d Hz</string>
     <string name="smoothing">Smoothing: %.1f</string>
+    <string name="dsp_threshold">Порог: %.1f%%</string>
 
     <!-- Buttons -->
     <string name="btn_app_password_set">🔒 Установить пароль</string>
@@ -122,6 +123,10 @@
     <string name="add_from_gallery">Выбрать из галереи</string>
     <string name="add_from_url">Вставить ссылку</string>
     <string name="add_batch">Импорт списка</string>
+    <string name="add_open_webview">Открыть WebView</string>
+    <string name="dialog_webview_url">Открыть сайт с вибрацией</string>
+    <string name="webview_audio_capture_hint">Звук WebView будет использоваться для генерации вибрации. Android запросит доступ к захвату аудиовыхода; пока WebView открыт, другой медиазвук тоже может попасть в анализ.</string>
+    <string name="btn_open_webview">Открыть</string>
 
     <!-- Auth Screen -->
     <string name="auth_enter_password">Введите пароль</string>

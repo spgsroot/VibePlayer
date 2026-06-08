@@ -27,6 +27,7 @@ import ru.spgsroot.vibeplayer.domain.model.Video
 import ru.spgsroot.vibeplayer.playback.player.ExoPlayerWrapper
 import ru.spgsroot.vibeplayer.playback.player.PlayerState
 import ru.spgsroot.vibeplayer.playback.queue.PlaylistManager
+import ru.spgsroot.vibeplayer.playback.service.WebViewAudioCaptureService
 import ru.spgsroot.vibeplayer.playback.timer.TimerController
 import java.io.File
 import javax.inject.Inject
@@ -65,6 +66,7 @@ class PlayerViewModel @Inject constructor(
         playlistManager.setOnCurrentVideoRemovedListener { nextVideo ->
             viewModelScope.launch {
                 nextVideo?.let {
+                    stopWebViewCapture()
                     exoPlayerWrapper.play(nextVideo)
                     startTimer()
                 } ?: run {
@@ -117,12 +119,14 @@ class PlayerViewModel @Inject constructor(
             }
 
             is PlayerState.Paused -> {
+                stopWebViewCapture()
                 exoPlayerWrapper.play()
                 startTimer()
             }
 
             is PlayerState.Idle -> {
                 playlistManager.current()?.let {
+                    stopWebViewCapture()
                     exoPlayerWrapper.play(it)
                     startTimer()
                 }
@@ -134,6 +138,7 @@ class PlayerViewModel @Inject constructor(
 
     fun onNext() {
         playlistManager.next()?.let {
+            stopWebViewCapture()
             exoPlayerWrapper.play(it)
             startTimer()
         }
@@ -141,6 +146,7 @@ class PlayerViewModel @Inject constructor(
 
     fun onPrevious() {
         playlistManager.previous()?.let {
+            stopWebViewCapture()
             exoPlayerWrapper.play(it)
             startTimer()
         }
@@ -150,8 +156,16 @@ class PlayerViewModel @Inject constructor(
         exoPlayerWrapper.seekTo(positionMs)
     }
 
+    fun pauseForWebView() {
+        if (playerState.value is PlayerState.Playing) {
+            exoPlayerWrapper.pause()
+            timerController.stop()
+        }
+    }
+
     fun playVideo(video: Video) {
         playlistManager.selectVideo(video)
+        stopWebViewCapture()
         exoPlayerWrapper.play(video)
         startTimer()
     }
@@ -161,6 +175,12 @@ class PlayerViewModel @Inject constructor(
     private fun startTimer() {
         currentSettings?.let {
             timerController.start(viewModelScope, it.timerMs)
+        }
+    }
+
+    private fun stopWebViewCapture() {
+        runCatching {
+            context.stopService(WebViewAudioCaptureService.stopIntent(context))
         }
     }
 

@@ -18,6 +18,7 @@
     <string name="dsp_settings_title">DSP Settings</string>
     <string name="bass_range" formatted="false">Bass range: %d-%d Hz</string>
     <string name="smoothing">Smoothing: %.1f</string>
+    <string name="dsp_threshold">Threshold: %.1f%%</string>
 
     <!-- Buttons -->
     <string name="btn_app_password_set">🔒 Set Password</string>
@@ -122,6 +123,10 @@
     <string name="add_from_gallery">Select from Gallery</string>
     <string name="add_from_url">Paste URL</string>
     <string name="add_batch">Import List</string>
+    <string name="add_open_webview">Open WebView</string>
+    <string name="dialog_webview_url">Open site with vibration</string>
+    <string name="webview_audio_capture_hint">WebView audio will be used to generate vibration. Android will ask for audio output capture access; while WebView is open, other playing media can also be analyzed.</string>
+    <string name="btn_open_webview">Open</string>
 
     <!-- Auth Screen -->
     <string name="auth_enter_password">Enter password</string>

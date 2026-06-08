@@ -13,6 +13,7 @@ data class SettingsEntity(
     val dspHighFreq: Int,
     val dspSmoothingAlpha: Float,
     val dspPowerBoost: Float = 1.0f,
+    val dspThreshold: Float = 0.03f,
     val autoLockTimeoutMs: Long,
     val languageCode: String = "system"
 )

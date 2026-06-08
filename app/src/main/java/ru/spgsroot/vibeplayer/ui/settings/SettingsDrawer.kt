@@ -137,9 +137,11 @@ fun SettingsDrawer(
                         lowFreq = s.dspConfig.lowFreqHz,
                         highFreq = s.dspConfig.highFreqHz,
                         smoothing = s.dspConfig.smoothingAlpha,
+                        threshold = s.dspConfig.threshold,
                         onLowFreqChange = viewModel::updateDspLowFreq,
                         onHighFreqChange = viewModel::updateDspHighFreq,
-                        onSmoothingChange = viewModel::updateDspSmoothing
+                        onSmoothingChange = viewModel::updateDspSmoothing,
+                        onThresholdChange = viewModel::updateDspThreshold
                     )
                 }
 
