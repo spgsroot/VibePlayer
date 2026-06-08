@@ -36,9 +36,11 @@
 ## ✨ Features
 
 - **🎬 Local video playback** — support for various video formats via ExoPlayer
+- **🌐 WebView playback** — open a website in-app and use page audio for haptic sync
 - **📁 Gallery** — video library management with rename and cover options
 - **🔗 Buttplug API integration** — direct device sync via Buttplug.io
 - **📡 Bluetooth connection** — device support through Intiface Central
+- **🎚️ Unified DSP settings** — shared smoothing, power boost, and threshold for Player and WebView sources
 - **⏱️ Auto-switch timer** — automatic video switching by timer
 - **🎛️ Playback speed** — adjustable from 0.5x to 2.0x
 - **🔒 Password protection** — app lock with password
@@ -79,9 +81,9 @@ VibePlayer uses **Buttplug API** to sync with compatible devices:
 ```
 
 1. **Intiface Central** runs on PC or mobile device
-2. VibePlayer connects via **Bluetooth**
-3. Video syncs with device through **Buttplug Protocol**
-4. Intensity adjusts automatically based on playback
+2. VibePlayer connects to Intiface and discovers supported actuators
+3. Local player audio or WebView page audio is analyzed in real time
+4. Intensity is mapped through unified DSP settings and sent through **Buttplug Protocol**
 
 ### Buttplug Commands Used
 
@@ -90,7 +92,7 @@ VibePlayer uses **Buttplug API** to sync with compatible devices:
 | `DeviceScan` | Scan for nearby devices |
 | `DeviceConnect` | Connect to selected device |
 | `StopAllDevices` | Stop all device activity |
-| `SingleMotorVibrateCmd` | Control vibration intensity |
+| `ScalarCmd` / actuator commands | Control vibration, rotation, oscillation, position and other supported actuators |
 | `BatteryLevelCmd` | Check device battery level |
 
 ### Benefits of Buttplug API
@@ -124,12 +126,20 @@ VibePlayer uses **Buttplug API** to sync with compatible devices:
 
 - **Android 8.0 (API 26)** or higher
 - **Android 13 (API 33)** recommended for full localization support
+- **Android 10 (API 29)** or higher for WebView audio capture haptics
 
 ### For Buttplug Sync
 
 - **Intiface Central** (PC or mobile app)
 - **Compatible Bluetooth device**
 - **Bluetooth permission** granted
+
+### For WebView Audio Haptics
+
+- Android audio output capture consent via MediaProjection
+- `RECORD_AUDIO` permission
+- A visible foreground capture notification while WebView audio analysis is active
+- Note: while WebView is open, Android audio output capture may include other media playing on the device; audio is analyzed locally and converted to haptic intensity.
 
 ---
 
@@ -197,7 +207,20 @@ cd VibePlayer
 - Open **Settings** menu
 - Configure **auto-switch timer** for automatic playback
 - Adjust **playback speed** (0.5x - 2.0x)
+- Tune shared **DSP settings** for all haptic sources:
+  - **Smoothing** — response stability
+  - **Threshold** — silence/noise cutoff
+  - **Power Boost** — final intensity multiplier
 - Set your preferred **language**
+
+### WebView Haptics
+
+1. Open **Add Video → Open WebView**.
+2. Enter a website URL.
+3. Grant Android audio capture consent.
+4. Play media on the page; VibePlayer analyzes WebView audio and drives the selected Buttplug device through the same DSP settings as the local player.
+
+When local player playback is started again, WebView audio capture is stopped so the two sources do not fight for device control.
 
 ### Adding Videos
 
@@ -206,6 +229,7 @@ cd VibePlayer
 | **Gallery** | Import videos from device storage |
 | **URL** | Paste direct video link |
 | **Batch Import** | Import multiple URLs at once |
+| **WebView** | Open a website and use page audio for haptics |
 
 ---
 
@@ -228,7 +252,8 @@ Change language in **Settings → Language**.
 - **🔐 App Password** — PIN code protection against unauthorized access
 - **🔒 SQLCipher** — 256-bit AES database encryption
 - **🛡️ Secure Storage** — Android Keystore for sensitive data
-- **📱 Minimal Permissions** — only required permissions requested
+- **📱 Runtime Permissions** — Bluetooth and WebView audio capture permissions are requested only when needed
+- **🎧 Local audio analysis** — audio samples are analyzed on-device for intensity and are not stored by VibePlayer
 
 ---
 
@@ -247,9 +272,14 @@ VibePlayer/
 │   │   │   ├── device/
 │   │   │   │   └── buttplug/        # Buttplug API integration
 │   │   │   ├── domain/
+│   │   │   │   ├── dsp/             # Audio analysis, haptic mapping and runtime DSP config
 │   │   │   │   └── model/           # Business logic models
+│   │   │   ├── playback/
+│   │   │   │   ├── player/          # ExoPlayer wrapper and DSP audio processor
+│   │   │   │   └── service/         # Foreground playback and WebView audio capture services
 │   │   │   ├── ui/
 │   │   │   │   ├── player/          # Video player screen
+│   │   │   │   ├── webview/         # In-app WebView playback screen
 │   │   │   │   ├── gallery/         # Gallery screen
 │   │   │   │   ├── settings/        # Settings screen
 │   │   │   │   ├── auth/            # Authentication screen
