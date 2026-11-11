@@ -13,7 +13,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.os.LocaleListCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
+import androidx.navigation.navArgument
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
@@ -24,6 +26,8 @@ import ru.spgsroot.vibeplayer.locale.LocaleManager
 import ru.spgsroot.vibeplayer.ui.auth.AuthScreen
 import ru.spgsroot.vibeplayer.security.AuthSession
 import ru.spgsroot.vibeplayer.ui.gallery.GalleryScreen
+import ru.spgsroot.vibeplayer.ui.manga.MangaLibraryScreen
+import ru.spgsroot.vibeplayer.ui.manga.MangaReaderScreen
 import ru.spgsroot.vibeplayer.ui.gallery.GalleryViewModel
 import ru.spgsroot.vibeplayer.ui.onboarding.OnboardingScreen
 import ru.spgsroot.vibeplayer.ui.player.PlayerScreen
@@ -199,6 +203,18 @@ fun AppNavigation(authManager: AuthManager, authSession: AuthSession) {
             composable("gallery") {
                 val galleryViewModel: GalleryViewModel = hiltViewModel()
                 GalleryScreen(navController = navController, viewModel = galleryViewModel)
+            }
+            composable("manga") {
+                MangaLibraryScreen(navController = navController)
+            }
+            composable(
+                "manga/{id}",
+                arguments = listOf(navArgument("id") { type = NavType.IntType })
+            ) { entry ->
+                MangaReaderScreen(
+                    galleryId = entry.arguments?.getInt("id") ?: return@composable,
+                    navController = navController
+                )
             }
         }
     }

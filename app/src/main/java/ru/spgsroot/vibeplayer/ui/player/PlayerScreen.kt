@@ -106,6 +106,9 @@ fun PlayerScreen(
                             IconButton(onClick = { navController.navigate("gallery") }) {
                                 Icon(Icons.Default.VideoLibrary, "Gallery")
                             }
+                            IconButton(onClick = { navController.navigate("manga") }) {
+                                Icon(Icons.Default.MenuBook, "Library")
+                            }
                             IconButton(onClick = { showAddDialog = true }) {
                                 Icon(Icons.Default.Add, "Add video")
                             }

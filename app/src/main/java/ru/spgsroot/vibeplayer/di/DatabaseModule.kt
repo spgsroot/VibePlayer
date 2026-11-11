@@ -28,4 +28,6 @@ object DatabaseModule {
 
     @Provides
     fun providePlaybackStateDao(database: AppDatabase): PlaybackStateDao = database.playbackStateDao()
+    @Provides
+    fun provideLibraryGalleryDao(database: AppDatabase): LibraryGalleryDao = database.libraryGalleryDao()
 }

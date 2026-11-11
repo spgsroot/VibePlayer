@@ -7,4 +7,5 @@
     <exclude domain="file" path="datastore/" />
     <exclude domain="file" path="videos/" />
     <exclude domain="file" path="thumbnails/" />
+    <exclude domain="file" path="manga/" />
 </full-backup-content>

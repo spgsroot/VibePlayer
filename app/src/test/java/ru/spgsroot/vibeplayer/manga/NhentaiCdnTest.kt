@@ -1,0 +1,30 @@
+package ru.spgsroot.vibeplayer.manga
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Test
+
+class NhentaiCdnTest {
+    @Test
+    fun usesThePinnedImageHostWithoutRewritingThePath() {
+        assertEquals(
+            "https://i1.nhentai.net/galleries/9/1.jpg",
+            NhentaiCdn.image("galleries/9/1.jpg")
+        )
+    }
+
+    @Test
+    fun usesThePinnedThumbHost() {
+        assertEquals(
+            "https://t1.nhentai.net/galleries/9/thumb.jpg",
+            NhentaiCdn.thumb("galleries/9/thumb.jpg")
+        )
+    }
+
+    @Test
+    fun rejectsEmptyTraversalAndAbsolutePaths() {
+        assertNull(NhentaiCdn.image(""))
+        assertNull(NhentaiCdn.image("../secret.jpg"))
+        assertNull(NhentaiCdn.image("https://evil.example/galleries/9/1.jpg"))
+    }
+}

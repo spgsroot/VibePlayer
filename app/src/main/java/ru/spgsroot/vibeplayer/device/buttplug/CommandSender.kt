@@ -80,6 +80,16 @@ class CommandSender @Inject constructor(
         startSilenceWatchdog(scope)
     }
 
+    fun pulse(intensity: Float, durationMs: Long) {
+        if (targets.isEmpty() || scope == null) return
+        scope?.launch {
+            sendScalarToAll(intensity.coerceIn(0f, 1f))
+            delay(durationMs.coerceAtLeast(0L))
+            sendScalarToAll(0f)
+            lastIntensity = 0f
+        }
+    }
+
     fun stop() {
         stop(sendStopCommand = true)
     }

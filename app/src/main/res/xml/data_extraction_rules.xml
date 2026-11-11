@@ -8,6 +8,7 @@
         <exclude domain="file" path="datastore/" />
         <exclude domain="file" path="videos/" />
         <exclude domain="file" path="thumbnails/" />
+        <exclude domain="file" path="manga/" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="root" path="." />
@@ -17,5 +18,6 @@
         <exclude domain="file" path="datastore/" />
         <exclude domain="file" path="videos/" />
         <exclude domain="file" path="thumbnails/" />
+        <exclude domain="file" path="manga/" />
     </device-transfer>
 </data-extraction-rules>

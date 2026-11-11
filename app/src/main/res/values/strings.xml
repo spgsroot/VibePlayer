@@ -68,6 +68,14 @@
     <string name="error_download_failed">Не удалось скачать видео</string>
     <string name="btn_download">Скачать</string>
     <string name="btn_close">Закрыть</string>
+    <string name="manga_library">Библиотека</string>
+    <string name="manga_search">Поиск</string>
+    <string name="manga_favorites">Избранное</string>
+    <string name="manga_open">Открыть</string>
+    <string name="manga_remove">Удалить</string>
+    <string name="manga_save">В библиотеку</string>
+    <string name="manga_reader">Ридер</string>
+    <string name="manga_empty">Страниц нет</string>
 
     <!-- Password Dialog -->
     <string name="dialog_set_password">Установить пароль</string>
