@@ -1,6 +1,6 @@
 # VibePlayer
 
-Android video player that maps playback audio to Buttplug actuators, plus a reader for nhentai. UI is Jetpack Compose. Version in this tree: `2.2.1` (`versionCode` 2). [Русская версия](README_RU.md).
+Android video player that maps playback audio to Buttplug actuators, plus a reader for nhentai. UI is Jetpack Compose. Version in this tree: `2.3.0` (`versionCode` 3). [Русская версия](README_RU.md).
 
 The screenshots below were taken on an emulator with an empty library. No video and no gallery pages were loaded.
 

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
@@ -36,10 +37,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -119,9 +122,10 @@ fun MangaLibraryScreen(
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            Cover(item.thumbnailPath)
                             Text(item.title, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
                             TextButton(onClick = { navController.navigate("manga/${item.id}") }) {
                                 Text(stringResource(R.string.manga_open))
@@ -141,23 +145,40 @@ private fun LibraryCard(
     onRemove: () -> Unit
 ) {
     Card(onClick = onOpen, modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    item.title,
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (item.favorite) {
-                    Icon(Icons.Default.Favorite, stringResource(R.string.manga_favorites))
+        Row(
+            Modifier.padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Cover(item.thumbnailPath)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        item.title,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (item.favorite) {
+                        Icon(Icons.Default.Favorite, stringResource(R.string.manga_favorites))
+                    }
                 }
+                Text("${item.pagePaths.size}", style = MaterialTheme.typography.bodySmall)
+                TextButton(onClick = onRemove) { Text(stringResource(R.string.manga_remove)) }
             }
-            Text("${item.pagePaths.size}", style = MaterialTheme.typography.bodySmall)
-            TextButton(onClick = onRemove) { Text(stringResource(R.string.manga_remove)) }
         }
     }
+}
+
+@Composable
+private fun Cover(path: String) {
+    AsyncImage(
+        model = NhentaiCdn.thumb(path),
+        contentDescription = null,
+        modifier = Modifier.size(72.dp).clip(RoundedCornerShape(8.dp)),
+        contentScale = ContentScale.Crop
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

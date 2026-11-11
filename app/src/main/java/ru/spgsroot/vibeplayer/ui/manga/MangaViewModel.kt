@@ -7,7 +7,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import ru.spgsroot.vibeplayer.data.manga.MangaLibraryRepository
 import ru.spgsroot.vibeplayer.data.manga.NhentaiApi
 import ru.spgsroot.vibeplayer.data.manga.NhentaiException
@@ -48,7 +50,7 @@ class MangaViewModel @Inject constructor(
         viewModelScope.launch {
             _error.value = null
             try {
-                _search.value = api.search(query)
+                _search.value = withContext(Dispatchers.IO) { api.search(query) }
             } catch (e: NhentaiException) {
                 _error.value = e.message
             } catch (e: Exception) {
@@ -65,7 +67,7 @@ class MangaViewModel @Inject constructor(
         viewModelScope.launch {
             _error.value = null
             try {
-                _detail.value = api.gallery(id)
+                _detail.value = withContext(Dispatchers.IO) { api.gallery(id) }
             } catch (e: Exception) {
                 if (_detail.value == null) _error.value = e.message ?: "Open failed"
             }
