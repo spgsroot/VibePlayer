@@ -45,6 +45,7 @@ fun PlayerContent(
             .background(Color.Black)
     ) {
         // Layer 0: PlayerView (fullscreen video)
+        val zoomed = zoomScale != 1f || panX != 0f || panY != 0f
         AndroidView(
             factory = { ctx ->
                 PlayerView(ctx).apply {
@@ -61,11 +62,17 @@ fun PlayerContent(
             modifier = Modifier
                 .fillMaxSize()
                 .align(Alignment.Center)
-                .graphicsLayer(
-                    scaleX = zoomScale,
-                    scaleY = zoomScale,
-                    translationX = panX,
-                    translationY = panY
+                .then(
+                    if (zoomed) {
+                        Modifier.graphicsLayer(
+                            scaleX = zoomScale,
+                            scaleY = zoomScale,
+                            translationX = panX,
+                            translationY = panY
+                        )
+                    } else {
+                        Modifier
+                    }
                 )
         )
 

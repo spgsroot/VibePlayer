@@ -8,6 +8,12 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.Modifier
 import androidx.compose.runtime.*
 import androidx.compose.ui.res.stringResource
 import androidx.core.os.LocaleListCompat
@@ -129,7 +135,17 @@ fun AppNavigation(authManager: AuthManager, authSession: AuthSession) {
     }
 
     startDestination?.let { start ->
-        NavHost(navController = navController, startDestination = start) {
+        NavHost(
+            navController = navController,
+            startDestination = start,
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None },
+            popEnterTransition = { EnterTransition.None },
+            popExitTransition = { ExitTransition.None }
+        ) {
             composable("onboarding") {
                 OnboardingScreen(
                     onComplete = {

@@ -9,4 +9,5 @@
     <color name="vibe_pink">#FF0080</color>
     <color name="vibe_dark_bg">#1C1B1F</color>
     <color name="vibe_light_bg">#FFFFFF</color>
+    <color name="window_background">#101114</color>
 </resources>
