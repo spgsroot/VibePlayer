@@ -78,7 +78,6 @@ class CommandSender @Inject constructor(
             }
         }
         startSilenceWatchdog(scope)
-        sendTestPulse(scope)
     }
 
     fun stop() {
@@ -86,34 +85,28 @@ class CommandSender @Inject constructor(
     }
 
     private fun stop(sendStopCommand: Boolean) {
+        val targetsToStop = targets.toList()
         job?.cancel()
         job = null
         watchdogJob?.cancel()
         watchdogJob = null
-        if (sendStopCommand) {
-            val s = scope
-            if (s != null) {
-                s.launch { sendStopToAll() }
-            } else {
-                CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                    sendStopToAll()
-                }
-            }
-        }
-        if (job != null || targets.isNotEmpty()) {
-            Log.d(TAG, "CommandSender stopped")
-        }
+        val senderScope = scope
+        targets = emptyList()
         _activeDeviceIndex.value = null
         scope = null
-        targets = emptyList()
+        if (sendStopCommand && targetsToStop.isNotEmpty()) {
+            Log.d(TAG, "CommandSender stopped")
+            val launchScope = senderScope ?: CoroutineScope(kotlinx.coroutines.Dispatchers.IO)
+            launchScope.launch { sendStopTo(targetsToStop) }
+        }
     }
 
     /**
-     * Send stop to all targets' devices. Only sends once per unique device.
+     * Send stop to the devices that were active when stop was requested.
      */
-    private suspend fun sendStopToAll() {
+    private suspend fun sendStopTo(targetsToStop: List<ActuatorTarget>) {
         val processedDevices = mutableSetOf<Int>()
-        targets.forEach { target ->
+        targetsToStop.forEach { target ->
             if (processedDevices.add(target.deviceIndex)) {
                 connectionManager.sendStop(target.deviceIndex)
             }
@@ -152,14 +145,7 @@ class CommandSender @Inject constructor(
         }
     }
 
-    private fun sendTestPulse(scope: CoroutineScope) {
-        scope.launch {
-            sendScalarToAll(TEST_PULSE_INTENSITY)
-            delay(TEST_PULSE_MS)
-            sendScalarToAll(0f)
-            lastIntensity = 0f
-        }
-    }
+
 
     /** Send intensity to ALL configured actuator targets with power boost applied. */
     private suspend fun sendScalarToAll(intensity: Float) {
@@ -204,8 +190,7 @@ class CommandSender @Inject constructor(
 
     companion object {
         private const val TAG = "CommandSender"
-        private const val TEST_PULSE_INTENSITY = 0.35f
-        private const val TEST_PULSE_MS = 250L
+
         private const val CHANGE_THRESHOLD = 0.02f
         private const val SILENCE_TIMEOUT_MS = 350L
         private const val LOG_INTERVAL_MS = 1_000L

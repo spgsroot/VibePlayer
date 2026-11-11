@@ -20,7 +20,7 @@ import javax.inject.Singleton
 class ButtplugConnectionManager @Inject constructor() {
 
     companion object {
-        const val DEFAULT_URL = "ws://192.168.10.221:12345"
+        const val DEFAULT_URL = "ws://127.0.0.1:12345"
         private const val TAG = "ButtplugConnection"
         private const val CLIENT_NAME = "VibePlayer"
         private const val PROTOCOL_VERSION_MAJOR = 4
@@ -69,7 +69,7 @@ class ButtplugConnectionManager @Inject constructor() {
     }
 
     fun connect(url: String = DEFAULT_URL) {
-        Log.d(TAG, "connect() called with URL: $url")
+        Log.d(TAG, "connect() called")
         stateCollectionJob?.cancel()
         deviceCollectionJob?.cancel()
         connectionJob?.cancel()

@@ -87,32 +87,18 @@ class InternalStorageManager @Inject constructor(
     }
 
     fun delete(videoId: Long): Boolean {
-        var deleted = false
-        
-        // Delete video file
-        val videoFiles = videosDir.listFiles() ?: emptyArray()
-        val videoFile = videoFiles.find { it.nameWithoutExtension == videoId.toString() }
-        if (videoFile != null) {
-            deleted = videoFile.delete()
-        }
-        
-        // Delete thumbnail file
-        val thumbnailFiles = thumbnailsDir.listFiles() ?: emptyArray()
-        val thumbnailFile = thumbnailFiles.find { it.nameWithoutExtension == videoId.toString() }
-        if (thumbnailFile != null) {
-            deleted = thumbnailFile.delete() || deleted
-        }
-        
-        return deleted
+        val thumbnail = File(thumbnailsDir, "$videoId.jpg")
+        return thumbnail.delete()
+    }
+
+    fun deleteFile(filePath: String): Boolean {
+        val file = VideoFileDeletion.resolve(videosDir, filePath) ?: return false
+        return file.delete()
     }
 
     fun deleteThumbnail(thumbnailPath: String): Boolean {
-        return try {
-            val file = File(thumbnailPath)
-            file.delete()
-        } catch (e: Exception) {
-            false
-        }
+        val file = VideoFileDeletion.resolve(thumbnailsDir, thumbnailPath) ?: return false
+        return file.delete()
     }
 
     fun getFile(videoId: Long): File? {

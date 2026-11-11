@@ -48,7 +48,9 @@ class ButtplugClientTest {
         /** Latch released when WebSocket closes */
         val closeLatch = CountDownLatch(1)
 
-        /** Count of messages received */
+        /** Message types received, in order. */
+        val receivedTypes = mutableListOf<String>()
+
         @Volatile var messageCount = 0
 
         /** Last received raw text */
@@ -110,6 +112,7 @@ class ButtplugClientTest {
                     val payload = msgObj[typeName]?.jsonObject ?: continue
 
                     state.lastMessageKey = typeName
+                    state.receivedTypes.add(typeName)
                     state.lastMessagePayload = payload
 
                     handleServerMessage(webSocket, typeName, payload, state)
@@ -381,6 +384,23 @@ class ButtplugClientTest {
         client.disconnect()
 
         assertEquals(ButtplugClientState.Disconnected, client.state.value)
+    }
+
+    @Test
+    fun `disconnect sends stop before the socket closes`() = runBlocking {
+        startMockServer()
+        val client = createClient()
+        connectClient(client)
+        mockState.receivedTypes.clear()
+
+        client.disconnect()
+
+        assertTrue(mockState.closeLatch.await(5, TimeUnit.SECONDS), "socket should close")
+        val stopIndex = mockState.receivedTypes.indexOfLast { it == "StopCmd" || it == "StopAllDevices" }
+        assertTrue(
+            stopIndex >= 0,
+            "stop must be sent before close, got ${mockState.receivedTypes}"
+        )
     }
 
     @Test

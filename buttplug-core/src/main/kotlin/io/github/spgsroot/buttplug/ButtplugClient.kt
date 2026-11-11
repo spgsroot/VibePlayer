@@ -120,11 +120,22 @@ class ButtplugClient(
     }
 
     /**
-     * Disconnect from the server. Sends StopAllDevices first.
+     * Disconnect from the server. Sends StopAllDevices before the socket closes.
      */
     fun disconnect() {
         reconnectJob?.cancel()
         reconnectJob = null
+        pingJob?.cancel()
+        pingJob = null
+        val shouldStop = _state.value is ButtplugClientState.Connected ||
+            _state.value is ButtplugClientState.Scanning
+        if (shouldStop) {
+            runCatching {
+                runBlocking {
+                    withTimeout(1_000) { stopAllDevices() }
+                }
+            }
+        }
         cleanup()
         _state.value = ButtplugClientState.Disconnected
     }

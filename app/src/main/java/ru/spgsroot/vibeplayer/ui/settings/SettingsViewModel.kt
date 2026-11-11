@@ -12,6 +12,7 @@ import ru.spgsroot.vibeplayer.device.buttplug.ButtplugDevice
 import ru.spgsroot.vibeplayer.device.buttplug.ButtplugConnectionManager
 import ru.spgsroot.vibeplayer.device.buttplug.CommandSender
 import ru.spgsroot.vibeplayer.device.buttplug.DeviceState
+import ru.spgsroot.vibeplayer.device.buttplug.isAudioDrivable
 import ru.spgsroot.vibeplayer.domain.dsp.HapticRuntimeConfig
 import ru.spgsroot.vibeplayer.domain.model.Settings
 import ru.spgsroot.vibeplayer.security.AuthManager
@@ -121,31 +122,25 @@ class SettingsViewModel @Inject constructor(
 
     fun connectDevice(deviceIndex: Int) {
         android.util.Log.d("SettingsViewModel", "Device selected: $deviceIndex")
-        // Collect all actuator features of the selected device
         val libDevice = connectionManager.rawDevices.firstOrNull { it.index == deviceIndex }
-        val discoveredTargets = libDevice?.features?.flatMap { feature ->
-            feature.outputTypes.map { actuator ->
-                ru.spgsroot.vibeplayer.device.buttplug.ActuatorTarget(
-                    deviceIndex = deviceIndex,
-                    featureIndex = feature.index,
-                    actuatorType = actuator
-                )
-            }
+        val targets = libDevice?.features?.flatMap { feature ->
+            feature.outputTypes
+                .filter { it.isAudioDrivable() }
+                .map { actuator ->
+                    ru.spgsroot.vibeplayer.device.buttplug.ActuatorTarget(
+                        deviceIndex = deviceIndex,
+                        featureIndex = feature.index,
+                        actuatorType = actuator
+                    )
+                }
         }.orEmpty()
-        val targets = discoveredTargets.ifEmpty {
-            // Fallback: default single Vibrate on feature 0
-            listOf(
-                ru.spgsroot.vibeplayer.device.buttplug.ActuatorTarget(
-                    deviceIndex = deviceIndex,
-                    featureIndex = 0,
-                    actuatorType = io.github.spgsroot.buttplug.device.ActuatorType.Vibrate
-                )
+        if (targets.isEmpty()) {
+            android.util.Log.w(
+                "SettingsViewModel",
+                "No audio-drivable actuators on device $deviceIndex; CommandSender not started"
             )
+            return
         }
-        android.util.Log.d(
-            "SettingsViewModel",
-            "Starting CommandSender with ${targets.size} target(s); discovered=${discoveredTargets.size} features=${libDevice?.features?.size ?: 0}"
-        )
         commandSender.start(viewModelScope, targets)
     }
 

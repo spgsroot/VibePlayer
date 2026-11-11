@@ -8,11 +8,9 @@ import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.Bundle
-import android.os.SystemClock
-import android.util.Log
-import android.webkit.ConsoleMessage
-import android.webkit.JavascriptInterface
-import android.webkit.WebChromeClient
+import android.view.WindowManager
+import android.webkit.WebResourceRequest
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
@@ -25,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import dagger.hilt.android.AndroidEntryPoint
+import ru.spgsroot.vibeplayer.R
 import ru.spgsroot.vibeplayer.domain.dsp.HapticInputRouter
 import ru.spgsroot.vibeplayer.domain.dsp.HapticSource
 import ru.spgsroot.vibeplayer.playback.service.WebViewAudioCaptureService
@@ -37,8 +36,7 @@ class WebViewActivity : ComponentActivity() {
     lateinit var hapticInputRouter: HapticInputRouter
 
     private var webView: WebView? = null
-    private lateinit var initialUrl: String
-    private var bridgeLastLogMs = 0L
+    private var captureStarted = false
 
     private val recordAudioPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -69,27 +67,31 @@ class WebViewActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_SECURE,
+            WindowManager.LayoutParams.FLAG_SECURE
+        )
 
-        val url = intent.getStringExtra(EXTRA_URL).orEmpty()
-        if (url.isBlank()) {
-            Toast.makeText(this, "Missing WebView URL", Toast.LENGTH_SHORT).show()
+        val url = intent.getStringExtra(EXTRA_URL).orEmpty().trim()
+        if (!isOpenableWebViewUrl(url)) {
+            Toast.makeText(this, R.string.error_webview_https, Toast.LENGTH_SHORT).show()
             finish()
             return
         }
-        initialUrl = url
 
         setContent {
-            WebViewContent(initialUrl)
+            WebViewContent(url)
         }
-
         beginAudioCaptureFlow()
     }
 
+    override fun onStop() {
+        stopCapture()
+        super.onStop()
+    }
+
     override fun onDestroy() {
-        runCatching {
-            stopService(WebViewAudioCaptureService.stopIntent(applicationContext))
-        }
-        hapticInputRouter.release(HapticSource.WEBVIEW)
+        stopCapture()
         webView?.apply {
             stopLoading()
             destroy()
@@ -98,19 +100,26 @@ class WebViewActivity : ComponentActivity() {
         super.onDestroy()
     }
 
+    private fun stopCapture() {
+        if (!captureStarted && webView == null) return
+        runCatching {
+            stopService(WebViewAudioCaptureService.stopIntent(applicationContext))
+        }
+        hapticInputRouter.release(HapticSource.WEBVIEW)
+        captureStarted = false
+    }
+
     private fun beginAudioCaptureFlow() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             Toast.makeText(this, "WebView audio capture requires Android 10+", Toast.LENGTH_SHORT).show()
             return
         }
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             return
         }
-
         ensureRecordAudioPermission()
     }
 
@@ -128,12 +137,15 @@ class WebViewActivity : ComponentActivity() {
     }
 
     private fun startAudioCaptureService(resultCode: Int, data: Intent) {
-        val serviceIntent = WebViewAudioCaptureService.captureIntent(
-            context = applicationContext,
-            resultCode = resultCode,
-            data = data
+        captureStarted = true
+        ContextCompat.startForegroundService(
+            applicationContext,
+            WebViewAudioCaptureService.captureIntent(
+                context = applicationContext,
+                resultCode = resultCode,
+                data = data
+            )
         )
-        ContextCompat.startForegroundService(applicationContext, serviceIntent)
     }
 
     @Composable
@@ -143,207 +155,33 @@ class WebViewActivity : ComponentActivity() {
             factory = { context ->
                 WebView(context).apply {
                     webView = this
-                    addJavascriptInterface(WebViewAudioBridge(), JS_BRIDGE_NAME)
                     webViewClient = object : WebViewClient() {
-                        override fun onPageFinished(view: WebView, url: String?) {
-                            super.onPageFinished(view, url)
-                            injectWebAudioBridge(view)
-                        }
-                    }
-                    webChromeClient = object : WebChromeClient() {
-                        override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-                            val message = consoleMessage.message().orEmpty()
-                            when {
-                                message.startsWith(JS_LOG_PREFIX) -> {
-                                    Log.d(TAG, "WebView console: $message")
-                                }
-                                consoleMessage.messageLevel() == ConsoleMessage.MessageLevel.ERROR -> {
-                                    Log.w(
-                                        TAG,
-                                        "WebView console error: $message @${consoleMessage.sourceId()}:${consoleMessage.lineNumber()}"
-                                    )
-                                }
-                            }
-                            return super.onConsoleMessage(consoleMessage)
+                        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                            val target = request.url?.toString().orEmpty()
+                            if (isOpenableWebViewUrl(target)) return false
+                            Toast.makeText(this@WebViewActivity, R.string.error_webview_https, Toast.LENGTH_SHORT).show()
+                            return true
                         }
                     }
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
-                    settings.mediaPlaybackRequiresUserGesture = false
+                    settings.mediaPlaybackRequiresUserGesture = true
+                    settings.allowFileAccess = false
+                    settings.allowContentAccess = false
+                    @Suppress("DEPRECATION")
+                    settings.allowFileAccessFromFileURLs = false
+                    @Suppress("DEPRECATION")
+                    settings.allowUniversalAccessFromFileURLs = false
+                    settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
                     loadUrl(url)
-                }
-            },
-            update = { view ->
-                if (view.url != url) {
-                    view.loadUrl(url)
                 }
             }
         )
     }
 
-    private fun injectWebAudioBridge(view: WebView) {
-        Log.d(TAG, "Injecting JS WebAudio bridge into ${view.url}")
-        view.evaluateJavascript(WEB_AUDIO_BRIDGE_SCRIPT) { result ->
-            Log.d(TAG, "JS WebAudio bridge injection result=$result url=${view.url}")
-        }
-    }
-
-    inner class WebViewAudioBridge {
-        @JavascriptInterface
-        fun onAmplitude(rawAmplitude: String) {
-            val parsedAmplitude = rawAmplitude.toFloatOrNull()
-            if (parsedAmplitude == null || !parsedAmplitude.isFinite()) {
-                Log.w(TAG, "Invalid JS WebAudio amplitude=$rawAmplitude")
-                return
-            }
-            val amplitude = parsedAmplitude.coerceIn(0f, 1f)
-            hapticInputRouter.acquire(HapticSource.WEBVIEW)
-            val emitted = hapticInputRouter.emit(HapticSource.WEBVIEW, amplitude)
-            val now = SystemClock.elapsedRealtime()
-            if (now - bridgeLastLogMs >= LOG_INTERVAL_MS) {
-                Log.d(TAG, "JS WebAudio amplitude=$amplitude emitted=$emitted")
-                bridgeLastLogMs = now
-            }
-        }
-
-        @JavascriptInterface
-        fun onBridgeError(message: String) {
-            Log.w(TAG, "JS WebAudio bridge error: $message")
-        }
-    }
-
     companion object {
-        private const val TAG = "WebViewActivity"
-        private const val JS_BRIDGE_NAME = "VibePlayerAudioBridge"
-        private const val JS_LOG_PREFIX = "[VibePlayer]"
-        private const val LOG_INTERVAL_MS = 1_000L
-        const val EXTRA_URL = "ru.spgsroot.vibeplayer.ui.webview.EXTRA_URL"
+        const val EXTRA_URL = "extra_url"
 
-        private val WEB_AUDIO_BRIDGE_SCRIPT = """
-            (function() {
-              function log(message) {
-                if (window.console && window.console.log) console.log('[VibePlayer] ' + message);
-              }
-
-              function warn(message) {
-                if (window.console && window.console.warn) console.warn('[VibePlayer] ' + message);
-              }
-
-              if (window.__vibePlayerAudioBridgeInstalled) {
-                log('WebAudio bridge already installed');
-                return;
-              }
-              window.__vibePlayerAudioBridgeInstalled = true;
-              log('WebAudio bridge installing');
-
-              var AudioContextCtor = window.AudioContext || window.webkitAudioContext;
-              if (!AudioContextCtor) {
-                window.VibePlayerAudioBridge && window.VibePlayerAudioBridge.onBridgeError('AudioContext is unavailable');
-                return;
-              }
-
-              var context = null;
-              var attachedElements = new WeakSet();
-              var lastNoMediaLogMs = 0;
-
-              function sendAmplitude(value) {
-                if (window.VibePlayerAudioBridge && window.VibePlayerAudioBridge.onAmplitude) {
-                  window.VibePlayerAudioBridge.onAmplitude(String(value));
-                }
-              }
-
-              function sendError(message) {
-                warn(message);
-                if (window.VibePlayerAudioBridge && window.VibePlayerAudioBridge.onBridgeError) {
-                  window.VibePlayerAudioBridge.onBridgeError(String(message));
-                }
-              }
-
-              function ensureContext() {
-                if (!context) context = new AudioContextCtor();
-                if (context.state === 'suspended') context.resume().catch(function() {});
-                return context;
-              }
-
-              function attach(element) {
-                if (!element || attachedElements.has(element)) return;
-                attachedElements.add(element);
-
-                try {
-                  var ctx = ensureContext();
-                  var source = ctx.createMediaElementSource(element);
-                  var analyser = ctx.createAnalyser();
-                  analyser.fftSize = 1024;
-                  source.connect(analyser);
-                  analyser.connect(ctx.destination);
-                  log('Attached media element tag=' + element.tagName + ' src=' + (element.currentSrc || element.src || 'inline'));
-
-                  var data = new Uint8Array(analyser.fftSize);
-                  function tick() {
-                    if (element.isConnected === false) return;
-                    if (element.isConnected === undefined && !document.contains(element)) return;
-                    if (!element.paused && !element.ended) {
-                      if (ctx.state === 'suspended') ctx.resume().catch(function() {});
-                      analyser.getByteTimeDomainData(data);
-                      var sum = 0;
-                      for (var i = 0; i < data.length; i++) {
-                        var sample = (data[i] - 128) / 128;
-                        sum += sample * sample;
-                      }
-                      sendAmplitude(Math.sqrt(sum / data.length).toFixed(4));
-                    }
-                    window.requestAnimationFrame(tick);
-                  }
-                  window.requestAnimationFrame(tick);
-                } catch (error) {
-                  sendError(error && error.message ? error.message : error);
-                }
-              }
-
-              function collectMedia(root, result) {
-                if (!root || !root.querySelectorAll) return result;
-
-                var media = root.querySelectorAll('audio,video');
-                for (var i = 0; i < media.length; i++) result.push(media[i]);
-
-                var all = root.querySelectorAll('*');
-                for (var j = 0; j < all.length; j++) {
-                  if (all[j].shadowRoot) collectMedia(all[j].shadowRoot, result);
-                }
-                return result;
-              }
-
-              function scan() {
-                var media = collectMedia(document, []);
-                if (!media.length) {
-                  var now = Date.now();
-                  if (now - lastNoMediaLogMs >= 2000) {
-                    sendError('No audio/video elements found on page scan');
-                    lastNoMediaLogMs = now;
-                  }
-                  return;
-                }
-                for (var i = 0; i < media.length; i++) attach(media[i]);
-              }
-
-              var originalPlay = HTMLMediaElement.prototype.play;
-              HTMLMediaElement.prototype.play = function() {
-                attach(this);
-                return originalPlay.apply(this, arguments);
-              };
-
-              document.addEventListener('click', function() {
-                ensureContext();
-                scan();
-              }, true);
-
-              new MutationObserver(scan).observe(document.documentElement || document, {
-                childList: true,
-                subtree: true
-              });
-
-              scan();
-            })();
-        """.trimIndent()
+        fun isOpenableWebViewUrl(url: String): Boolean = url.trim().startsWith("https://")
     }
 }

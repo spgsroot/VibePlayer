@@ -45,7 +45,9 @@ private fun AuthScreenPreview() {
 @Composable
 fun AuthScreen(
     onVerifyPassword: suspend (String) -> Boolean,
-    onAuthenticated: () -> Unit
+    onAuthenticated: () -> Unit,
+    statusMessage: String? = null,
+    inputEnabled: Boolean = true
 ) {
     var password by remember { mutableStateOf("") }
     var isError by remember { mutableStateOf(false) }
@@ -97,7 +99,7 @@ fun AuthScreen(
     }
 
     fun appendDigit(digit: String) {
-        if (password.length < PIN_LENGTH && !isLoading && !isError) {
+        if (password.length < PIN_LENGTH && !isLoading && !isError && inputEnabled) {
             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) // Легкая отдача на клик
             password += digit
 
@@ -108,7 +110,7 @@ fun AuthScreen(
     }
 
     fun removeDigit() {
-        if (password.isNotEmpty() && !isLoading && !isError) {
+        if (password.isNotEmpty() && !isLoading && !isError && inputEnabled) {
             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
             password = password.dropLast(1)
         }
@@ -157,7 +159,7 @@ fun AuthScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = stringResource(R.string.enter_pin),
+                    text = statusMessage ?: stringResource(R.string.enter_pin),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

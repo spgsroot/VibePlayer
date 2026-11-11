@@ -43,6 +43,7 @@ import ru.spgsroot.vibeplayer.domain.dsp.AudioAnalyzer
 import ru.spgsroot.vibeplayer.domain.dsp.HapticInputRouter
 import ru.spgsroot.vibeplayer.domain.dsp.HapticSource
 import javax.inject.Inject
+import java.util.concurrent.atomic.AtomicInteger
 
 @AndroidEntryPoint
 class WebViewAudioCaptureService : Service() {
@@ -63,6 +64,7 @@ class WebViewAudioCaptureService : Service() {
     private var activeMediaProjection: MediaProjection? = null
     private var mediaProjectionCallback: MediaProjection.Callback? = null
     private val resourceLock = Any()
+    private val captureGeneration = AtomicInteger(0)
     private var lastReadLogMs = 0L
 
     override fun onCreate() {
@@ -121,6 +123,7 @@ class WebViewAudioCaptureService : Service() {
         }
 
         stopCapture()
+        val generation = captureGeneration.incrementAndGet()
         if (!hapticInputRouter.acquire(HapticSource.WEBVIEW)) {
             Log.w(TAG, "Unable to acquire WEBVIEW haptic source")
             stopForeground(Service.STOP_FOREGROUND_REMOVE)
@@ -155,10 +158,10 @@ class WebViewAudioCaptureService : Service() {
         )
 
         captureJob = serviceScope.launch {
-            runCaptureLoop(mediaProjection)
+            runCaptureLoop(mediaProjection, generation)
         }.also { job ->
             job.invokeOnCompletion { cause ->
-                if (cause !is CancellationException) {
+                if (cause !is CancellationException && generation == captureGeneration.get()) {
                     stopForeground(Service.STOP_FOREGROUND_REMOVE)
                     stopSelf()
                 }
@@ -168,22 +171,26 @@ class WebViewAudioCaptureService : Service() {
 
     @RequiresApi(Build.VERSION_CODES.Q)
     @SuppressLint("MissingPermission")
-    private suspend fun runCaptureLoop(mediaProjection: MediaProjection) {
+    private suspend fun runCaptureLoop(mediaProjection: MediaProjection, generation: Int) {
         val audioRecord = runCatching { buildAudioRecord(mediaProjection) }.getOrElse {
             Log.e(TAG, "Unable to build AudioRecord", it)
-            releaseCaptureResources()
-            hapticInputRouter.release(HapticSource.WEBVIEW)
-            stopForeground(Service.STOP_FOREGROUND_REMOVE)
-            stopSelf()
+            if (generation == captureGeneration.get()) {
+                releaseCaptureResources()
+                hapticInputRouter.release(HapticSource.WEBVIEW)
+                stopForeground(Service.STOP_FOREGROUND_REMOVE)
+                stopSelf()
+            }
             return
         }
         if (audioRecord.state != AudioRecord.STATE_INITIALIZED) {
             Log.e(TAG, "AudioRecord is not initialized")
             audioRecord.release()
-            releaseCaptureResources()
-            hapticInputRouter.release(HapticSource.WEBVIEW)
-            stopForeground(Service.STOP_FOREGROUND_REMOVE)
-            stopSelf()
+            if (generation == captureGeneration.get()) {
+                releaseCaptureResources()
+                hapticInputRouter.release(HapticSource.WEBVIEW)
+                stopForeground(Service.STOP_FOREGROUND_REMOVE)
+                stopSelf()
+            }
             return
         }
 
@@ -191,14 +198,18 @@ class WebViewAudioCaptureService : Service() {
 
         try {
             audioRecord.startRecording()
-            activeAudioRecord = audioRecord
+            synchronized(resourceLock) {
+                if (generation == captureGeneration.get()) {
+                    activeAudioRecord = audioRecord
+                }
+            }
             Log.d(TAG, "AudioRecord capture loop started")
             while (currentCoroutineContext().isActive) {
                 val read = audioRecord.read(samples, 0, samples.size)
                 if (read > 0) {
                     val analysisSamples = if (read == samples.size) samples else samples.copyOf(read)
                     val amplitude = audioAnalyzer.analyze(analysisSamples, SAMPLE_RATE)
-                    val emitted = emitWebViewAmplitude(amplitude)
+                    val emitted = hapticInputRouter.emit(HapticSource.WEBVIEW, amplitude)
                     logReadProgress(read, amplitude, emitted)
                 } else if (read < 0) {
                     Log.e(TAG, "AudioRecord read failed: $read")
@@ -209,22 +220,16 @@ class WebViewAudioCaptureService : Service() {
             }
         } finally {
             Log.d(TAG, "AudioRecord capture loop stopped")
-            releaseCaptureResources()
-            hapticInputRouter.release(HapticSource.WEBVIEW)
+            if (generation == captureGeneration.get()) {
+                releaseCaptureResources()
+                hapticInputRouter.release(HapticSource.WEBVIEW)
+            } else {
+                runCatching { audioRecord.release() }
+            }
         }
     }
 
-    private fun emitWebViewAmplitude(amplitude: Float): Boolean {
-        if (hapticInputRouter.emit(HapticSource.WEBVIEW, amplitude)) {
-            return true
-        }
 
-        // WebView capture can start while PLAYER is still active or PLAYER can briefly re-acquire
-        // during pause transitions. Re-acquire WEBVIEW here so captured WebView audio is not read
-        // successfully but dropped before it reaches HapticMapper/CommandSender.
-        return hapticInputRouter.acquire(HapticSource.WEBVIEW) &&
-            hapticInputRouter.emit(HapticSource.WEBVIEW, amplitude)
-    }
 
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
     @RequiresApi(Build.VERSION_CODES.Q)
@@ -261,6 +266,7 @@ class WebViewAudioCaptureService : Service() {
     }
 
     private fun stopCapture() {
+        captureGeneration.incrementAndGet()
         captureJob?.cancel()
         captureJob = null
         releaseCaptureResources()

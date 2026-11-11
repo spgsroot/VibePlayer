@@ -15,7 +15,6 @@ class HapticInputRouter @Inject constructor(
 
     fun acquire(source: HapticSource): Boolean {
         var previousSource: HapticSource? = null
-        var shouldReset = false
         val acquired = synchronized(lock) {
             previousSource = activeSource
             when {
@@ -25,15 +24,11 @@ class HapticInputRouter @Inject constructor(
                 }
                 canAcquireOverActiveSource(requested = source, active = activeSource) -> {
                     activeSource = source
-                    shouldReset = true
+                    hapticMapper.reset()
                     true
                 }
                 else -> false
             }
-        }
-
-        if (shouldReset) {
-            hapticMapper.reset()
         }
         if (acquired && previousSource != source) {
             Log.d(TAG, "Haptic source acquired: $source previous=$previousSource")
@@ -44,47 +39,34 @@ class HapticInputRouter @Inject constructor(
     }
 
     fun emit(source: HapticSource, rawAmplitude: Float): Boolean {
-        var currentSource: HapticSource? = null
-        var shouldReset = false
-        val shouldEmit = synchronized(lock) {
-            if (activeSource == null) {
-                activeSource = source
-                currentSource = source
-                true
-            } else if (source == HapticSource.PLAYER && activeSource == HapticSource.WEBVIEW) {
-                currentSource = activeSource
-                activeSource = source
-                shouldReset = true
-                true
+        val emitted = synchronized(lock) {
+            val ownsSource = activeSource == null || activeSource == source
+            if (!ownsSource) {
+                false
             } else {
-                currentSource = activeSource
-                activeSource == source
+                activeSource = source
+                hapticMapper.emitNonBlocking(normalizeAmplitude(source, rawAmplitude))
+                true
             }
         }
-        if (shouldEmit) {
-            if (shouldReset) {
-                Log.d(TAG, "Haptic source switched by emit: $source previous=$currentSource")
-                hapticMapper.reset()
-            }
-            hapticMapper.emitNonBlocking(normalizeAmplitude(source, rawAmplitude))
-        } else {
-            logBlocked("emit", source, currentSource)
+        if (!emitted) {
+            logBlocked("emit", source, activeSource)
         }
-        return shouldEmit
+        return emitted
     }
 
     fun release(source: HapticSource) {
-        val shouldReset = synchronized(lock) {
-            if (activeSource == source) {
-                activeSource = null
-                true
-            } else {
+        val released = synchronized(lock) {
+            if (activeSource != source) {
                 false
+            } else {
+                activeSource = null
+                hapticMapper.reset()
+                true
             }
         }
-        if (shouldReset) {
+        if (released) {
             Log.d(TAG, "Haptic source released: $source")
-            hapticMapper.reset()
         }
     }
 

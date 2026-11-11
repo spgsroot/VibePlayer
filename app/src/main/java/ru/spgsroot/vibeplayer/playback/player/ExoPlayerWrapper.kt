@@ -12,7 +12,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import ru.spgsroot.vibeplayer.domain.dsp.AudioAnalyzer
-import ru.spgsroot.vibeplayer.domain.dsp.HapticMapper
+import ru.spgsroot.vibeplayer.domain.dsp.HapticInputRouter
+import ru.spgsroot.vibeplayer.domain.dsp.HapticSource
 import ru.spgsroot.vibeplayer.domain.model.Video
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -22,14 +23,14 @@ import javax.inject.Singleton
 class ExoPlayerWrapper @Inject constructor(
     @ApplicationContext private val context: Context,
     private val audioAnalyzer: AudioAnalyzer,
-    private val hapticMapper: HapticMapper
+    private val hapticInputRouter: HapticInputRouter
 ) : Player.Listener {
     private val _state = MutableStateFlow<PlayerState>(PlayerState.Idle)
     val state: StateFlow<PlayerState> = _state
 
     private var currentVideoId: Long? = null
 
-    private val dspAudioProcessor = DspAudioProcessor(audioAnalyzer, hapticMapper)
+    private val dspAudioProcessor = DspAudioProcessor(audioAnalyzer, hapticInputRouter)
 
     private val player: ExoPlayer by lazy {
         ExoPlayer.Builder(context)
@@ -49,9 +50,9 @@ class ExoPlayerWrapper @Inject constructor(
 
     fun play(video: Video) {
         currentVideoId = video.id
+        hapticInputRouter.acquire(HapticSource.PLAYER)
         val mediaItem = MediaItem.fromUri(video.filePath)
-        
-        // Reset to beginning before playing new video
+
         player.seekTo(0)
         player.setMediaItem(mediaItem)
         player.prepare()
@@ -61,6 +62,7 @@ class ExoPlayerWrapper @Inject constructor(
 
     fun pause() {
         player.pause()
+        hapticInputRouter.release(HapticSource.PLAYER)
         val currentState = _state.value
         if (currentState is PlayerState.Playing) {
             _state.value = PlayerState.Paused(currentState.video, player.currentPosition)
@@ -68,6 +70,7 @@ class ExoPlayerWrapper @Inject constructor(
     }
 
     fun resume() {
+        hapticInputRouter.acquire(HapticSource.PLAYER)
         player.play()
         val currentState = _state.value
         if (currentState is PlayerState.Paused) {
@@ -90,6 +93,7 @@ class ExoPlayerWrapper @Inject constructor(
     fun getPlayer(): Player = player
 
     fun play() {
+        hapticInputRouter.acquire(HapticSource.PLAYER)
         player.play()
         val currentState = _state.value
         if (currentState is PlayerState.Paused) {

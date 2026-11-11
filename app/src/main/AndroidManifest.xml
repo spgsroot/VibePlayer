@@ -13,7 +13,7 @@
 
     <application
         android:name=".VibePlayerApplication"
-        android:allowAudioPlaybackCapture="true"
+        android:allowAudioPlaybackCapture="false"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -58,7 +58,6 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:mimeType="video/*" />
                 <data android:scheme="content" />
-                <data android:scheme="file" />
             </intent-filter>
         </activity>
 

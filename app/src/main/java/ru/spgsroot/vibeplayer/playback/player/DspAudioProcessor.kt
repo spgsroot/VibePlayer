@@ -7,14 +7,15 @@ import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.audio.BaseAudioProcessor
 import androidx.media3.common.util.UnstableApi
 import ru.spgsroot.vibeplayer.domain.dsp.AudioAnalyzer
-import ru.spgsroot.vibeplayer.domain.dsp.HapticMapper
+import ru.spgsroot.vibeplayer.domain.dsp.HapticInputRouter
+import ru.spgsroot.vibeplayer.domain.dsp.HapticSource
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 @UnstableApi
 class DspAudioProcessor(
     private val audioAnalyzer: AudioAnalyzer,
-    private val hapticMapper: HapticMapper
+    private val hapticInputRouter: HapticInputRouter
 ) : BaseAudioProcessor() {
 
     private var lastAnalysisMs = 0L
@@ -57,7 +58,7 @@ class DspAudioProcessor(
             val rawAmplitude = audioAnalyzer.analyze(samples)
             val mappedAmplitude = mapPlayerAmplitude(rawAmplitude)
             logAmplitude(rawAmplitude, mappedAmplitude, now)
-            hapticMapper.emitNonBlocking(mappedAmplitude)
+            hapticInputRouter.emit(HapticSource.PLAYER, mappedAmplitude)
             lastAnalysisMs = now
         }
 
@@ -65,7 +66,7 @@ class DspAudioProcessor(
     }
 
     override fun onReset() {
-        hapticMapper.reset()
+        hapticInputRouter.release(HapticSource.PLAYER)
     }
 
     private fun mapPlayerAmplitude(rawAmplitude: Float): Float {

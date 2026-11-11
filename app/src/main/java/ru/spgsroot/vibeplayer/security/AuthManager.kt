@@ -4,6 +4,8 @@ import android.content.Context
 import android.util.Base64
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -27,12 +29,17 @@ class AuthManager @Inject constructor(
 ) {
     private val passwordKey = stringPreferencesKey("password_hash")
     private val onboardingKey = booleanPreferencesKey("onboarding_completed")
-
+    private val failuresKey = intPreferencesKey("pin_failures")
+    private val lockedUntilKey = longPreferencesKey("pin_locked_until")
+    private val resetRequiredKey = booleanPreferencesKey("pin_reset_required")
     suspend fun setPassword(password: String) {
         val hash = withContext(Dispatchers.Default) { hashPassword(password) }
         context.authDataStore.edit { prefs ->
             prefs[passwordKey] = hash
             prefs[onboardingKey] = true
+            prefs[failuresKey] = 0
+            prefs[lockedUntilKey] = 0L
+            prefs[resetRequiredKey] = false
         }
     }
 
@@ -43,6 +50,9 @@ class AuthManager @Inject constructor(
         val hash = withContext(Dispatchers.Default) { hashPassword(newPassword) }
         context.authDataStore.edit { prefs ->
             prefs[passwordKey] = hash
+            prefs[failuresKey] = 0
+            prefs[lockedUntilKey] = 0L
+            prefs[resetRequiredKey] = false
         }
         return true
     }
@@ -54,23 +64,41 @@ class AuthManager @Inject constructor(
     }
 
     suspend fun verifyPassword(password: String): Boolean {
-        val stored = context.authDataStore.data.map { it[passwordKey] }.first()
-        if (stored == null) return false
-
-        val isValid = withContext(Dispatchers.Default) { verifyStoredPassword(password, stored) }
-
-        if (!isValid) {
+        val prefs = context.authDataStore.data.first()
+        val stored = prefs[passwordKey] ?: return false
+        val now = System.currentTimeMillis()
+        val lockout = PinLockoutState(
+            failures = prefs[failuresKey] ?: 0,
+            lockedUntilEpochMs = prefs[lockedUntilKey] ?: 0L
+        )
+        if (PinLockout.remainingMs(lockout, now) > 0L) return false
+        if (StoredPassword.isLegacy(stored)) {
+            context.authDataStore.edit { it[resetRequiredKey] = true }
             return false
         }
 
-        if (isLegacyHash(stored)) {
-            val upgradedHash = withContext(Dispatchers.Default) { hashPassword(password) }
-            context.authDataStore.edit { prefs ->
-                prefs[passwordKey] = upgradedHash
-            }
+        val isValid = withContext(Dispatchers.Default) { verifyStoredPassword(password, stored) }
+        val next = if (isValid) PinLockout.registerSuccess() else PinLockout.registerFailure(lockout, now)
+        context.authDataStore.edit { editable ->
+            editable[failuresKey] = next.failures
+            editable[lockedUntilKey] = next.lockedUntilEpochMs
         }
+        return isValid
+    }
 
-        return true
+    suspend fun isResetRequired(): Boolean {
+        return context.authDataStore.data.map { it[resetRequiredKey] ?: false }.first()
+    }
+
+    suspend fun lockRemainingMs(now: Long = System.currentTimeMillis()): Long {
+        val prefs = context.authDataStore.data.first()
+        return PinLockout.remainingMs(
+            PinLockoutState(
+                failures = prefs[failuresKey] ?: 0,
+                lockedUntilEpochMs = prefs[lockedUntilKey] ?: 0L
+            ),
+            now
+        )
     }
 
     fun isPasswordSetFlow(): Flow<Boolean> {
@@ -97,17 +125,12 @@ class AuthManager @Inject constructor(
     }
 
     private fun verifyStoredPassword(password: String, stored: String): Boolean {
-        if (isLegacyHash(stored)) {
-            return stored == password.hashCode().toString()
-        }
-
+        if (StoredPassword.isLegacy(stored)) return false
         val parts = stored.split(DELIMITER)
-        if (parts.size != HASH_PARTS || parts[0] != HASH_PREFIX) {
-            return false
-        }
-
+        if (parts.size != HASH_PARTS || parts[0] != HASH_PREFIX) return false
         return runCatching {
             val iterations = parts[1].toInt()
+            if (iterations !in 1..PBKDF2_ITERATIONS) return false
             val salt = Base64.decode(parts[2], Base64.NO_WRAP)
             val expectedHash = Base64.decode(parts[3], Base64.NO_WRAP)
             val actualHash = deriveHash(password, salt, iterations)
@@ -127,7 +150,6 @@ class AuthManager @Inject constructor(
         }
     }
 
-    private fun isLegacyHash(stored: String): Boolean = !stored.startsWith("$HASH_PREFIX$DELIMITER")
 
     companion object {
         private const val HASH_PREFIX = "pbkdf2_sha256"

@@ -86,9 +86,8 @@ class GalleryViewModel @Inject constructor(
             // Remove from playlist first
             playlistManager.removeVideo(video)
 
-            // Delete from storage (video + thumbnail)
+            internalStorageManager.deleteFile(video.filePath)
             internalStorageManager.delete(video.id)
-
             // Delete from database
             videoRepository.deleteById(video.id)
         }

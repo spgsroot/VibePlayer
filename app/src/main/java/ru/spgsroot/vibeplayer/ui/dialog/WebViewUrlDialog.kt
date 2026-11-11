@@ -48,7 +48,7 @@ fun WebViewUrlDialog(
                     label = { Text(stringResource(R.string.label_url)) },
                     isError = isError,
                     supportingText = if (isError) {
-                        { Text(stringResource(R.string.error_invalid_url)) }
+                        { Text(stringResource(R.string.error_webview_https)) }
                     } else {
                         null
                     },
@@ -80,6 +80,6 @@ fun WebViewUrlDialog(
 }
 
 private fun isValidUrl(url: String): Boolean {
-    return (url.startsWith("http://") || url.startsWith("https://")) &&
-        Patterns.WEB_URL.matcher(url).matches()
+    val trimmed = url.trim()
+    return trimmed.startsWith("https://") && Patterns.WEB_URL.matcher(trimmed).matches()
 }

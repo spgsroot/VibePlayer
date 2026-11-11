@@ -58,6 +58,9 @@
     <!-- URL Input Dialog -->
     <string name="dialog_download">Скачать по ссылке</string>
     <string name="error_invalid_url">Введите корректный http/https URL</string>
+    <string name="error_webview_https">Откройте сайт по HTTPS</string>
+    <string name="auth_locked_seconds">Повтор через %1$d с</string>
+    <string name="auth_reset_required">Старый PIN больше не действует. Задайте новый.</string>
     <string name="label_url">URL</string>
     <string name="downloading">Скачивание…</string>
     <string name="download_in_progress">Скачиваю видео и добавляю его в библиотеку…</string>

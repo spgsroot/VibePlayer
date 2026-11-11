@@ -58,6 +58,9 @@
     <!-- URL Input Dialog -->
     <string name="dialog_download">Download from URL</string>
     <string name="error_invalid_url">Enter a valid http/https URL</string>
+    <string name="error_webview_https">Open an HTTPS page</string>
+    <string name="auth_locked_seconds">Try again in %1$d s</string>
+    <string name="auth_reset_required">This PIN format is no longer accepted. Set a new PIN.</string>
     <string name="label_url">URL</string>
     <string name="downloading">Downloading…</string>
     <string name="download_in_progress">Downloading video and adding to library…</string>
