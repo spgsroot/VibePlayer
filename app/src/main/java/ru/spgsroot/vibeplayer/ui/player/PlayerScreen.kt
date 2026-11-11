@@ -8,8 +8,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.*
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -20,6 +24,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
+import ru.spgsroot.vibeplayer.R
 import ru.spgsroot.vibeplayer.playback.player.PlayerState
 import ru.spgsroot.vibeplayer.ui.dialog.AddVideoDialog
 import ru.spgsroot.vibeplayer.ui.dialog.BatchImportDialog
@@ -99,18 +104,18 @@ fun PlayerScreen(
                             IconButton(onClick = {
                                 scope.launch { drawerState.open() }
                             }) {
-                                Icon(Icons.Default.Menu, "Menu")
+                                Icon(Icons.Default.Menu, stringResource(R.string.content_description_menu))
                             }
                         },
                         actions = {
                             IconButton(onClick = { navController.navigate("gallery") }) {
-                                Icon(Icons.Default.VideoLibrary, "Gallery")
+                                Icon(Icons.Default.VideoLibrary, stringResource(R.string.content_description_gallery))
                             }
                             IconButton(onClick = { navController.navigate("manga") }) {
-                                Icon(Icons.Default.MenuBook, "Library")
+                                Icon(Icons.AutoMirrored.Filled.MenuBook, stringResource(R.string.content_description_library))
                             }
                             IconButton(onClick = { showAddDialog = true }) {
-                                Icon(Icons.Default.Add, "Add video")
+                                Icon(Icons.Default.Add, stringResource(R.string.content_description_add_video))
                             }
                         }
                     )

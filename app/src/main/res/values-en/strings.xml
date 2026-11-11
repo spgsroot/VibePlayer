@@ -7,9 +7,11 @@
     <string name="invalid_pin">Invalid PIN</string>
     <string name="enter_4_digits">Enter 4 digits</string>
     <string name="delete">Delete</string>
-    <string name="btn_set_password">Set password</string>
+    <string name="btn_set_password">Set PIN</string>
     <!-- Settings -->
     <string name="settings_title">Settings</string>
+    <string name="settings_device">Device</string>
+    <string name="settings_power_boost">Power boost</string>
     <string name="timer_label">Auto-switch timer</string>
     <string name="timer_full_video">Full video</string>
     <string name="timer_seconds">%ds</string>
@@ -21,12 +23,12 @@
     <string name="dsp_threshold">Threshold: %.1f%%</string>
 
     <!-- Buttons -->
-    <string name="btn_app_password_set">🔒 Set Password</string>
-    <string name="btn_app_password_change">🔒 Change Password</string>
-    <string name="btn_device_connect">🔗 Device Connection</string>
+    <string name="btn_app_password_set">Set password</string>
+    <string name="btn_app_password_change">Change password</string>
+    <string name="btn_device_connect">Connect device</string>
 
     <!-- Support -->
-    <string name="support_title">❤ Support</string>
+    <string name="support_title">Support</string>
     <string name="support_ton">TON:</string>
 
     <!-- Language -->
@@ -78,14 +80,14 @@
     <string name="manga_empty">No pages</string>
 
     <!-- Password Dialog -->
-    <string name="dialog_set_password">Set Password</string>
-    <string name="dialog_change_password">Change Password</string>
-    <string name="password_hint">Password will be used to protect the app</string>
-    <string name="label_current_password">Current Password</string>
-    <string name="label_password">Password</string>
-    <string name="label_confirm_password">Confirm Password</string>
-    <string name="error_password_min_length">Minimum 4 characters</string>
-    <string name="error_passwords_mismatch">Passwords do not match</string>
+    <string name="dialog_set_password">Set PIN</string>
+    <string name="dialog_change_password">Change PIN</string>
+    <string name="password_hint">A 4-digit PIN locks the app</string>
+    <string name="label_current_password">Current PIN</string>
+    <string name="label_password">PIN</string>
+    <string name="label_confirm_password">Confirm PIN</string>
+    <string name="error_password_min_length">Enter 4 digits</string>
+    <string name="error_passwords_mismatch">PINs do not match</string>
     <string name="error_current_password_wrong">Wrong current password</string>
     <string name="btn_set">Set</string>
     <string name="btn_change">Change</string>
@@ -140,17 +142,28 @@
     <string name="btn_open_webview">Open</string>
 
     <!-- Auth Screen -->
-    <string name="auth_enter_password">Enter password</string>
-    <string name="auth_wrong_password">Wrong password</string>
+    <string name="auth_enter_password">Enter PIN</string>
+    <string name="auth_wrong_password">Wrong PIN</string>
     <string name="btn_login">Login</string>
 
     <!-- Content Descriptions -->
     <string name="content_description_back">Back</string>
     <string name="content_description_delete_selected">Delete selected</string>
+    <string name="content_description_menu">Menu</string>
+    <string name="content_description_gallery">Gallery</string>
+    <string name="content_description_library">Library</string>
+    <string name="content_description_add_video">Add video</string>
+    <string name="content_description_more">More</string>
 
     <!-- Empty State -->
     <string name="empty_playlist">Playlist is empty</string>
-    <string name="empty_add_first">Add First Video</string>
+    <string name="empty_add_first">Add the first video</string>
+    <string name="empty_gallery">No videos in the gallery yet</string>
+    <string name="manga_haptic">Page-turn intensity</string>
+    <string name="manga_saved">Saved</string>
+    <string name="manga_results">Search results</string>
+    <string name="manga_page">%1$d / %2$d</string>
+    <string name="manga_none">Nothing saved yet</string>
 
     <!-- Notifications -->
     <string name="notification_download_title">Downloading video</string>

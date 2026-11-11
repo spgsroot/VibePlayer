@@ -55,8 +55,7 @@ fun GalleryItemCard(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(9f / 16f)
-                .clip(RoundedCornerShape(8.dp))
+                .aspectRatio(16f / 9f)
                 .combinedClickable(
                     onClick = onVideoClick,
                     onLongClick = onLongClick
@@ -120,6 +119,7 @@ fun GalleryItemCard(
                 }
 
                 // Dropdown menu button
+                if (!isSelected) {
                 IconButton(
                     onClick = { showDropdown = true },
                     modifier = Modifier
@@ -128,9 +128,10 @@ fun GalleryItemCard(
                 ) {
                     Icon(
                         Icons.Default.MoreVert,
-                        contentDescription = "More",
+                        contentDescription = stringResource(R.string.content_description_more),
                         tint = Color.White
                     )
+                }
                 }
 
                 DropdownMenu(

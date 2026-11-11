@@ -84,7 +84,7 @@ fun DeviceScanDialog(
                     value = serverUrl,
                     onValueChange = { serverUrl = it },
                     label = { Text(stringResource(R.string.label_server_url)) },
-                    placeholder = { Text("ws://192.168.1.100:12345") },
+                    placeholder = { Text("ws://127.0.0.1:12345") },
                     singleLine = true,
                     enabled = canEditUrl,
                     leadingIcon = {

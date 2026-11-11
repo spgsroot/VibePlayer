@@ -4,12 +4,14 @@
     <!-- Auth -->
     <string name="enter_pin">Введите PIN-код</string>
     <string name="verifying">Проверка...</string>
-    <string name="invalid_pin">Неверный пароль</string>
+    <string name="invalid_pin">Неверный PIN</string>
     <string name="enter_4_digits">Введите 4 цифры</string>
     <string name="delete">Удалить</string>
-    <string name="btn_set_password">Установить пароль</string>
+    <string name="btn_set_password">Задать PIN</string>
     <!-- Settings -->
     <string name="settings_title">Настройки</string>
+    <string name="settings_device">Устройство</string>
+    <string name="settings_power_boost">Усиление</string>
     <string name="timer_label">Таймер автопереключения</string>
     <string name="timer_full_video">Полное видео</string>
     <string name="timer_seconds">%dс</string>
@@ -21,12 +23,12 @@
     <string name="dsp_threshold">Порог: %.1f%%</string>
 
     <!-- Buttons -->
-    <string name="btn_app_password_set">🔒 Установить пароль</string>
-    <string name="btn_app_password_change">🔒 Сменить пароль</string>
-    <string name="btn_device_connect">🔗 Подключение устройства</string>
+    <string name="btn_app_password_set">Установить пароль</string>
+    <string name="btn_app_password_change">Сменить пароль</string>
+    <string name="btn_device_connect">Подключить устройство</string>
 
     <!-- Support -->
-    <string name="support_title">❤ Support</string>
+    <string name="support_title">Поддержка</string>
     <string name="support_ton">TON:</string>
 
     <!-- Language -->
@@ -78,14 +80,14 @@
     <string name="manga_empty">Страниц нет</string>
 
     <!-- Password Dialog -->
-    <string name="dialog_set_password">Установить пароль</string>
-    <string name="dialog_change_password">Сменить пароль</string>
-    <string name="password_hint">Пароль будет использоваться для защиты приложения</string>
-    <string name="label_current_password">Текущий пароль</string>
-    <string name="label_password">Пароль</string>
-    <string name="label_confirm_password">Подтвердите пароль</string>
-    <string name="error_password_min_length">Минимум 4 символа</string>
-    <string name="error_passwords_mismatch">Пароли не совпадают</string>
+    <string name="dialog_set_password">Задать PIN</string>
+    <string name="dialog_change_password">Сменить PIN</string>
+    <string name="password_hint">PIN из 4 цифр закрывает приложение</string>
+    <string name="label_current_password">Текущий PIN</string>
+    <string name="label_password">PIN</string>
+    <string name="label_confirm_password">Повторите PIN</string>
+    <string name="error_password_min_length">Введите 4 цифры</string>
+    <string name="error_passwords_mismatch">PIN не совпадают</string>
     <string name="error_current_password_wrong">Неверный текущий пароль</string>
     <string name="btn_set">Установить</string>
     <string name="btn_change">Сменить</string>
@@ -140,17 +142,28 @@
     <string name="btn_open_webview">Открыть</string>
 
     <!-- Auth Screen -->
-    <string name="auth_enter_password">Введите пароль</string>
-    <string name="auth_wrong_password">Неверный пароль</string>
+    <string name="auth_enter_password">Введите PIN</string>
+    <string name="auth_wrong_password">Неверный PIN</string>
     <string name="btn_login">Войти</string>
 
     <!-- Content Descriptions -->
     <string name="content_description_back">Назад</string>
     <string name="content_description_delete_selected">Удалить выбранное</string>
+    <string name="content_description_menu">Меню</string>
+    <string name="content_description_gallery">Галерея</string>
+    <string name="content_description_library">Библиотека</string>
+    <string name="content_description_add_video">Добавить видео</string>
+    <string name="content_description_more">Ещё</string>
 
     <!-- Empty State -->
     <string name="empty_playlist">Плейлист пуст</string>
     <string name="empty_add_first">Добавить первое видео</string>
+    <string name="empty_gallery">В галерее пока нет видео</string>
+    <string name="manga_haptic">Сила импульса при листании</string>
+    <string name="manga_saved">Сохранённые</string>
+    <string name="manga_results">Результаты поиска</string>
+    <string name="manga_page">%1$d / %2$d</string>
+    <string name="manga_none">В библиотеке пока ничего нет</string>
 
     <!-- Notifications -->
     <string name="notification_download_title">Скачивание видео</string>

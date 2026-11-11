@@ -115,6 +115,7 @@ fun AppNavigation(authManager: AuthManager, authSession: AuthSession) {
         }
     }
 
+
     LaunchedEffect(unlocked, startDestination) {
         val destination = startDestination ?: return@LaunchedEffect
         if (destination == "onboarding") return@LaunchedEffect

@@ -48,16 +48,16 @@ fun SettingsDrawer(
 
     ModalDrawerSheet {
         LazyColumn(
-            modifier = Modifier
-                .fillMaxHeight()
-                .padding(16.dp)
+            modifier = Modifier.fillMaxHeight(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             // ═══════════════════════════════════════════
             // DEVICE CONNECTION SECTION (at top)
             // ═══════════════════════════════════════════
             item {
                 Text(
-                    text = "Device",
+                    text = stringResource(R.string.settings_device),
                     style = MaterialTheme.typography.headlineSmall
                 )
 
@@ -274,15 +274,15 @@ fun PowerBoostSlider(
     onPowerBoostChange: (Float) -> Unit
 ) {
     Column {
-        Text("Power Boost", style = MaterialTheme.typography.titleSmall)
+        Text(stringResource(R.string.settings_power_boost), style = MaterialTheme.typography.titleSmall)
         Slider(
             value = powerBoost,
             onValueChange = onPowerBoostChange,
             valueRange = 0.5f..3.0f,
             steps = 24,
             colors = SliderDefaults.colors(
-                thumbColor = MaterialTheme.colorScheme.tertiary,
-                activeTrackColor = MaterialTheme.colorScheme.tertiary
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary
             )
         )
         Text(
