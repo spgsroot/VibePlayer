@@ -78,6 +78,15 @@
     <string name="manga_save">Save</string>
     <string name="manga_reader">Reader</string>
     <string name="manga_empty">No pages</string>
+    <string name="manga_reader_settings">Reader settings</string>
+    <string name="manga_reader_mode">Reading mode</string>
+    <string name="manga_mode_paged">Paged</string>
+    <string name="manga_mode_strip">Vertical strip</string>
+    <string name="manga_reader_fit">Image fit</string>
+    <string name="manga_fit_contain">Contain</string>
+    <string name="manga_fit_width">Fill width</string>
+    <string name="manga_mirror">Mirror tap zones</string>
+    <string name="manga_jump_page">Page %1$d</string>
     <string name="manga_hub">Manga</string>
     <string name="manga_catalog">Catalog</string>
     <string name="manga_history">History</string>

@@ -5,9 +5,11 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -15,6 +17,7 @@ import kotlinx.coroutines.withContext
 import ru.spgsroot.vibeplayer.data.manga.MangaLibraryRepository
 import ru.spgsroot.vibeplayer.data.manga.MangaCatalogStore
 import ru.spgsroot.vibeplayer.data.manga.NhentaiApi
+import ru.spgsroot.vibeplayer.data.db.ReadHistoryEntity
 import ru.spgsroot.vibeplayer.manga.CatalogQuery
 import ru.spgsroot.vibeplayer.manga.SearchDestination
 import ru.spgsroot.vibeplayer.manga.searchDestination
@@ -25,7 +28,7 @@ import ru.spgsroot.vibeplayer.manga.GallerySummary
 import ru.spgsroot.vibeplayer.manga.LibraryGallery
 import ru.spgsroot.vibeplayer.manga.NhentaiCdn
 import ru.spgsroot.vibeplayer.manga.PageTurnHaptic
-import java.io.File
+import ru.spgsroot.vibeplayer.manga.startPage
 import javax.inject.Inject
 
 data class CatalogState(
@@ -67,6 +70,10 @@ class MangaViewModel @Inject constructor(
 
     private val _detail = MutableStateFlow<GalleryDetail?>(null)
     val detail: StateFlow<GalleryDetail?> = _detail
+    private val _initialPage = MutableStateFlow<Int?>(null)
+    val initialPage: StateFlow<Int?> = _initialPage
+    private var openJob: Job? = null
+    private var historyWrite: Job? = null
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
@@ -128,25 +135,50 @@ class MangaViewModel @Inject constructor(
     }
 
     fun open(id: Int) {
-        val saved = libraryItems.value.find { it.id == id }
-        if (saved != null && saved.pagePaths.isNotEmpty()) {
-            _detail.value = GalleryDetail(saved.id, saved.title, saved.thumbnailPath, saved.pagePaths)
-        }
-        viewModelScope.launch {
-            _error.value = null
+        openJob?.cancel()
+        _detail.value = null
+        _initialPage.value = null
+        _error.value = null
+        openJob = viewModelScope.launch {
             try {
-                _detail.value = withContext(Dispatchers.IO) { api.gallery(id) }
+                val savedPage = withContext(Dispatchers.IO) { catalogStore.getHistory(id)?.page }
+                val saved = library.observe().first().find { it.id == id && it.pagePaths.isNotEmpty() }
+                if (saved != null) {
+                    _initialPage.value = startPage(savedPage, saved.pagePaths.size)
+                    _detail.value = GalleryDetail(saved.id, saved.title, saved.thumbnailPath, saved.pagePaths)
+                }
+                val fetched = withContext(Dispatchers.IO) { api.gallery(id) }
+                if (_detail.value == null) _initialPage.value = startPage(savedPage, fetched.pagePaths.size)
+                _detail.value = fetched
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 if (_detail.value == null) _error.value = e.message ?: "Open failed"
             }
         }
     }
 
-    fun pageModel(path: String): Any? {
-        val id = _detail.value?.id ?: return null
-        val local = library.localPage(id, path)
-        if (local != null && local.exists()) return local
-        return NhentaiCdn.image(path)
+    fun pageModel(galleryId: Int, path: String): Any? {
+        val local = library.localPage(galleryId, path)
+        return local?.takeIf { it.exists() } ?: NhentaiCdn.page(path)
+    }
+
+    fun saveReadHistory(current: GalleryDetail, page: Int) {
+        if (page !in current.pagePaths.indices) return
+        val entry = ReadHistoryEntity(
+            galleryId = current.id,
+            title = current.title,
+            thumbnailPath = current.thumbnailPath,
+            page = page,
+            pageCount = current.pagePaths.size,
+            readAt = System.currentTimeMillis()
+        )
+        // This bounded write must survive the reader's navigation-scoped ViewModel.
+        val previous = historyWrite
+        historyWrite = viewModelScope.launch(NonCancellable + Dispatchers.IO) {
+            previous?.join()
+            catalogStore.upsertHistory(entry)
+        }
     }
 
     fun isSaved(id: Int): Boolean = libraryItems.value.any { it.id == id }
@@ -189,8 +221,4 @@ class MangaViewModel @Inject constructor(
         commandSender.pulse(_intensity.value, PageTurnHaptic.DEFAULT_DURATION_MS)
     }
 
-    fun localFile(path: String): File? {
-        val id = _detail.value?.id ?: return null
-        return library.localPage(id, path)?.takeIf { it.exists() }
-    }
 }

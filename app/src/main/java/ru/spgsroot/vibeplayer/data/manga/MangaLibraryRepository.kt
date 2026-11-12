@@ -29,7 +29,7 @@ class MangaLibraryRepository @Inject constructor(
         withContext(Dispatchers.IO) {
             val paths = detail.pagePaths
             paths.forEachIndexed { index, path ->
-                val url = NhentaiCdn.image(path) ?: return@forEachIndexed
+                val url = NhentaiCdn.page(path) ?: return@forEachIndexed
                 if (files.pageFile(detail.id, path)?.exists() != true) {
                     files.save(detail.id, path, api.download(url))
                 }
