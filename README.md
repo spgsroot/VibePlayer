@@ -29,7 +29,7 @@ The reader shot is the screen after a failed open. It does not contain page imag
 - Switches videos on a timer and changes playback speed.
 - Locks the app with a 4-digit PIN. Repeated failures increase the wait. The database is SQLCipher.
 - Speaks Russian and English. The interface is dark.
-- Searches nhentai, saves a gallery on the device, and marks favorites. Page images are requested from `i1.nhentai.net` and `t1.nhentai.net` without rewriting the path returned by the API. Turning a page sends a short pulse. Its strength is the slider in the reader.
+- Searches nhentai in a catalog that filters by tag, date, and page count, sorts by date or popularity, and opens a native Compose reader. Saves a gallery on the device and marks favorites. Page images are requested from `i1.nhentai.net` and `t1.nhentai.net` without rewriting the path returned by the API. Turning a page sends a short pulse. Page-turn strength is configured in the reader settings sheet, not with a slider on the page.
 
 The nhentai key is compiled into the client and sent only in the `Authorization` header. It is in the public source and can be read from the APK. Minify is off in the release build type.
 
