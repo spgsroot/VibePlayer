@@ -399,7 +399,10 @@ private fun NativeReader(
     if (settings) {
         ModalBottomSheet(onDismissRequest = { settings = false }) {
             Column(
-                Modifier.fillMaxWidth().padding(16.dp).navigationBarsPadding(),
+                Modifier.fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp)
+                    .navigationBarsPadding(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(stringResource(R.string.manga_reader_settings), style = MaterialTheme.typography.titleLarge)

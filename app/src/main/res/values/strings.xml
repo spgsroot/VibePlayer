@@ -114,6 +114,7 @@
     <string name="manga_language_english">Английский</string>
     <string name="manga_language_japanese">Японский</string>
     <string name="manga_language_chinese">Китайский</string>
+    <string name="manga_language_translated">Переведённые</string>
     <string name="manga_tag_name">Название тега</string>
     <string name="manga_tag_id">ID тега</string>
     <string name="manga_add_tag">Добавить тег</string>

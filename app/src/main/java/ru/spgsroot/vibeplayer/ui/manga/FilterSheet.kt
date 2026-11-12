@@ -63,7 +63,8 @@ private val tagTypes = listOf(
 private val languages = listOf(
     "english" to R.string.manga_language_english,
     "japanese" to R.string.manga_language_japanese,
-    "chinese" to R.string.manga_language_chinese
+    "chinese" to R.string.manga_language_chinese,
+    "translated" to R.string.manga_language_translated
 )
 private val sorts = listOf(
     SortKey.Date to R.string.manga_sort_date,

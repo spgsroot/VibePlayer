@@ -66,6 +66,20 @@ class CatalogQueryTest {
     }
 
     @Test
+    fun translatedLanguageUsesTheIncludeExcludeRemoveCycle() {
+        var mode: TagMode? = nextTagMode(null)
+        fun query() = CatalogQuery(
+            tags = mode?.let { listOf(TagFilter("language", "translated", it)) }.orEmpty()
+        ).toSearchQuery()
+
+        assertEquals("language:translated", query())
+        mode = nextTagMode(mode)
+        assertEquals("-language:translated", query())
+        mode = nextTagMode(mode)
+        assertEquals("", query())
+    }
+
+    @Test
     fun allSortKeysUseSeparateApiValues() {
         assertEquals("date", SortKey.Date.toApi())
         assertEquals("popular", SortKey.Popular.toApi())

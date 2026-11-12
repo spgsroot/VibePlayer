@@ -10,3 +10,11 @@ fun blocks(
         blockedNames.any { name.equals(it, ignoreCase = true) }
     }
 }
+
+internal suspend fun filterSearchResults(
+    results: List<GallerySummary>,
+    knownTagNames: Map<Int, String>,
+    isBlocked: suspend (Collection<Int>, Collection<String>) -> Boolean
+): List<GallerySummary> = results.filterNot {
+    isBlocked(it.tagIds, it.tagIds.mapNotNull(knownTagNames::get))
+}

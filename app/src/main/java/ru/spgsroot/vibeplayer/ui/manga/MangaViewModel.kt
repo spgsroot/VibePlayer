@@ -29,6 +29,7 @@ import ru.spgsroot.vibeplayer.manga.LibraryGallery
 import ru.spgsroot.vibeplayer.manga.NhentaiCdn
 import ru.spgsroot.vibeplayer.manga.PageTurnHaptic
 import ru.spgsroot.vibeplayer.manga.startPage
+import ru.spgsroot.vibeplayer.manga.filterSearchResults
 import javax.inject.Inject
 
 data class CatalogState(
@@ -59,6 +60,8 @@ class MangaViewModel @Inject constructor(
     val catalog: StateFlow<CatalogState> = _catalog
     private var searchJob: Job? = null
     private var rawResults: List<GallerySummary> = emptyList()
+    private var knownTagNames: Map<Int, String> = emptyMap()
+    private var filterVersion = 0
     private val _blockedIds = MutableStateFlow<Set<Int>>(emptySet())
     val blockedIds: StateFlow<Set<Int>> = _blockedIds
     private val _blockedNames = MutableStateFlow<Set<String>>(emptySet())
@@ -117,21 +120,25 @@ class MangaViewModel @Inject constructor(
         viewModelScope.launch {
             withContext(Dispatchers.IO) { change() }
             refreshBlacklist()
-            refreshVisibleResults()
         }
     }
 
     private suspend fun refreshBlacklist() {
         _blockedIds.value = withContext(Dispatchers.IO) { catalogStore.blockedIds() }
         _blockedNames.value = withContext(Dispatchers.IO) { catalogStore.blockedNames() }
+        refreshVisibleResults()
     }
 
     private suspend fun refreshVisibleResults() {
         val source = rawResults
+        val names = knownTagNames
+        val version = ++filterVersion
         val visible = withContext(Dispatchers.IO) {
-            source.filterNot { catalogStore.blocks(it.tagIds, emptyList()) }
+            filterSearchResults(source, names, catalogStore::blocks)
         }
-        if (rawResults === source) _catalog.value = _catalog.value.copy(results = visible)
+        if (rawResults === source && filterVersion == version) {
+            _catalog.value = _catalog.value.copy(results = visible)
+        }
     }
 
     fun open(id: Int) {
@@ -150,6 +157,11 @@ class MangaViewModel @Inject constructor(
                 val fetched = withContext(Dispatchers.IO) { api.gallery(id) }
                 if (_detail.value == null) _initialPage.value = startPage(savedPage, fetched.pagePaths.size)
                 _detail.value = fetched
+                knownTagNames = buildMap {
+                    putAll(knownTagNames)
+                    for (tag in fetched.tags) put(tag.id, tag.name.lowercase())
+                }
+                refreshVisibleResults()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

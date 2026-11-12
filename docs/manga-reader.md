@@ -2,6 +2,12 @@
 
 The `manga/{id}` route uses Compose and Coil. Downloaded pages take precedence over remote URLs resolved by `NhentaiCdn.page`. Saved library metadata remains usable if the gallery request fails.
 
+## Catalog filters
+
+Language chips include English, Japanese, Chinese, and Translated. Each cycles through include, exclude, and off using the corresponding `language:` tag.
+
+Tag blacklisting applies only to search cards, not the saved library. Search summaries carry tag IDs only. Fetching gallery details teaches the current catalog ViewModel the lowercase name of each returned tag ID; cards with those IDs can then be hidden by an exact, case-insensitive blocked name. Substrings do not match. Results are refiltered when metadata arrives or the blacklist changes, including restoring cards when a blocked name is removed.
+
 ## Controls
 
 - Swipe horizontally in paged mode or scroll vertically in strip mode.
@@ -9,7 +15,7 @@ The `manga/{id}` route uses Compose and Coil. Downloaded pages take precedence o
 - Tap the center third to show or hide the title, page count, Back, favorite, settings, and page thumbnails. Chrome starts hidden.
 - Pinch the current page to zoom from 1× to 5×; drag while zoomed to pan. Double-tap to reset zoom and pan.
 - Tap a thumbnail to jump to its page.
-- Reader settings select paged/strip mode, contain/fill-width fit, mirrored taps, and page-turn intensity. Saving the gallery remains available in this sheet.
+- Reader settings select paged/strip mode, contain/fill-width fit, mirrored taps, and page-turn intensity. The sheet scrolls on short viewports, keeping the intensity slider and Save action reachable above the navigation bar.
 
 Contain fits each page inside the viewport. Fill-width preserves the image aspect ratio; tall pages can be scrolled vertically in paged mode and extend naturally in strip mode. Short strip pages occupy at least one viewport so a page jump does not immediately select a neighboring page. Paged mode composes one neighboring page on each side.
 
