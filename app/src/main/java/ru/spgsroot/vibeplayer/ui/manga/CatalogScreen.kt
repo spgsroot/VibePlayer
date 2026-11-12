@@ -1,15 +1,24 @@
 package ru.spgsroot.vibeplayer.ui.manga
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridScope
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -23,9 +32,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -33,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -42,9 +54,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import ru.spgsroot.vibeplayer.R
 import ru.spgsroot.vibeplayer.manga.CatalogQuery
+import ru.spgsroot.vibeplayer.manga.GallerySummary
+import ru.spgsroot.vibeplayer.manga.GalleryTag
 import ru.spgsroot.vibeplayer.manga.NhentaiCdn
 import ru.spgsroot.vibeplayer.manga.SearchDestination
+import ru.spgsroot.vibeplayer.manga.TagFilter
+import ru.spgsroot.vibeplayer.manga.TagMode
+import ru.spgsroot.vibeplayer.manga.nextTagMode
 import ru.spgsroot.vibeplayer.manga.searchDestination
+
+private const val CARD_TAG_LIMIT = 4
+private const val COVER_ASPECT = 0.7f
 
 @Composable
 fun CatalogScreen(viewModel: MangaViewModel, onOpen: (Int) -> Unit) {
@@ -60,6 +80,11 @@ fun CatalogScreen(viewModel: MangaViewModel, onOpen: (Int) -> Unit) {
             is SearchDestination.OpenGallery -> onOpen(destination.id)
             SearchDestination.RunSearch -> viewModel.search(query)
         }
+    }
+
+    // Opening the catalog shows the newest galleries instead of an empty prompt.
+    LaunchedEffect(Unit) {
+        if (!catalog.searched && !catalog.loading) viewModel.search(catalog.query)
     }
 
     if (showFilters) {
@@ -79,12 +104,14 @@ fun CatalogScreen(viewModel: MangaViewModel, onOpen: (Int) -> Unit) {
         )
     }
 
-    LazyColumn(
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item {
+        fullWidth {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
@@ -100,41 +127,76 @@ fun CatalogScreen(viewModel: MangaViewModel, onOpen: (Int) -> Unit) {
                 }
             )
         }
-        item {
-            TextButton(onClick = { showFilters = true }) { Text(stringResource(R.string.manga_filters)) }
-        }
-        if (queries.isNotEmpty()) {
-            item {
-                Text(stringResource(R.string.manga_recent_queries), style = MaterialTheme.typography.titleSmall)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(queries.take(10), key = { it }) { previous ->
+        fullWidth {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = { showFilters = true }) { Text(stringResource(R.string.manga_filters)) }
+                LazyRow(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(catalog.query.tags, key = { it.type + ":" + it.name }) { filter ->
                         AssistChip(
                             onClick = {
-                                text = previous
-                                submit(CatalogQuery(text = previous, sort = catalog.query.sort))
+                                val next = nextTagMode(filter.mode)
+                                val tags = catalog.query.tags.mapNotNull {
+                                    if (it != filter) it else next?.let { mode -> it.copy(mode = mode) }
+                                }
+                                submit(catalog.query.copy(tags = tags))
                             },
-                            label = { Text(previous, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                            label = {
+                                val sign = if (filter.mode == TagMode.Exclude) "-" else "#"
+                                Text(sign + filter.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
                         )
                     }
                 }
             }
         }
-        when {
-            catalog.loading -> item { CircularProgressIndicator() }
-            catalog.failed -> item {
-                Text(stringResource(R.string.manga_search_error), color = MaterialTheme.colorScheme.error)
-                TextButton(onClick = { viewModel.search(catalog.query, catalog.page) }) {
-                    Text(stringResource(R.string.manga_retry))
+        if (queries.isNotEmpty() && catalog.query.tags.isEmpty()) {
+            fullWidth {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(stringResource(R.string.manga_recent_queries), style = MaterialTheme.typography.titleSmall)
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(queries.take(10), key = { it }) { previous ->
+                            AssistChip(
+                                onClick = {
+                                    text = previous
+                                    submit(CatalogQuery(text = previous, sort = catalog.query.sort))
+                                },
+                                label = { Text(previous, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                            )
+                        }
+                    }
                 }
             }
-            catalog.results.isEmpty() -> item {
+        }
+        when {
+            catalog.loading -> fullWidth {
+                Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            }
+            catalog.failed -> fullWidth {
+                Column {
+                    Text(stringResource(R.string.manga_search_error), color = MaterialTheme.colorScheme.error)
+                    TextButton(onClick = { viewModel.search(catalog.query, catalog.page) }) {
+                        Text(stringResource(R.string.manga_retry))
+                    }
+                }
+            }
+            catalog.results.isEmpty() -> fullWidth {
                 Text(stringResource(if (catalog.searched) R.string.manga_no_results else R.string.manga_catalog_hint))
             }
         }
         items(catalog.results, key = { it.id }) { gallery ->
-            CatalogGalleryCard(gallery.title, gallery.thumbnailPath, gallery.numPages, onOpen = { onOpen(gallery.id) })
+            CatalogGridCard(
+                gallery = gallery,
+                onOpen = { onOpen(gallery.id) },
+                onTag = { tag ->
+                    val filter = TagFilter(tag.type, tag.name, TagMode.Include)
+                    val tags = catalog.query.tags.filterNot { it.type == filter.type && it.name == filter.name }
+                    submit(catalog.query.copy(text = text, tags = tags + filter))
+                }
+            )
         }
-        if (catalog.searched) item {
+        if (catalog.searched) fullWidth {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                 TextButton(
                     enabled = !catalog.loading && catalog.page > 1,
@@ -148,6 +210,83 @@ fun CatalogScreen(viewModel: MangaViewModel, onOpen: (Int) -> Unit) {
             }
         }
     }
+}
+
+private fun LazyGridScope.fullWidth(content: @Composable () -> Unit) {
+    item(span = { GridItemSpan(maxLineSpan) }) { content() }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CatalogGridCard(gallery: GallerySummary, onOpen: () -> Unit, onTag: (GalleryTag) -> Unit) {
+    val language = gallery.tags.firstOrNull { it.type == "language" && it.name != "translated" }?.name
+    val hashtags = gallery.tags
+        .filter { it.type != "language" && it.type != "category" }
+        .sortedBy { if (it.type == "tag") 0 else 1 }
+        .take(CARD_TAG_LIMIT)
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Card(onClick = onOpen, modifier = Modifier.fillMaxWidth().aspectRatio(COVER_ASPECT)) {
+            Box(Modifier.fillMaxSize()) {
+                AsyncImage(
+                    model = NhentaiCdn.thumb(gallery.thumbnailPath),
+                    contentDescription = gallery.title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+                gallery.numFavorites?.let { favorites ->
+                    Text(
+                        text = "\u2665 " + compactCount(favorites),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(6.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color.Black.copy(alpha = 0.6f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+        }
+        Text(
+            gallery.title,
+            style = MaterialTheme.typography.titleSmall,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            text = listOfNotNull(language, stringResource(R.string.manga_page_count, gallery.numPages)).joinToString(" \u00b7 "),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        if (hashtags.isNotEmpty()) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                hashtags.forEach { tag ->
+                    Surface(
+                        onClick = { onTag(tag) },
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant
+                    ) {
+                        Text(
+                            "#" + tag.name,
+                            style = MaterialTheme.typography.labelSmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun compactCount(value: Int): String = when {
+    value >= 1_000_000 -> "%.1fM".format(value / 1_000_000f)
+    value >= 1_000 -> "%.1fk".format(value / 1_000f)
+    else -> value.toString()
 }
 
 @Composable

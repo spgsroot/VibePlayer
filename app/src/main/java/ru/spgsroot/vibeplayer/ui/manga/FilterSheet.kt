@@ -26,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -50,15 +51,6 @@ private val datePresets = listOf(
     "uploaded:>90d" to R.string.manga_date_90d,
     "uploaded:>180d" to R.string.manga_date_180d,
     "uploaded:>1y" to R.string.manga_date_1y
-)
-private val tagTypes = listOf(
-    "tag" to R.string.manga_tag,
-    "artist" to R.string.manga_artist,
-    "character" to R.string.manga_character,
-    "parody" to R.string.manga_parody,
-    "group" to R.string.manga_group,
-    "category" to R.string.manga_category,
-    "language" to R.string.manga_language
 )
 private val languages = listOf(
     "english" to R.string.manga_language_english,
@@ -118,100 +110,116 @@ fun FilterSheet(
             Text(stringResource(R.string.manga_filters), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 16.dp))
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
-                    Text(stringResource(R.string.manga_tags), style = MaterialTheme.typography.titleMedium)
-                    Text(stringResource(R.string.manga_tag_cycle), style = MaterialTheme.typography.bodySmall)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        tagTypes.forEach { (type, label) ->
-                            FilterChip(selected = tagType == type, onClick = { tagType = type }, label = { Text(stringResource(label)) })
+                    FilterSection(R.string.manga_tags, hint = R.string.manga_tag_cycle) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            tagTypes.forEach { (type, label) ->
+                                FilterChip(selected = tagType == type, onClick = { tagType = type }, label = { Text(stringResource(label)) })
+                            }
                         }
-                    }
-                    OutlinedTextField(value = tagName, onValueChange = { tagName = it }, singleLine = true,
-                        label = { Text(stringResource(R.string.manga_tag_name)) }, modifier = Modifier.fillMaxWidth())
-                    TextButton(enabled = tagName.isNotBlank(), onClick = {
-                        val name = tagName.trim()
-                        if (tags.none { it.type == tagType && it.name == name }) tags = tags + TagFilter(tagType, name, TagMode.Include)
-                        tagName = ""
-                    }) { Text(stringResource(R.string.manga_add_tag)) }
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        tags.forEach { tag ->
-                            FilterChip(selected = tag.mode == TagMode.Include, onClick = { cycleTag(tag.type, tag.name) }, label = {
-                                Text(stringResource(if (tag.mode == TagMode.Include) R.string.manga_tag_included else R.string.manga_tag_excluded, "${tag.type}:${tag.name}"))
-                            })
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            OutlinedTextField(value = tagName, onValueChange = { tagName = it }, singleLine = true,
+                                label = { Text(stringResource(R.string.manga_tag_name)) }, modifier = Modifier.weight(1f))
+                            TextButton(enabled = tagName.isNotBlank(), onClick = {
+                                val name = tagName.trim()
+                                if (tags.none { it.type == tagType && it.name == name }) tags = tags + TagFilter(tagType, name, TagMode.Include)
+                                tagName = ""
+                            }) { Text(stringResource(R.string.manga_add_tag)) }
                         }
-                    }
-                }
-                item {
-                    Text(stringResource(R.string.manga_language), style = MaterialTheme.typography.titleMedium)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        languages.forEach { (name, label) ->
-                            val mode = tags.find { it.type == "language" && it.name == name }?.mode
-                            FilterChip(selected = mode != null, onClick = { cycleTag("language", name) }, label = {
-                                val language = stringResource(label)
-                                Text(when (mode) {
-                                    TagMode.Include -> stringResource(R.string.manga_tag_included, language)
-                                    TagMode.Exclude -> stringResource(R.string.manga_tag_excluded, language)
-                                    null -> language
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            tags.forEach { tag ->
+                                FilterChip(selected = tag.mode == TagMode.Include, onClick = { cycleTag(tag.type, tag.name) }, label = {
+                                    Text(stringResource(if (tag.mode == TagMode.Include) R.string.manga_tag_included else R.string.manga_tag_excluded, "${tag.type}:${tag.name}"))
                                 })
-                            })
+                            }
                         }
                     }
                 }
                 item {
-                    Text(stringResource(R.string.manga_sort), style = MaterialTheme.typography.titleMedium)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        sorts.forEach { (key, label) ->
-                            FilterChip(selected = sort == key, onClick = { sort = key }, label = { Text(stringResource(label)) })
+                    FilterSection(R.string.manga_language) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            languages.forEach { (name, label) ->
+                                val mode = tags.find { it.type == "language" && it.name == name }?.mode
+                                FilterChip(selected = mode != null, onClick = { cycleTag("language", name) }, label = {
+                                    val language = stringResource(label)
+                                    Text(when (mode) {
+                                        TagMode.Include -> stringResource(R.string.manga_tag_included, language)
+                                        TagMode.Exclude -> stringResource(R.string.manga_tag_excluded, language)
+                                        null -> language
+                                    })
+                                })
+                            }
                         }
                     }
                 }
                 item {
-                    Text(stringResource(R.string.manga_uploaded), style = MaterialTheme.typography.titleMedium)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        datePresets.forEach { (value, label) ->
-                            FilterChip(selected = preset == value, onClick = {
-                                preset = if (preset == value) "" else value
-                                start = ""
-                                end = ""
-                            }, label = { Text(stringResource(label)) })
+                    FilterSection(R.string.manga_sort) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            sorts.forEach { (key, label) ->
+                                FilterChip(selected = sort == key, onClick = { sort = key }, label = { Text(stringResource(label)) })
+                            }
                         }
                     }
-                    OutlinedTextField(value = start, onValueChange = { start = it; preset = "" }, singleLine = true,
-                        label = { Text(stringResource(R.string.manga_date_start)) }, isError = !validDate(start), modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = end, onValueChange = { end = it; preset = "" }, singleLine = true,
-                        label = { Text(stringResource(R.string.manga_date_end)) }, isError = !validDate(end), modifier = Modifier.fillMaxWidth())
-                    if (!datesValid) Text(stringResource(R.string.manga_date_invalid), color = MaterialTheme.colorScheme.error)
-                    if (reversed) Text(stringResource(R.string.manga_date_reversed), color = MaterialTheme.colorScheme.error)
                 }
                 item {
-                    Text(stringResource(R.string.manga_pages_filter), style = MaterialTheme.typography.titleMedium)
-                    PageField(minPages, { minPages = it }, R.string.manga_pages_min)
-                    PageField(maxPages, { maxPages = it }, R.string.manga_pages_max)
-                    PageField(exactPages, { exactPages = it }, R.string.manga_pages_exact)
+                    FilterSection(R.string.manga_uploaded) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            datePresets.forEach { (value, label) ->
+                                FilterChip(selected = preset == value, onClick = {
+                                    preset = if (preset == value) "" else value
+                                    start = ""
+                                    end = ""
+                                }, label = { Text(stringResource(label)) })
+                            }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(value = start, onValueChange = { start = it; preset = "" }, singleLine = true,
+                                label = { Text(stringResource(R.string.manga_date_start), maxLines = 1) }, isError = !validDate(start), modifier = Modifier.weight(1f))
+                            OutlinedTextField(value = end, onValueChange = { end = it; preset = "" }, singleLine = true,
+                                label = { Text(stringResource(R.string.manga_date_end), maxLines = 1) }, isError = !validDate(end), modifier = Modifier.weight(1f))
+                        }
+                        if (!datesValid) Text(stringResource(R.string.manga_date_invalid), color = MaterialTheme.colorScheme.error)
+                        if (reversed) Text(stringResource(R.string.manga_date_reversed), color = MaterialTheme.colorScheme.error)
+                    }
+                }
+                item {
+                    FilterSection(R.string.manga_pages_filter) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            PageField(minPages, { minPages = it }, R.string.manga_pages_min, Modifier.weight(1f))
+                            PageField(maxPages, { maxPages = it }, R.string.manga_pages_max, Modifier.weight(1f))
+                            PageField(exactPages, { exactPages = it }, R.string.manga_pages_exact, Modifier.weight(1f))
+                        }
+                    }
                 }
                 item {
                     HorizontalDivider()
-                    Text(stringResource(R.string.manga_blacklist), style = MaterialTheme.typography.titleMedium)
-                    Text(stringResource(R.string.manga_blacklist_hint), style = MaterialTheme.typography.bodySmall)
-                    OutlinedTextField(value = blockedName, onValueChange = { blockedName = it }, singleLine = true,
-                        label = { Text(stringResource(R.string.manga_tag_name)) }, modifier = Modifier.fillMaxWidth())
-                    TextButton(enabled = blockedName.isNotBlank(), onClick = { onBlockName(blockedName.trim()); blockedName = "" }) {
-                        Text(stringResource(R.string.manga_block_name))
-                    }
-                    PageField(blockedId, { blockedId = it }, R.string.manga_tag_id)
-                    TextButton(enabled = (blockedId.toIntOrNull() ?: 0) > 0, onClick = {
-                        blockedId.toIntOrNull()?.let(onBlockId)
-                        blockedId = ""
-                    }) { Text(stringResource(R.string.manga_block_id)) }
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        blockedNames.sorted().forEach { name ->
-                            FilterChip(selected = true, onClick = { onUnblockName(name) }, label = { Text(stringResource(R.string.manga_unblock_name, name)) })
+                }
+                item {
+                    FilterSection(R.string.manga_blacklist, hint = R.string.manga_blacklist_hint) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            OutlinedTextField(value = blockedName, onValueChange = { blockedName = it }, singleLine = true,
+                                label = { Text(stringResource(R.string.manga_tag_name)) }, modifier = Modifier.weight(1f))
+                            TextButton(enabled = blockedName.isNotBlank(), onClick = { onBlockName(blockedName.trim()); blockedName = "" }) {
+                                Text(stringResource(R.string.manga_block_name))
+                            }
                         }
-                        blockedIds.sorted().forEach { id ->
-                            FilterChip(selected = true, onClick = { onUnblockId(id) }, label = { Text(stringResource(R.string.manga_unblock_id, id)) })
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            PageField(blockedId, { blockedId = it }, R.string.manga_tag_id, Modifier.weight(1f))
+                            TextButton(enabled = (blockedId.toIntOrNull() ?: 0) > 0, onClick = {
+                                blockedId.toIntOrNull()?.let(onBlockId)
+                                blockedId = ""
+                            }) { Text(stringResource(R.string.manga_block_id)) }
+                        }
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            blockedNames.sorted().forEach { name ->
+                                FilterChip(selected = true, onClick = { onUnblockName(name) }, label = { Text(stringResource(R.string.manga_unblock_name, name)) })
+                            }
+                            blockedIds.sorted().forEach { id ->
+                                FilterChip(selected = true, onClick = { onUnblockId(id) }, label = { Text(stringResource(R.string.manga_unblock_id, id)) })
+                            }
                         }
                     }
                 }
@@ -244,10 +252,19 @@ fun FilterSheet(
 }
 
 @Composable
-private fun PageField(value: String, onChange: (String) -> Unit, label: Int) {
+private fun FilterSection(title: Int, hint: Int? = null, content: @Composable () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(stringResource(title), style = MaterialTheme.typography.titleSmall)
+        if (hint != null) Text(stringResource(hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        content()
+    }
+}
+
+@Composable
+private fun PageField(value: String, onChange: (String) -> Unit, label: Int, modifier: Modifier = Modifier) {
     OutlinedTextField(value = value, onValueChange = { next -> if (next.all { it in '0'..'9' }) onChange(next) },
-        label = { Text(stringResource(label)) }, singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+        label = { Text(stringResource(label), maxLines = 1) }, singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = modifier)
 }
 
 private fun validDate(value: String): Boolean {

@@ -99,10 +99,10 @@ import ru.spgsroot.vibeplayer.manga.NhentaiCdn
 @Composable
 fun MangaLibraryScreen(
     navController: NavController,
-    viewModel: MangaViewModel
+    viewModel: MangaViewModel,
+    favoritesOnly: Boolean
 ) {
     val library by viewModel.libraryItems.collectAsStateWithLifecycle()
-    var favoritesOnly by rememberSaveable { mutableStateOf(false) }
     val shown = if (favoritesOnly) library.filter { it.favorite } else library
 
     LazyColumn(
@@ -110,14 +110,6 @@ fun MangaLibraryScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item {
-            FilterChip(
-                selected = favoritesOnly,
-                onClick = { favoritesOnly = !favoritesOnly },
-                label = { Text(stringResource(R.string.manga_favorites)) }
-            )
-        }
-        item { Text(stringResource(R.string.manga_saved), style = MaterialTheme.typography.titleMedium) }
         if (shown.isEmpty()) {
             item { Text(stringResource(R.string.manga_none), style = MaterialTheme.typography.bodyMedium) }
         }

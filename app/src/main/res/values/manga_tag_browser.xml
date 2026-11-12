@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="manga_tag_search_hint">Поиск тегов</string>
+    <string name="manga_tag_tab_all">Все</string>
+    <string name="manga_tag_tab_favorites">Избранные</string>
+    <string name="manga_tag_tab_collections">Подборки</string>
+    <string name="manga_tag_search_selected">Искать: %1$d</string>
+    <string name="manga_tag_clear">Сбросить</string>
+    <string name="manga_tag_remove">Убрать</string>
+    <string name="manga_tag_error">Не удалось загрузить теги</string>
+    <string name="manga_tag_empty">Тегов не найдено</string>
+    <string name="manga_tag_favorite">В избранное</string>
+    <string name="manga_tag_favorites_empty">Избранных тегов пока нет. Нажмите на сердечко у тега.</string>
+    <string name="manga_tag_collections_empty">Подборок пока нет</string>
+    <string name="manga_tag_collection_name">Название подборки</string>
+    <string name="manga_tag_collection_create">Создать</string>
+    <string name="manga_tag_collection_rename">Переименовать</string>
+    <string name="manga_tag_collection_delete">Удалить</string>
+    <string name="manga_tag_collection_empty">Подборка пуста. Добавьте теги кнопкой «В подборку».</string>
+    <string name="manga_tag_collection_select">Выбрать все</string>
+    <string name="manga_tag_add_to_collection">В подборку</string>
+    <string name="manga_tag_no_collections">Сначала создайте подборку на вкладке «Подборки».</string>
+</resources>

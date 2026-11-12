@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="manga_detail_read">Read</string>
+    <string name="manga_detail_continue">Continue from page %1$d</string>
+    <string name="manga_detail_download">Download</string>
+    <string name="manga_detail_downloading">Downloading %1$s</string>
+    <string name="manga_detail_delete_download">Delete download</string>
+    <string name="manga_detail_favorites_count">Favorites: %1$d</string>
+    <string name="manga_detail_uploaded">Uploaded: %1$s</string>
+    <string name="manga_detail_scanlator">Scanlator: %1$s</string>
+    <string name="manga_detail_related">Related</string>
+    <string name="manga_detail_section_error">Could not load this section</string>
+    <string name="manga_detail_related_empty">No related galleries</string>
+    <string name="manga_detail_comments">Comments</string>
+    <string name="manga_detail_comments_load">Show comments</string>
+    <string name="manga_detail_comments_empty">No comments</string>
+    <string name="manga_detail_comments_note">Comments are read-only: posting needs an nhentai account.</string>
+    <string name="manga_detail_anonymous">Anonymous</string>
+    <string name="manga_drawer_downloads">Downloads</string>
+    <string name="manga_drawer_characters">Characters</string>
+    <string name="manga_drawer_random">Random gallery</string>
+    <string name="manga_random_error">Could not get a random gallery</string>
+    <string name="manga_menu_open">Menu</string>
+</resources>

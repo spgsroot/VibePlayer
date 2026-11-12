@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="manga_detail_read">Читать</string>
+    <string name="manga_detail_continue">Продолжить со страницы %1$d</string>
+    <string name="manga_detail_download">Скачать</string>
+    <string name="manga_detail_downloading">Скачивание %1$s</string>
+    <string name="manga_detail_delete_download">Удалить загрузку</string>
+    <string name="manga_detail_favorites_count">В избранном: %1$d</string>
+    <string name="manga_detail_uploaded">Загружено: %1$s</string>
+    <string name="manga_detail_scanlator">Сканлейт: %1$s</string>
+    <string name="manga_detail_related">Похожие</string>
+    <string name="manga_detail_section_error">Не удалось загрузить раздел</string>
+    <string name="manga_detail_related_empty">Похожих галерей нет</string>
+    <string name="manga_detail_comments">Комментарии</string>
+    <string name="manga_detail_comments_load">Показать комментарии</string>
+    <string name="manga_detail_comments_empty">Комментариев нет</string>
+    <string name="manga_detail_comments_note">Комментарии доступны только для чтения: для публикации нужен аккаунт nhentai.</string>
+    <string name="manga_detail_anonymous">Аноним</string>
+    <string name="manga_drawer_downloads">Загрузки</string>
+    <string name="manga_drawer_characters">Персонажи</string>
+    <string name="manga_drawer_random">Случайная галерея</string>
+    <string name="manga_random_error">Не удалось получить случайную галерею</string>
+    <string name="manga_menu_open">Меню</string>
+</resources>

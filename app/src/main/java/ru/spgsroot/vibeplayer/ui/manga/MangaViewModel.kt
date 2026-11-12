@@ -166,6 +166,23 @@ class MangaViewModel @Inject constructor(
         }
     }
 
+    private val _randomFailed = MutableStateFlow(false)
+    val randomFailed: StateFlow<Boolean> = _randomFailed
+
+    /** Asks the API for a real gallery id; the caller navigates, so the id never outlives the click. */
+    fun openRandom(onId: (Int) -> Unit) {
+        _randomFailed.value = false
+        viewModelScope.launch {
+            try {
+                onId(withContext(Dispatchers.IO) { api.randomId() })
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _randomFailed.value = true
+            }
+        }
+    }
+
     fun pageModel(galleryId: Int, path: String): Any? {
         val local = library.localPage(galleryId, path)
         return local?.takeIf { it.exists() } ?: NhentaiCdn.page(path)

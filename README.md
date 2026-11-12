@@ -16,6 +16,10 @@ The player shot is a local sample clip. The gallery shows clips imported into th
 |:---:|:---:|:---:|
 | <img src="repo/screens/gallery.png" width="180" alt="Gallery with imported clips"/> | <img src="repo/screens/catalog.png" width="180" alt="Catalog search with covers blurred"/> | <img src="repo/screens/reader.png" width="180" alt="Reader with no pages loaded"/> |
 
+| Manga drawer | Tag browser |
+|:---:|:---:|
+| <img src="repo/screens/drawer.png" width="180" alt="Manga navigation drawer"/> | <img src="repo/screens/tags.png" width="180" alt="Tag browser"/> |
+
 ## What it does
 
 - Plays local video with Media3 ExoPlayer. The gallery can rename an item, replace its cover, and delete one or many items.
@@ -27,7 +31,7 @@ The player shot is a local sample clip. The gallery shows clips imported into th
 - Switches videos on a timer and changes playback speed.
 - Locks the app with a 4-digit PIN. Repeated failures increase the wait. The database is SQLCipher.
 - Speaks Russian and English. The interface is dark.
-- Searches nhentai in a catalog that filters by tag, date, and page count, sorts by date or popularity, and opens a native Compose reader. Saves a gallery on the device and marks favorites. Page images are requested from `i1.nhentai.net` and `t1.nhentai.net` without rewriting the path returned by the API. Turning a page sends a short pulse. Page-turn strength is configured in the reader settings sheet, not with a slider on the page.
+- Browses nhentai in a drawer-based hub: Catalog, Downloads, Favorites, History, Tags, Characters, and Random gallery. The catalog is a two-column cover grid with tag chips, filters by tag (include or exclude), date, and page count, and sorting by date or popularity. The tag browser lists tags, artists, characters, parodies, groups, categories, and languages by popularity; tags can be marked favorite, put into named collections kept on the device, and sent to the catalog as a search. A gallery page shows titles, page count, favorite count, upload date, tags grouped by type, related galleries, and read-only comments loaded on demand. Posting comments needs an nhentai account and is not available. Galleries open in a native Compose reader and can be saved on the device and marked favorite. Page images are requested from `i1.nhentai.net` and `t1.nhentai.net` without rewriting the path returned by the API. Turning a page sends a short pulse. Page-turn strength is configured in the reader settings sheet, not with a slider on the page.
 
 The nhentai key is compiled into the client and sent only in the `Authorization` header. It is in the public source and can be read from the APK. Minify is off in the release build type.
 

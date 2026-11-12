@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="manga_tag_search_hint">Search tags</string>
+    <string name="manga_tag_tab_all">All</string>
+    <string name="manga_tag_tab_favorites">Favorites</string>
+    <string name="manga_tag_tab_collections">Collections</string>
+    <string name="manga_tag_search_selected">Search: %1$d</string>
+    <string name="manga_tag_clear">Clear</string>
+    <string name="manga_tag_remove">Remove</string>
+    <string name="manga_tag_error">Could not load tags</string>
+    <string name="manga_tag_empty">No tags found</string>
+    <string name="manga_tag_favorite">Favorite</string>
+    <string name="manga_tag_favorites_empty">No favorite tags yet. Tap the heart on a tag.</string>
+    <string name="manga_tag_collections_empty">No collections yet</string>
+    <string name="manga_tag_collection_name">Collection name</string>
+    <string name="manga_tag_collection_create">Create</string>
+    <string name="manga_tag_collection_rename">Rename</string>
+    <string name="manga_tag_collection_delete">Delete</string>
+    <string name="manga_tag_collection_empty">Empty collection. Add tags with the \"Add to collection\" button.</string>
+    <string name="manga_tag_collection_select">Select all</string>
+    <string name="manga_tag_add_to_collection">Add to collection</string>
+    <string name="manga_tag_no_collections">Create a collection on the Collections tab first.</string>
+</resources>

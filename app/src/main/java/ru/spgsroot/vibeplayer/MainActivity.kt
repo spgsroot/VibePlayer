@@ -32,8 +32,11 @@ import ru.spgsroot.vibeplayer.locale.LocaleManager
 import ru.spgsroot.vibeplayer.ui.auth.AuthScreen
 import ru.spgsroot.vibeplayer.security.AuthSession
 import ru.spgsroot.vibeplayer.ui.gallery.GalleryScreen
+import ru.spgsroot.vibeplayer.ui.manga.GalleryDetailScreen
 import ru.spgsroot.vibeplayer.ui.manga.MangaHubScreen
 import ru.spgsroot.vibeplayer.ui.manga.MangaReaderScreen
+import ru.spgsroot.vibeplayer.ui.manga.TagBrowserScreen
+import ru.spgsroot.vibeplayer.ui.manga.searchCatalog
 import ru.spgsroot.vibeplayer.ui.gallery.GalleryViewModel
 import ru.spgsroot.vibeplayer.ui.onboarding.OnboardingScreen
 import ru.spgsroot.vibeplayer.ui.player.PlayerScreen
@@ -221,16 +224,35 @@ fun AppNavigation(authManager: AuthManager, authSession: AuthSession) {
                 val galleryViewModel: GalleryViewModel = hiltViewModel()
                 GalleryScreen(navController = navController, viewModel = galleryViewModel)
             }
-            composable("manga") {
-                MangaHubScreen(navController = navController)
+            composable("manga") { entry ->
+                MangaHubScreen(navController = navController, entry = entry)
             }
             composable(
                 "manga/{id}",
                 arguments = listOf(navArgument("id") { type = NavType.IntType })
             ) { entry ->
+                GalleryDetailScreen(
+                    galleryId = entry.arguments?.getInt("id") ?: return@composable,
+                    navController = navController
+                )
+            }
+            composable(
+                "manga/{id}/read",
+                arguments = listOf(navArgument("id") { type = NavType.IntType })
+            ) { entry ->
                 MangaReaderScreen(
                     galleryId = entry.arguments?.getInt("id") ?: return@composable,
                     navController = navController
+                )
+            }
+            composable(
+                "mangatags/{type}",
+                arguments = listOf(navArgument("type") { type = NavType.StringType })
+            ) { entry ->
+                TagBrowserScreen(
+                    onSearch = navController::searchCatalog,
+                    onBack = { navController.popBackStack() },
+                    initialType = entry.arguments?.getString("type") ?: "tag"
                 )
             }
         }
