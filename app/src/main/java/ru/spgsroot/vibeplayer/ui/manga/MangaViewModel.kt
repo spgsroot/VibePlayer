@@ -50,7 +50,7 @@ class MangaViewModel @Inject constructor(
         viewModelScope.launch {
             _error.value = null
             try {
-                _search.value = withContext(Dispatchers.IO) { api.search(query) }
+                _search.value = withContext(Dispatchers.IO) { api.search(query, sort = "date") }
             } catch (e: NhentaiException) {
                 _error.value = e.message
             } catch (e: Exception) {
