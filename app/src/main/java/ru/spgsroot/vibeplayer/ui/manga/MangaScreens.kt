@@ -1,6 +1,7 @@
 package ru.spgsroot.vibeplayer.ui.manga
 
 import android.content.Context
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -465,6 +466,7 @@ private fun LazyListState.centeredPage(): Int {
 }
 
 @Composable
+@OptIn(ExperimentalFoundationApi::class)
 private fun ReaderPage(
     model: Any?,
     page: Int,
