@@ -30,4 +30,13 @@ object DatabaseModule {
     fun providePlaybackStateDao(database: AppDatabase): PlaybackStateDao = database.playbackStateDao()
     @Provides
     fun provideLibraryGalleryDao(database: AppDatabase): LibraryGalleryDao = database.libraryGalleryDao()
+
+    @Provides
+    fun provideReadHistoryDao(database: AppDatabase): ReadHistoryDao = database.readHistoryDao()
+
+    @Provides
+    fun provideSearchHistoryDao(database: AppDatabase): SearchHistoryDao = database.searchHistoryDao()
+
+    @Provides
+    fun provideTagBlacklistDao(database: AppDatabase): TagBlacklistDao = database.tagBlacklistDao()
 }
