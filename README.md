@@ -33,8 +33,6 @@ The reader shot is the screen after a failed open. It does not contain page imag
 
 The nhentai key is compiled into the client and sent only in the `Authorization` header. It is in the public source and can be read from the APK. Minify is off in the release build type.
 
-The pure `CatalogQuery` model in `app/src/main/java/ru/spgsroot/vibeplayer/manga/CatalogQuery.kt` is available for catalog search integration; the app does not call it yet. It joins trimmed text, include/exclude tags, an uploaded-date clause, and page filters. Tag names containing spaces are quoted without other escaping. An exact page count overrides the range; non-positive page counts are omitted. `SortKey.toApi()` supplies the separate API sort value, never part of the search string. The top-level `nextTagMode` cycles absent → include → exclude → absent.
-
 ## Requirements
 
 - minSdk 26, targetSdk 36
