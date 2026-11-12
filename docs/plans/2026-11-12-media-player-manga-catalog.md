@@ -146,6 +146,15 @@ git commit -m "Pass catalog sort and gallery tags through the nhentai client"
 **Interfaces:**
 - Produces: `PageTurnGate.onPage(page, idle): Boolean`, `centerPage(centers, viewportCenter): Int`, `tapZone(x, width, mirror): TapZone`, `startPage(saved, pageCount): Int`, `blocks(tagIds, tagNames, blockedIds, blockedNames): Boolean`, `rememberQuery(current, query): List<String>`, `isGalleryId(raw): Boolean`
 
+Task 3 API details for consumers:
+- `PageTurnGate.onPage(page: Int, idle: Boolean)` tracks only settled pages; keep one gate per reader session.
+- `centerPage(centers: List<Int>, viewportCenter: Int)` returns the nearest center's zero-based list index (first on a tie, `-1` for no centers). Callers map that index to the corresponding page.
+- `tapZone(x: Float, width: Float, mirror: Boolean)` uses pixel coordinates and returns `TapZone.Back`, `TapZone.Chrome`, or `TapZone.Forward`.
+- `startPage(saved: Int?, pageCount: Int)` returns a valid saved index or zero.
+- `blocks(tagIds: Collection<Int>, tagNames: Collection<String>, blockedIds: Set<Int>, blockedNames: Set<String>)` matches IDs or exact case-insensitive tag names, never titles.
+- `rememberQuery(current: List<String>, query: String)` trims the query, ignores blanks, and returns at most ten distinct queries, newest first, without mutating `current`.
+- `isGalleryId(raw: String)` accepts a nonempty sequence of ASCII digits after trimming.
+
 - [ ] **Step 1: Write the failing tests**
 
 `PageTurnGate`: the first idle page returns false; a later idle change returns true; calls with `idle=false` return false and do not count as a change. A fling that reports pages 1 then 2 while not idle, then page 2 while idle, pulses once.
