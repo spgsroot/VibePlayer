@@ -13,6 +13,7 @@ import ru.spgsroot.vibeplayer.data.db.SearchHistoryDao
 import ru.spgsroot.vibeplayer.data.db.SearchHistoryEntity
 import ru.spgsroot.vibeplayer.data.db.TagBlacklistDao
 import ru.spgsroot.vibeplayer.data.db.TagBlacklistEntity
+import ru.spgsroot.vibeplayer.manga.GalleryTag
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -84,6 +85,18 @@ class MangaMigrationSqlTest {
         reloaded.unblockName("SCHOOL UNIFORM")
         assertTrue(reloaded.blockedIds().isEmpty())
         assertTrue(reloaded.blockedNames().isEmpty())
+    }
+
+    @Test
+    fun learnedTagNamesBlockLaterChecksOnTheSameStore() = runBlocking {
+        val store = MangaCatalogStore(MemoryReadHistoryDao(), MemorySearchHistoryDao(), MemoryTagBlacklistDao())
+        store.blockName("english")
+        assertFalse(store.blocks(listOf(7), emptyList()))
+        store.rememberTags(listOf(GalleryTag(7, "language", "English")))
+        assertTrue(store.blocks(listOf(7), emptyList()))
+        assertFalse(store.blocks(listOf(8), emptyList()))
+        store.unblockName("english")
+        assertFalse(store.blocks(listOf(7), emptyList()))
     }
 
     @Test

@@ -1,13 +1,16 @@
 package ru.spgsroot.vibeplayer.data.manga
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import ru.spgsroot.vibeplayer.data.db.ReadHistoryDao
 import ru.spgsroot.vibeplayer.data.db.ReadHistoryEntity
 import ru.spgsroot.vibeplayer.data.db.SearchHistoryDao
 import ru.spgsroot.vibeplayer.data.db.TagBlacklistDao
 import ru.spgsroot.vibeplayer.data.db.TagBlacklistEntity
+import ru.spgsroot.vibeplayer.manga.GalleryTag
 import ru.spgsroot.vibeplayer.manga.blocks
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -38,9 +41,26 @@ class MangaCatalogStore @Inject constructor(
 
     suspend fun unblockName(name: String) = tagBlacklistDao.delete("name", name.lowercase())
 
+    private val knownNames = ConcurrentHashMap<Int, String>()
+    private val _knownGeneration = MutableStateFlow(0)
+    val knownGeneration: Flow<Int> = _knownGeneration
+
+    fun rememberTags(tags: List<GalleryTag>) {
+        var changed = false
+        for (tag in tags) {
+            val name = tag.name.lowercase()
+            if (knownNames.put(tag.id, name) != name) changed = true
+        }
+        if (changed) _knownGeneration.value = _knownGeneration.value + 1
+    }
+
     suspend fun blocks(tagIds: Collection<Int>, tagNames: Collection<String>): Boolean {
         val rows = tagBlacklistDao.getAll()
-        return blocks(tagIds, tagNames, rows.ids(), rows.names())
+        val names = buildList {
+            addAll(tagNames)
+            for (id in tagIds) knownNames[id]?.let(::add)
+        }
+        return blocks(tagIds, names, rows.ids(), rows.names())
     }
 }
 
