@@ -19,8 +19,8 @@ class NhentaiApi @Inject constructor() {
         .callTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    fun search(query: String, page: Int = 1): List<GallerySummary> {
-        val request = NhentaiRequest.search(query, page, NhentaiSecrets.API_KEY)
+    fun search(query: String, sort: String, page: Int = 1): List<GallerySummary> {
+        val request = NhentaiRequest.search(query, sort, page, NhentaiSecrets.API_KEY)
         return NhentaiParser.search(execute(request))
     }
 

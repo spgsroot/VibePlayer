@@ -6,14 +6,22 @@ data class GallerySummary(
     val id: Int,
     val title: String,
     val thumbnailPath: String,
-    val numPages: Int
+    val numPages: Int,
+    val tagIds: List<Int> = emptyList()
 )
 
 data class GalleryDetail(
     val id: Int,
     val title: String,
     val thumbnailPath: String,
-    val pagePaths: List<String>
+    val pagePaths: List<String>,
+    val tags: List<GalleryTag> = emptyList()
+)
+
+data class GalleryTag(
+    val id: Int,
+    val type: String,
+    val name: String
 )
 
 object NhentaiParser {
@@ -27,7 +35,10 @@ object NhentaiParser {
                         id = item.optInt("id"),
                         title = item.optString("english_title"),
                         thumbnailPath = item.optString("thumbnail"),
-                        numPages = item.optInt("num_pages")
+                        numPages = item.optInt("num_pages"),
+                        tagIds = item.optJSONArray("tag_ids")?.let { ids ->
+                            List(ids.length()) { ids.optInt(it) }
+                        } ?: emptyList()
                     )
                 )
             }
@@ -48,11 +59,26 @@ object NhentaiParser {
                 }
             }
         }
+        val tags = json.optJSONArray("tags")?.let { items ->
+            buildList {
+                for (index in 0 until items.length()) {
+                    val item = items.optJSONObject(index) ?: continue
+                    add(
+                        GalleryTag(
+                            id = item.optInt("id"),
+                            type = item.optString("type"),
+                            name = item.optString("name")
+                        )
+                    )
+                }
+            }
+        } ?: emptyList()
         return GalleryDetail(
             id = json.optInt("id"),
             title = pretty.ifBlank { english },
             thumbnailPath = json.optJSONObject("thumbnail")?.optString("path").orEmpty(),
-            pagePaths = pagePaths
+            pagePaths = pagePaths,
+            tags = tags
         )
     }
 }

@@ -18,11 +18,12 @@ data class NhentaiRequest(
             )
         }
 
-        fun search(query: String, page: Int, key: String): NhentaiRequest {
-            val encoded = java.net.URLEncoder.encode(query, Charsets.UTF_8.name())
+        fun search(query: String, sort: String, page: Int, key: String): NhentaiRequest {
+            val encodedQuery = java.net.URLEncoder.encode(query, Charsets.UTF_8.name())
+            val encodedSort = java.net.URLEncoder.encode(sort, Charsets.UTF_8.name())
             return NhentaiRequest(
                 method = "GET",
-                url = "https://nhentai.net/api/v2/search?query=$encoded&sort=date&page=$page",
+                url = "https://nhentai.net/api/v2/search?query=$encodedQuery&sort=$encodedSort&page=$page",
                 headers = authHeaders(key)
             )
         }
