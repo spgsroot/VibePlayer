@@ -33,8 +33,6 @@ The reader shot is the screen after a failed open. It does not contain page imag
 
 The nhentai key is compiled into the client and sent only in the `Authorization` header. It is in the public source and can be read from the APK. Minify is off in the release build type.
 
-The nhentai search client accepts an explicit sort value and page, URL-encodes query and sort, and exposes search-result tag IDs and gallery tag metadata. Missing tag arrays become empty lists. The current manga screen still requests `date` order; no sort control is wired to it yet.
-
 ## Requirements
 
 - minSdk 26, targetSdk 36
