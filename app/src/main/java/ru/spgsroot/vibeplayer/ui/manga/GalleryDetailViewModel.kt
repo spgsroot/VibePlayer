@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import ru.spgsroot.vibeplayer.data.manga.GalleryMemoryStore
 import ru.spgsroot.vibeplayer.data.manga.MangaCatalogStore
 import ru.spgsroot.vibeplayer.data.manga.MangaLibraryRepository
 import ru.spgsroot.vibeplayer.data.manga.NhentaiApi
@@ -42,7 +43,8 @@ data class DetailState(
 class GalleryDetailViewModel @Inject constructor(
     private val api: NhentaiApi,
     private val library: MangaLibraryRepository,
-    private val catalogStore: MangaCatalogStore
+    private val catalogStore: MangaCatalogStore,
+    private val memory: GalleryMemoryStore
 ) : ViewModel() {
     private val _state = MutableStateFlow(DetailState())
     val state: StateFlow<DetailState> = _state
@@ -75,6 +77,7 @@ class GalleryDetailViewModel @Inject constructor(
                 val fetched = withContext(Dispatchers.IO) { api.gallery(id) }
                 catalogStore.rememberTags(fetched.tags)
                 _state.update { it.copy(detail = fetched, loading = false, error = null) }
+                memory.remember(fetched)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

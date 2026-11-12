@@ -9,13 +9,14 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import net.sqlcipher.database.SQLiteDatabase
 import net.sqlcipher.database.SupportFactory
 import ru.spgsroot.vibeplayer.data.manga.MangaMigrations.MIGRATION_5_6
+import ru.spgsroot.vibeplayer.data.manga.MangaMigrations.MIGRATION_6_7
 
 @Database(
     entities = [
         VideoEntity::class, SettingsEntity::class, PlaybackStateEntity::class, LibraryGalleryEntity::class,
-        ReadHistoryEntity::class, SearchHistoryEntity::class, TagBlacklistEntity::class
+        ReadHistoryEntity::class, SearchHistoryEntity::class, TagBlacklistEntity::class, GalleryMemoryEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -26,6 +27,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun readHistoryDao(): ReadHistoryDao
     abstract fun searchHistoryDao(): SearchHistoryDao
     abstract fun tagBlacklistDao(): TagBlacklistDao
+    abstract fun galleryMemoryDao(): GalleryMemoryDao
 
     companion object {
         private const val DB_NAME = "vibeplayer.db"
@@ -66,7 +68,9 @@ abstract class AppDatabase : RoomDatabase() {
             val factory = SupportFactory(passphrase)
             return Room.databaseBuilder(context, AppDatabase::class.java, DB_NAME)
                 .openHelperFactory(factory)
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(
+                    MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7
+                )
                 .fallbackToDestructiveMigration()
                 .build()
         }

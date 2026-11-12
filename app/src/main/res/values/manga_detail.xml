@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="manga_detail_pages">Страницы</string>
     <string name="manga_detail_read">Читать</string>
     <string name="manga_detail_continue">Продолжить со страницы %1$d</string>
     <string name="manga_detail_download">Скачать</string>

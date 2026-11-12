@@ -19,4 +19,16 @@ object MangaMigrations {
             )
         }
     }
+
+    /** Adds the table that remembers what each opened gallery looked like; nothing else is touched. */
+    val MIGRATION_6_7 = object : Migration(6, 7) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS gallery_memory (galleryId INTEGER NOT NULL PRIMARY KEY, " +
+                    "title TEXT NOT NULL, thumbnailPath TEXT NOT NULL, numPages INTEGER NOT NULL, " +
+                    "tags TEXT NOT NULL, uploadedAt INTEGER, numFavorites INTEGER, " +
+                    "seenAt INTEGER NOT NULL, dismissed INTEGER NOT NULL)"
+            )
+        }
+    }
 }

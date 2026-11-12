@@ -10,10 +10,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import ru.spgsroot.vibeplayer.data.manga.GalleryMemoryStore
 import ru.spgsroot.vibeplayer.data.manga.MangaLibraryRepository
 import ru.spgsroot.vibeplayer.data.manga.MangaCatalogStore
 import ru.spgsroot.vibeplayer.data.manga.NhentaiApi
@@ -26,6 +28,7 @@ import ru.spgsroot.vibeplayer.device.buttplug.CommandSender
 import ru.spgsroot.vibeplayer.manga.GalleryDetail
 import ru.spgsroot.vibeplayer.manga.GallerySummary
 import ru.spgsroot.vibeplayer.manga.LibraryGallery
+import ru.spgsroot.vibeplayer.manga.RememberedGallery
 import ru.spgsroot.vibeplayer.manga.NhentaiCdn
 import ru.spgsroot.vibeplayer.manga.PageTurnHaptic
 import ru.spgsroot.vibeplayer.manga.startPage
@@ -47,7 +50,8 @@ class MangaViewModel @Inject constructor(
     private val api: NhentaiApi,
     private val library: MangaLibraryRepository,
     private val commandSender: CommandSender,
-    private val catalogStore: MangaCatalogStore
+    private val catalogStore: MangaCatalogStore,
+    private val memory: GalleryMemoryStore
 ) : ViewModel() {
     val libraryItems: StateFlow<List<LibraryGallery>> = library.observe()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -56,6 +60,15 @@ class MangaViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val queries = catalogStore.queries
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Upload dates of galleries the user has opened; shown on cards only where one is known. */
+    val uploadDates: StateFlow<Map<Int, Long>> = memory.uploadDates
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
+    /** Cover, tags and counts remembered for each gallery, so History can draw the same cards as the catalog. */
+    val remembered: StateFlow<Map<Int, RememberedGallery>> = memory.all
+        .map { galleries -> galleries.associateBy { it.id } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
     private val _catalog = MutableStateFlow(CatalogState())
     val catalog: StateFlow<CatalogState> = _catalog
     private var searchJob: Job? = null
@@ -140,7 +153,7 @@ class MangaViewModel @Inject constructor(
         }
     }
 
-    fun open(id: Int) {
+    fun open(id: Int, startAt: Int? = null) {
         openJob?.cancel()
         _detail.value = null
         _initialPage.value = null
@@ -150,14 +163,15 @@ class MangaViewModel @Inject constructor(
                 val savedPage = withContext(Dispatchers.IO) { catalogStore.getHistory(id)?.page }
                 val saved = library.observe().first().find { it.id == id && it.pagePaths.isNotEmpty() }
                 if (saved != null) {
-                    _initialPage.value = startPage(savedPage, saved.pagePaths.size)
+                    _initialPage.value = startPage(startAt ?: savedPage, saved.pagePaths.size)
                     _detail.value = GalleryDetail(saved.id, saved.title, saved.thumbnailPath, saved.pagePaths)
                 }
                 val fetched = withContext(Dispatchers.IO) { api.gallery(id) }
-                if (_detail.value == null) _initialPage.value = startPage(savedPage, fetched.pagePaths.size)
+                if (_detail.value == null) _initialPage.value = startPage(startAt ?: savedPage, fetched.pagePaths.size)
                 _detail.value = fetched
                 catalogStore.rememberTags(fetched.tags)
                 refreshVisibleResults()
+                memory.remember(fetched)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

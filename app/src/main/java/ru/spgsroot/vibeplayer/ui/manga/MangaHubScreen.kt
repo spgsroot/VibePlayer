@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -16,6 +19,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -53,10 +57,14 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import ru.spgsroot.vibeplayer.R
 import ru.spgsroot.vibeplayer.manga.CatalogQuery
+import ru.spgsroot.vibeplayer.manga.GalleryTag
+import ru.spgsroot.vibeplayer.manga.TagFilter
+import ru.spgsroot.vibeplayer.manga.TagMode
 
 /** Hub sections that live inside the drawer; the tag browser and random gallery open other screens. */
 private enum class HubDestination(val label: Int, val icon: ImageVector) {
     Catalog(R.string.manga_catalog, Icons.Filled.Search),
+    ForYou(R.string.manga_for_you, Icons.Filled.Star),
     Downloads(R.string.manga_drawer_downloads, Icons.Filled.Download),
     Favorites(R.string.manga_favorites, Icons.Filled.Favorite),
     History(R.string.manga_history, Icons.Filled.History)
@@ -92,6 +100,12 @@ fun MangaHubScreen(
             catalogKey++
             destination = HubDestination.Catalog
         }
+    }
+
+    fun searchTag(tag: GalleryTag) {
+        viewModel.search(CatalogQuery(tags = listOf(TagFilter(tag.type, tag.name, TagMode.Include))))
+        catalogKey++
+        destination = HubDestination.Catalog
     }
 
     fun go(action: () -> Unit) {
@@ -166,7 +180,15 @@ fun MangaHubScreen(
                         }
                         HubDestination.Downloads -> MangaLibraryScreen(navController, viewModel, favoritesOnly = false)
                         HubDestination.Favorites -> MangaLibraryScreen(navController, viewModel, favoritesOnly = true)
-                        HubDestination.History -> HistoryScreen(viewModel, onOpen = { navController.navigate("manga/$it") })
+                        HubDestination.History -> HistoryScreen(
+                            viewModel,
+                            onOpen = { navController.navigate("manga/$it") },
+                            onTag = ::searchTag
+                        )
+                        HubDestination.ForYou -> ForYouScreen(
+                            onOpen = { navController.navigate("manga/$it") },
+                            onTag = ::searchTag
+                        )
                     }
                 }
             }
@@ -175,20 +197,31 @@ fun MangaHubScreen(
 }
 
 @Composable
-private fun HistoryScreen(viewModel: MangaViewModel, onOpen: (Int) -> Unit) {
+private fun HistoryScreen(viewModel: MangaViewModel, onOpen: (Int) -> Unit, onTag: (GalleryTag) -> Unit) {
     val history by viewModel.history.collectAsStateWithLifecycle()
-    LazyColumn(
+    val remembered by viewModel.remembered.collectAsStateWithLifecycle()
+    if (history.isEmpty()) {
+        Text(stringResource(R.string.manga_history_empty), modifier = Modifier.padding(16.dp))
+        return
+    }
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        if (history.isEmpty()) item { Text(stringResource(R.string.manga_history_empty)) }
         items(history, key = { it.galleryId }) { entry ->
-            CatalogGalleryCard(
+            val memory = remembered[entry.galleryId]
+            GalleryGridCard(
                 title = entry.title,
                 thumbnailPath = entry.thumbnailPath,
-                pageCount = entry.pageCount,
-                onOpen = { onOpen(entry.galleryId) }
+                pages = entry.pageCount,
+                tags = memory?.tags.orEmpty(),
+                favorites = memory?.numFavorites,
+                uploadedAt = memory?.uploadedAt,
+                onOpen = { onOpen(entry.galleryId) },
+                onTag = onTag
             )
         }
     }

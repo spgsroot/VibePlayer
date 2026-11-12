@@ -237,11 +237,18 @@ fun AppNavigation(authManager: AuthManager, authSession: AuthSession) {
                 )
             }
             composable(
-                "manga/{id}/read",
-                arguments = listOf(navArgument("id") { type = NavType.IntType })
+                "manga/{id}/read?page={page}",
+                arguments = listOf(
+                    navArgument("id") { type = NavType.IntType },
+                    navArgument("page") {
+                        type = NavType.IntType
+                        defaultValue = -1
+                    }
+                )
             ) { entry ->
                 MangaReaderScreen(
                     galleryId = entry.arguments?.getInt("id") ?: return@composable,
+                    startAt = entry.arguments?.getInt("page")?.takeIf { it >= 0 },
                     navController = navController
                 )
             }

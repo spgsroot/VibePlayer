@@ -22,7 +22,9 @@ data class GalleryDetail(
     val japaneseTitle: String? = null,
     val uploadedAt: Long? = null,
     val favoriteCount: Int? = null,
-    val scanlator: String? = null
+    val scanlator: String? = null,
+    /** Thumbnail path of each page, aligned with [pagePaths]; blank when the API sent none. */
+    val pageThumbs: List<String> = emptyList()
 )
 
 data class GalleryTag(
@@ -56,12 +58,15 @@ object NhentaiParser {
         val english = title?.optString("english").orEmpty()
         val japanese = title?.nullableString("japanese")
         val pages = json.optJSONArray("pages")
-        val pagePaths = buildList {
-            if (pages != null) {
-                for (index in 0 until pages.length()) {
-                    val path = pages.optJSONObject(index)?.optString("path").orEmpty()
-                    if (path.isNotBlank()) add(path)
-                }
+        val pagePaths = mutableListOf<String>()
+        val pageThumbs = mutableListOf<String>()
+        if (pages != null) {
+            for (index in 0 until pages.length()) {
+                val page = pages.optJSONObject(index) ?: continue
+                val path = page.optString("path").orEmpty()
+                if (path.isBlank()) continue
+                pagePaths += path
+                pageThumbs += page.optString("thumbnail").orEmpty()
             }
         }
         return GalleryDetail(
@@ -73,7 +78,8 @@ object NhentaiParser {
             japaneseTitle = japanese,
             uploadedAt = json.nullableLong("upload_date")?.let { it * MILLIS_PER_SECOND },
             favoriteCount = json.nullableInt("num_favorites"),
-            scanlator = json.nullableString("scanlator")
+            scanlator = json.nullableString("scanlator"),
+            pageThumbs = pageThumbs
         )
     }
 

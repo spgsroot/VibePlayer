@@ -1,12 +1,14 @@
 package ru.spgsroot.vibeplayer.ui.manga
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -131,6 +134,9 @@ fun GalleryDetailScreen(
                         }
                     }
                 }
+                pagePreviewRows(detail) { page ->
+                    navController.navigate("manga/$galleryId/read?page=$page")
+                }
                 item(key = "related") {
                     val related = state.related
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -170,6 +176,35 @@ fun GalleryDetailScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+private const val PREVIEW_COLUMNS = 3
+
+/** Thumbnails of every page, three per row, loaded lazily as the list scrolls; a tap opens the reader there. */
+private fun LazyListScope.pagePreviewRows(detail: GalleryDetail, onOpenPage: (Int) -> Unit) {
+    if (detail.pagePaths.isEmpty()) return
+    item(key = "pages-title") {
+        Text(stringResource(R.string.manga_detail_pages), style = MaterialTheme.typography.titleMedium)
+    }
+    val rows = detail.pagePaths.indices.chunked(PREVIEW_COLUMNS)
+    items(rows.size, key = { "pages-$it" }) { rowIndex ->
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            rows[rowIndex].forEach { page ->
+                val thumb = detail.pageThumbs.getOrNull(page).orEmpty()
+                AsyncImage(
+                    model = if (thumb.isNotBlank()) NhentaiCdn.thumb(thumb) else NhentaiCdn.page(detail.pagePaths[page]),
+                    contentDescription = stringResource(R.string.manga_jump_page, page + 1),
+                    modifier = Modifier
+                        .weight(1f)
+                        .aspectRatio(COVER_RATIO)
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable { onOpenPage(page) },
+                    contentScale = ContentScale.Crop
+                )
+            }
+            repeat(PREVIEW_COLUMNS - rows[rowIndex].size) { Spacer(Modifier.weight(1f)) }
         }
     }
 }

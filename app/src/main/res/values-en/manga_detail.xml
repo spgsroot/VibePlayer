@@ -20,5 +20,6 @@
     <string name="manga_drawer_characters">Characters</string>
     <string name="manga_drawer_random">Random gallery</string>
     <string name="manga_random_error">Could not get a random gallery</string>
+    <string name="manga_detail_pages">Pages</string>
     <string name="manga_menu_open">Menu</string>
 </resources>

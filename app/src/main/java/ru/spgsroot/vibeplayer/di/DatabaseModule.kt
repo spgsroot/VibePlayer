@@ -39,4 +39,7 @@ object DatabaseModule {
 
     @Provides
     fun provideTagBlacklistDao(database: AppDatabase): TagBlacklistDao = database.tagBlacklistDao()
+
+    @Provides
+    fun provideGalleryMemoryDao(database: AppDatabase): GalleryMemoryDao = database.galleryMemoryDao()
 }

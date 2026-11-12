@@ -169,13 +169,14 @@ private fun Cover(path: String) {
 @Composable
 fun MangaReaderScreen(
     galleryId: Int,
+    startAt: Int? = null,
     navController: NavController,
     viewModel: MangaViewModel = hiltViewModel()
 ) {
     val detail by viewModel.detail.collectAsStateWithLifecycle()
     val initialPage by viewModel.initialPage.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
-    LaunchedEffect(galleryId) { viewModel.open(galleryId) }
+    LaunchedEffect(galleryId, startAt) { viewModel.open(galleryId, startAt) }
     val current = detail?.takeIf { it.id == galleryId }
     if (current != null && initialPage != null && current.pagePaths.isNotEmpty()) {
         key(galleryId) {

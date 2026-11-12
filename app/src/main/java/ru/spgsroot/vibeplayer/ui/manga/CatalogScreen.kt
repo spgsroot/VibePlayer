@@ -1,6 +1,7 @@
 package ru.spgsroot.vibeplayer.ui.manga
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,11 +50,18 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Placeable
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import ru.spgsroot.vibeplayer.R
 import ru.spgsroot.vibeplayer.manga.CatalogQuery
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import ru.spgsroot.vibeplayer.manga.GallerySummary
 import ru.spgsroot.vibeplayer.manga.GalleryTag
 import ru.spgsroot.vibeplayer.manga.NhentaiCdn
@@ -71,6 +79,7 @@ fun CatalogScreen(viewModel: MangaViewModel, onOpen: (Int) -> Unit) {
     val catalog by viewModel.catalog.collectAsStateWithLifecycle()
     val queries by viewModel.queries.collectAsStateWithLifecycle()
     val blockedIds by viewModel.blockedIds.collectAsStateWithLifecycle()
+    val uploadDates by viewModel.uploadDates.collectAsStateWithLifecycle()
     val blockedNames by viewModel.blockedNames.collectAsStateWithLifecycle()
     var text by rememberSaveable(catalog.query.text) { mutableStateOf(catalog.query.text) }
     var showFilters by rememberSaveable { mutableStateOf(false) }
@@ -186,8 +195,13 @@ fun CatalogScreen(viewModel: MangaViewModel, onOpen: (Int) -> Unit) {
             }
         }
         items(catalog.results, key = { it.id }) { gallery ->
-            CatalogGridCard(
-                gallery = gallery,
+            GalleryGridCard(
+                title = gallery.title,
+                thumbnailPath = gallery.thumbnailPath,
+                pages = gallery.numPages,
+                tags = gallery.tags,
+                favorites = gallery.numFavorites,
+                uploadedAt = uploadDates[gallery.id],
                 onOpen = { onOpen(gallery.id) },
                 onTag = { tag ->
                     val filter = TagFilter(tag.type, tag.name, TagMode.Include)
@@ -216,26 +230,30 @@ private fun LazyGridScope.fullWidth(content: @Composable () -> Unit) {
     item(span = { GridItemSpan(maxLineSpan) }) { content() }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+/** The large cover card used by the catalog and by History. [onTag] null leaves the chips as plain labels. */
 @Composable
-private fun CatalogGridCard(gallery: GallerySummary, onOpen: () -> Unit, onTag: (GalleryTag) -> Unit) {
-    val language = gallery.tags.firstOrNull { it.type == "language" && it.name != "translated" }?.name
-    val hashtags = gallery.tags
-        .filter { it.type != "language" && it.type != "category" }
-        .sortedBy { if (it.type == "tag") 0 else 1 }
-        .take(CARD_TAG_LIMIT)
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+internal fun GalleryGridCard(
+    title: String,
+    thumbnailPath: String,
+    pages: Int,
+    tags: List<GalleryTag>,
+    favorites: Int?,
+    uploadedAt: Long?,
+    onOpen: () -> Unit,
+    onTag: ((GalleryTag) -> Unit)?
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Card(onClick = onOpen, modifier = Modifier.fillMaxWidth().aspectRatio(COVER_ASPECT)) {
             Box(Modifier.fillMaxSize()) {
                 AsyncImage(
-                    model = NhentaiCdn.thumb(gallery.thumbnailPath),
-                    contentDescription = gallery.title,
+                    model = NhentaiCdn.thumb(thumbnailPath),
+                    contentDescription = title,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
-                gallery.numFavorites?.let { favorites ->
+                favorites?.let { count ->
                     Text(
-                        text = "\u2665 " + compactCount(favorites),
+                        text = "\u2665 " + compactCount(count),
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.White,
                         modifier = Modifier
@@ -249,35 +267,86 @@ private fun CatalogGridCard(gallery: GallerySummary, onOpen: () -> Unit, onTag: 
             }
         }
         Text(
-            gallery.title,
+            title,
             style = MaterialTheme.typography.titleSmall,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
-        Text(
-            text = listOfNotNull(language, stringResource(R.string.manga_page_count, gallery.numPages)).joinToString(" \u00b7 "),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        if (hashtags.isNotEmpty()) {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                hashtags.forEach { tag ->
-                    Surface(
-                        onClick = { onTag(tag) },
-                        shape = RoundedCornerShape(6.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant
-                    ) {
-                        Text(
-                            "#" + tag.name,
-                            style = MaterialTheme.typography.labelSmall,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                        )
-                    }
-                }
+        GalleryMetaLine(tags, pages, uploadedAt)
+        OneLineTagChips(cardTags(tags), onTag)
+    }
+}
+
+/** Language, page count and, when the app has seen one, the upload date, on a single line. */
+@Composable
+internal fun GalleryMetaLine(tags: List<GalleryTag>, pages: Int, uploadedAt: Long?) {
+    val language = tags.firstOrNull { it.type == "language" && it.name != "translated" }?.name
+    val parts = listOfNotNull(
+        language,
+        stringResource(R.string.manga_page_count, pages),
+        uploadedAt?.let(::formatUploadDate)
+    )
+    Text(
+        text = parts.joinToString(" \u00b7 "),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+    )
+}
+
+internal fun formatUploadDate(millis: Long): String =
+    DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+        .format(Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()))
+
+internal fun cardTags(tags: List<GalleryTag>): List<GalleryTag> = tags
+    .filter { it.type != "language" && it.type != "category" }
+    .sortedBy { if (it.type == "tag") 0 else 1 }
+    .take(CARD_TAG_LIMIT)
+
+/**
+ * Small chips in one row that never wrap or grow tall: a chip that would not fit whole is left out, so no chip
+ * is ever shown cut off.
+ */
+@Composable
+internal fun OneLineTagChips(tags: List<GalleryTag>, onTag: ((GalleryTag) -> Unit)?) {
+    if (tags.isEmpty()) return
+    val gap = 4.dp
+    Layout(
+        content = {
+            tags.forEach { tag ->
+                Text(
+                    "#" + tag.name,
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                    softWrap = false,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(5.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .let { chip -> if (onTag == null) chip else chip.clickable { onTag(tag) } }
+                        .padding(horizontal = 5.dp, vertical = 2.dp)
+                )
+            }
+        },
+        modifier = Modifier.fillMaxWidth()
+    ) { measurables, constraints ->
+        val gapPx = gap.roundToPx()
+        val loose = constraints.copy(minWidth = 0, minHeight = 0, maxWidth = Constraints.Infinity)
+        val placeables = measurables.map { it.measure(loose) }
+        var used = 0
+        val shown = ArrayList<Placeable>(placeables.size)
+        for (placeable in placeables) {
+            val next = if (shown.isEmpty()) placeable.width else used + gapPx + placeable.width
+            if (next > constraints.maxWidth) break
+            used = next
+            shown += placeable
+        }
+        val height = shown.maxOfOrNull { it.height } ?: 0
+        layout(constraints.maxWidth, height) {
+            var x = 0
+            shown.forEach { placeable ->
+                placeable.placeRelative(x, 0)
+                x += placeable.width + gapPx
             }
         }
     }
@@ -287,22 +356,4 @@ private fun compactCount(value: Int): String = when {
     value >= 1_000_000 -> "%.1fM".format(value / 1_000_000f)
     value >= 1_000 -> "%.1fk".format(value / 1_000f)
     else -> value.toString()
-}
-
-@Composable
-internal fun CatalogGalleryCard(title: String, thumbnailPath: String, pageCount: Int, onOpen: () -> Unit) {
-    Card(onClick = onOpen, modifier = Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            AsyncImage(
-                model = NhentaiCdn.thumb(thumbnailPath),
-                contentDescription = null,
-                modifier = Modifier.size(72.dp).clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
-            )
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(stringResource(R.string.manga_page_count, pageCount), style = MaterialTheme.typography.bodySmall)
-            }
-        }
-    }
 }

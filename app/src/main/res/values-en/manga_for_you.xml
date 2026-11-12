@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="manga_for_you">For you</string>
+    <string name="manga_for_you_because">Because you like: %1$s</string>
+    <string name="manga_for_you_not_interested">Not interested</string>
+    <string name="manga_for_you_refresh">Refresh picks</string>
+    <string name="manga_for_you_empty">No new picks right now</string>
+    <string name="manga_for_you_cold">Read, save or favorite something, or favorite a few tags, and the picks will follow your taste. Until then this is just what is popular.</string>
+</resources>

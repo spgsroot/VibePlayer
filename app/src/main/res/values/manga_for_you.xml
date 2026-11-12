@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="manga_for_you">Для вас</string>
+    <string name="manga_for_you_because">Потому что вам нравится: %1$s</string>
+    <string name="manga_for_you_not_interested">Не интересно</string>
+    <string name="manga_for_you_refresh">Обновить подборку</string>
+    <string name="manga_for_you_empty">Новых рекомендаций пока нет</string>
+    <string name="manga_for_you_cold">Почитайте, сохраните или добавьте в избранное что-нибудь, либо отметьте несколько тегов избранными — и подборка подстроится под ваш вкус. Пока это просто популярное.</string>
+</resources>
