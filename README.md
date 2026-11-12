@@ -1,6 +1,6 @@
 # Peachy
 
-Private player and gallery for adult content: videos, image galleries and hentai manga in one app. It syncs playback with devices through the Buttplug protocol (Intiface Central). Native Android, Jetpack Compose. Version in this tree: `2.4.0` (`versionCode` 4). [Русская версия](README_RU.md).
+Private player and gallery for adult content: videos, image galleries and hentai manga in one app. It syncs playback with devices through the Buttplug protocol (Intiface Central). Native Android, Jetpack Compose. Version in this tree: `3.0.0` (`versionCode` 5). [Русская версия](README_RU.md).
 
 The player shot is a local sample clip. The gallery shows clips imported into the app. Catalog covers and titles are blurred. The reader shot is the screen after a failed open and does not contain page images.
 
