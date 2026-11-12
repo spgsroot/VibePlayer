@@ -1,22 +1,20 @@
 # VibePlayer
 
-Android video player that maps playback audio to Buttplug actuators, plus a reader for nhentai. UI is Jetpack Compose. Version in this tree: `2.3.0` (`versionCode` 3). [Русская версия](README_RU.md).
+Android video player that maps playback audio to Buttplug actuators, plus a reader for nhentai. UI is Jetpack Compose. Version in this tree: `2.4.0` (`versionCode` 4). [Русская версия](README_RU.md).
 
-The screenshots below were taken on an emulator with an empty library. No video and no gallery pages were loaded.
+The player shot is a local sample clip. The gallery shows clips imported into the app. Catalog covers and titles are blurred. The reader shot is the screen after a failed open and does not contain page images.
 
 | Onboarding | PIN | Player |
 |:---:|:---:|:---:|
-| <img src="repo/screens/onboarding.png" width="180" alt="Onboarding"/> | <img src="repo/screens/auth.png" width="180" alt="PIN pad"/> | <img src="repo/screens/player.png" width="180" alt="Empty player"/> |
+| <img src="repo/screens/onboarding.png" width="180" alt="Onboarding"/> | <img src="repo/screens/auth.png" width="180" alt="PIN pad"/> | <img src="repo/screens/player.png" width="180" alt="Player with a local clip"/> |
 
 | Settings | Device | Add video |
 |:---:|:---:|:---:|
 | <img src="repo/screens/settings.png" width="180" alt="Settings"/> | <img src="repo/screens/device.png" width="180" alt="Intiface dialog"/> | <img src="repo/screens/add-video.png" width="180" alt="Add video"/> |
 
-| Gallery | Library | Reader |
+| Gallery | Catalog | Reader |
 |:---:|:---:|:---:|
-| <img src="repo/screens/gallery.png" width="180" alt="Empty gallery"/> | <img src="repo/screens/library.png" width="180" alt="Empty library"/> | <img src="repo/screens/reader.png" width="180" alt="Reader with no pages loaded"/> |
-
-The reader shot is the screen after a failed open. It does not contain page images.
+| <img src="repo/screens/gallery.png" width="180" alt="Gallery with imported clips"/> | <img src="repo/screens/catalog.png" width="180" alt="Catalog search with covers blurred"/> | <img src="repo/screens/reader.png" width="180" alt="Reader with no pages loaded"/> |
 
 ## What it does
 

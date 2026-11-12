@@ -1,22 +1,20 @@
 # VibePlayer
 
-Видеоплеер для Android, который переводит звук воспроизведения в команды актуаторов Buttplug, и ридер nhentai. Интерфейс на Jetpack Compose. Версия в этом дереве: `2.3.0` (`versionCode` 3). [English](README.md).
+Видеоплеер для Android, который переводит звук воспроизведения в команды актуаторов Buttplug, и ридер nhentai. Интерфейс на Jetpack Compose. Версия в этом дереве: `2.4.0` (`versionCode` 4). [English](README.md).
 
-Снимки сделаны на эмуляторе с пустой библиотекой. Видео и страницы галерей не загружались.
+На снимке плеера — локальный тестовый ролик. В галерее — ролики, импортированные в приложение. Обложки и названия в каталоге закрыты. Снимок ридера — экран после неудачного открытия, изображений страниц на нём нет.
 
 | Первый запуск | PIN | Плеер |
 |:---:|:---:|:---:|
-| <img src="repo/screens/onboarding.png" width="180" alt="Первый запуск"/> | <img src="repo/screens/auth.png" width="180" alt="Экран PIN"/> | <img src="repo/screens/player.png" width="180" alt="Пустой плеер"/> |
+| <img src="repo/screens/onboarding.png" width="180" alt="Первый запуск"/> | <img src="repo/screens/auth.png" width="180" alt="Экран PIN"/> | <img src="repo/screens/player.png" width="180" alt="Плеер с локальным роликом"/> |
 
 | Настройки | Устройство | Добавление видео |
 |:---:|:---:|:---:|
 | <img src="repo/screens/settings.png" width="180" alt="Настройки"/> | <img src="repo/screens/device.png" width="180" alt="Диалог Intiface"/> | <img src="repo/screens/add-video.png" width="180" alt="Добавить видео"/> |
 
-| Галерея | Библиотека | Ридер |
+| Галерея | Каталог | Ридер |
 |:---:|:---:|:---:|
-| <img src="repo/screens/gallery.png" width="180" alt="Пустая галерея"/> | <img src="repo/screens/library.png" width="180" alt="Пустая библиотека"/> | <img src="repo/screens/reader.png" width="180" alt="Ридер без загруженных страниц"/> |
-
-Снимок ридера — экран после неудачного открытия. Изображений страниц на нём нет.
+| <img src="repo/screens/gallery.png" width="180" alt="Галерея с импортированными роликами"/> | <img src="repo/screens/catalog.png" width="180" alt="Поиск в каталоге, обложки закрыты"/> | <img src="repo/screens/reader.png" width="180" alt="Ридер без загруженных страниц"/> |
 
 ## Что делает
 
