@@ -52,7 +52,8 @@ class ExternalDownloader @Inject constructor(
     suspend fun download(
         url: String,
         fileName: String,
-        onProgress: (Int) -> Unit = {}
+        onProgress: (Int) -> Unit = {},
+        headers: Map<String, String> = emptyMap()
     ): Result<File> {
         val notificationId = nextNotificationId.getAndIncrement()
 
@@ -71,6 +72,7 @@ class ExternalDownloader @Inject constructor(
         return try {
             val request = Request.Builder()
                 .url(url)
+                .apply { headers.forEach { (name, value) -> header(name, value) } }
                 .get()
                 .build()
 

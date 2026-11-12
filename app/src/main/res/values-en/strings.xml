@@ -187,7 +187,7 @@
 
     <!-- Batch Import Dialog -->
     <string name="dialog_import_list">Import List</string>
-    <string name="import_hint">Paste URLs, one per line.</string>
+    <string name="import_hint">Paste URLs, one per line. Album and file links from Bunkr, Cyberdrop, Turbo, Pixeldrain and Filester import every video in them.</string>
     <string name="import_url_placeholder">https://example.com/video1.mp4\nhttps://example.com/video2.mp4</string>
     <string name="error_no_urls">Add at least one valid http/https URL</string>
     <string name="importing">Importing…</string>

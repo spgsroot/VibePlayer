@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ru.spgsroot.peachy.data.downloader.ExternalDownloader
+import ru.spgsroot.peachy.data.hosts.HostEntry
+import ru.spgsroot.peachy.data.hosts.HostImporter
 import ru.spgsroot.peachy.data.repository.SettingsRepository
 import ru.spgsroot.peachy.data.repository.VideoRepository
 import ru.spgsroot.peachy.data.storage.InternalStorageManager
@@ -42,7 +44,8 @@ class PlayerViewModel @Inject constructor(
     private val timerController: TimerController,
     private val videoRepository: VideoRepository,
     private val storageManager: InternalStorageManager,
-    private val externalDownloader: ExternalDownloader
+    private val externalDownloader: ExternalDownloader,
+    private val hostImporter: HostImporter
 ) : ViewModel() {
 
     private var currentSettings: Settings? = null
@@ -201,25 +204,18 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Imports [url]. A link of a supported file host brings every video it points to (all videos of an album);
+     * the result is a success when at least one of them was saved.
+     */
     suspend fun importVideoFromUrl(url: String): Result<Unit> = withContext(Dispatchers.IO) {
         val normalizedUrl = url.trim()
         if (normalizedUrl.isBlank()) {
             return@withContext Result.failure(IllegalArgumentException("Пустой URL"))
         }
 
-        val fileName = buildDownloadFileName(normalizedUrl)
-
-        externalDownloader.download(
-            url = normalizedUrl,
-            fileName = fileName
-        ).fold(
-            onSuccess = { savedFile ->
-                persistSavedVideo(savedFile)
-            },
-            onFailure = { error ->
-                Result.failure(error)
-            }
-        )
+        val results = importItemsFor(normalizedUrl).map { it.run() }
+        results.firstOrNull { it.isSuccess } ?: results.first()
     }
 
     fun downloadVideosFromUrls(urls: List<String>) {
@@ -237,13 +233,16 @@ class PlayerViewModel @Inject constructor(
             .filter { it.isNotEmpty() }
             .distinct()
 
+        // Album links expand to one item per video, so the totals count videos, not links.
+        val items = normalizedUrls.flatMap { importItemsFor(it) }
+
         val failedUrls = mutableListOf<String>()
         var succeeded = 0
         var failed = 0
 
         onProgress(
             BatchImportProgress(
-                total = normalizedUrls.size,
+                total = items.size,
                 completed = 0,
                 currentUrl = "",
                 succeeded = 0,
@@ -251,21 +250,21 @@ class PlayerViewModel @Inject constructor(
             )
         )
 
-        normalizedUrls.forEachIndexed { index, currentUrl ->
-            val result = importVideoFromUrl(currentUrl)
+        items.forEachIndexed { index, item ->
+            val result = item.run()
 
             if (result.isSuccess) {
                 succeeded++
             } else {
                 failed++
-                failedUrls += currentUrl
+                failedUrls += item.label
             }
 
             onProgress(
                 BatchImportProgress(
-                    total = normalizedUrls.size,
+                    total = items.size,
                     completed = index + 1,
-                    currentUrl = currentUrl,
+                    currentUrl = item.label,
                     succeeded = succeeded,
                     failed = failed,
                     lastError = result.exceptionOrNull()?.message
@@ -274,19 +273,56 @@ class PlayerViewModel @Inject constructor(
         }
 
         BatchImportSummary(
-            total = normalizedUrls.size,
+            total = items.size,
             succeeded = succeeded,
             failed = failed,
             failedUrls = failedUrls
         )
     }
 
-    private suspend fun persistSavedVideo(savedFile: File): Result<Unit> = withContext(Dispatchers.IO) {
+    private class ImportItem(val label: String, val run: suspend () -> Result<Unit>)
+
+    /** Never throws: a host link that cannot be read becomes one failing item, so batches carry on. */
+    private fun importItemsFor(url: String): List<ImportItem> {
+        if (!hostImporter.recognizes(url)) {
+            return listOf(ImportItem(url) { importDirectUrl(url) })
+        }
+        val entries = try {
+            hostImporter.expand(url)
+        } catch (e: Exception) {
+            return listOf(ImportItem(url) { Result.failure(e) })
+        }
+        return entries.map { entry -> ImportItem(entry.label) { importHostEntry(entry) } }
+    }
+
+    private suspend fun importDirectUrl(url: String): Result<Unit> =
+        externalDownloader.download(url = url, fileName = buildDownloadFileName(url)).fold(
+            onSuccess = { persistSavedVideo(it) },
+            onFailure = { Result.failure(it) }
+        )
+
+    private suspend fun importHostEntry(entry: HostEntry): Result<Unit> {
+        val link = try {
+            hostImporter.resolve(entry)
+        } catch (e: Exception) {
+            return Result.failure(e)
+        }
+        return externalDownloader.download(
+            url = link.url,
+            fileName = "${System.currentTimeMillis()}.${link.name.substringAfterLast('.', "mp4").lowercase()}",
+            headers = link.headers
+        ).fold(
+            onSuccess = { persistSavedVideo(it, title = link.name.substringBeforeLast('.')) },
+            onFailure = { Result.failure(it) }
+        )
+    }
+
+    private suspend fun persistSavedVideo(savedFile: File, title: String? = null): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
             val metadata = extractMetadata(savedFile)
             val video = Video(
                 id = 0,
-                title = metadata.title,
+                title = title?.takeIf { it.isNotBlank() } ?: metadata.title,
                 filePath = savedFile.absolutePath,
                 duration = metadata.duration,
                 thumbnailPath = null,

@@ -187,7 +187,7 @@
 
     <!-- Batch Import Dialog -->
     <string name="dialog_import_list">Импорт списка</string>
-    <string name="import_hint">Вставьте URL-адреса, по одному на строку.</string>
+    <string name="import_hint">Вставьте URL-адреса, по одному на строку. Ссылки на альбомы и файлы Bunkr, Cyberdrop, Turbo, Pixeldrain и Filester импортируют все видео, которые в них есть.</string>
     <string name="import_url_placeholder">https://example.com/video1.mp4\nhttps://example.com/video2.mp4</string>
     <string name="error_no_urls">Добавьте хотя бы один корректный http/https URL</string>
     <string name="importing">Импорт…</string>
