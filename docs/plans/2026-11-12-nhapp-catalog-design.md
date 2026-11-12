@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Reproduce the supplied NHApp screen set in VibePlayer's native Compose catalog using real API and local-library data.
+**Goal:** Reproduce the supplied NHApp screen set in Peachy's native Compose catalog using real API and local-library data.
 
 **Architecture:** Keep the existing native reader and Hilt repositories. Extend the API's actual v2 contracts, render two-column cover grids, use a manga-scoped drawer, and persist tag favorites and named tag collections locally. Keep navigation between gallery details and reading explicit.
 

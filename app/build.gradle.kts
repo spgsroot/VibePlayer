@@ -10,11 +10,11 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 android {
-    namespace = "ru.spgsroot.vibeplayer"
+    namespace = "ru.spgsroot.peachy"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "ru.spgsroot.vibeplayer"
+        applicationId = "ru.spgsroot.peachy"
         minSdk = 26
         targetSdk = 36
         versionCode = 4

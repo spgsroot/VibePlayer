@@ -1,0 +1,231 @@
+package ru.spgsroot.peachy.ui.player
+
+import android.content.Intent
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.VideoLibrary
+import androidx.compose.material3.*
+import androidx.compose.ui.res.stringResource
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
+import kotlinx.coroutines.launch
+import ru.spgsroot.peachy.R
+import ru.spgsroot.peachy.playback.player.PlayerState
+import ru.spgsroot.peachy.ui.dialog.AddVideoDialog
+import ru.spgsroot.peachy.ui.dialog.BatchImportDialog
+import ru.spgsroot.peachy.ui.dialog.UrlInputDialog
+import ru.spgsroot.peachy.ui.dialog.WebViewUrlDialog
+import ru.spgsroot.peachy.ui.settings.SettingsDrawer
+import ru.spgsroot.peachy.ui.settings.SettingsViewModel
+import ru.spgsroot.peachy.ui.webview.WebViewActivity
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PlayerScreen(
+    navController: NavController,
+    viewModel: PlayerViewModel = hiltViewModel(),
+    settingsViewModel: SettingsViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val playerState by viewModel.playerState.collectAsStateWithLifecycle()
+    val deviceState by settingsViewModel.deviceState.collectAsStateWithLifecycle()
+    val devices by settingsViewModel.devices.collectAsStateWithLifecycle()
+    val activeDeviceIndex by settingsViewModel.activeDeviceIndex.collectAsStateWithLifecycle()
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    var showAddDialog by remember { mutableStateOf(false) }
+    var showUrlDialog by remember { mutableStateOf(false) }
+    var showBatchDialog by remember { mutableStateOf(false) }
+    var showWebViewDialog by remember { mutableStateOf(false) }
+
+    // Состояние полноэкранного режима
+    var isFullscreen by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
+    val activity = context as? android.app.Activity
+
+    // Состояние зума (сохраняется при переключении между видео благодаря rememberSaveable)
+    var zoomScale by rememberSaveable { mutableFloatStateOf(1f) }
+    var panX by rememberSaveable { mutableFloatStateOf(0f) }
+    var panY by rememberSaveable { mutableFloatStateOf(0f) }
+
+    LaunchedEffect(isFullscreen) {
+        if (activity != null) {
+            val window = activity.window
+            val windowInsetsController = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
+            if (isFullscreen) {
+                // Ориентация экрана зависит от положения телефона (переворот работает на все 360 градусов)
+                activity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR
+                windowInsetsController.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+                windowInsetsController.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            } else {
+                activity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                windowInsetsController.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            }
+        }
+    }
+
+    // Если мы в полноэкранном режиме, нажатие назад просто вернет нас в обычный режим
+    BackHandler(enabled = isFullscreen) {
+        isFullscreen = false
+    }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        uri?.let { viewModel.importVideoFromUri(it) }
+    }
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = { SettingsDrawer(viewModel = settingsViewModel) }
+    ) {
+        Scaffold(
+            topBar = {
+                // Скрываем TopAppBar в полноэкранном режиме
+                if (!isFullscreen) {
+                    TopAppBar(
+                        title = { Text("Peachy") },
+                        navigationIcon = {
+                            IconButton(onClick = {
+                                scope.launch { drawerState.open() }
+                            }) {
+                                Icon(Icons.Default.Menu, stringResource(R.string.content_description_menu))
+                            }
+                        },
+                        actions = {
+                            IconButton(onClick = { navController.navigate("gallery") }) {
+                                Icon(Icons.Default.VideoLibrary, stringResource(R.string.content_description_gallery))
+                            }
+                            IconButton(onClick = { navController.navigate("manga") }) {
+                                Icon(Icons.AutoMirrored.Filled.MenuBook, stringResource(R.string.content_description_library))
+                            }
+                            IconButton(onClick = { showAddDialog = true }) {
+                                Icon(Icons.Default.Add, stringResource(R.string.content_description_add_video))
+                            }
+                        }
+                    )
+                }
+            }
+        ) { padding ->
+            when (uiState) {
+                PlayerUiState.Empty -> EmptyState(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    onAddVideoClick = { showAddDialog = true }
+                )
+                PlayerUiState.Ready -> Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(androidx.compose.ui.graphics.Color.Black)
+                ) {
+                    PlayerContent(
+                        modifier = Modifier.fillMaxSize(),
+                        playerState = playerState,
+                        exoPlayerWrapper = viewModel.exoPlayerWrapper,
+                        isFullscreen = isFullscreen,
+                        onFullscreenToggle = { isFullscreen = !isFullscreen },
+                        onPlayPause = viewModel::onPlayPause,
+                        onNext = viewModel::onNext,
+                        onPrevious = viewModel::onPrevious,
+                        onSeek = viewModel::onSeek,
+                        zoomScale = zoomScale,
+                        panX = panX,
+                        panY = panY,
+                        onZoomChange = { zoomMultiplier ->
+                            zoomScale = (zoomScale * zoomMultiplier).coerceIn(1f, 4f)
+                        },
+                        onPanChange = { offset ->
+                            panX += offset.x
+                            panY += offset.y
+                            // Сбрасываем сдвиг, если вернулись к оригинальному размеру
+                            if (zoomScale <= 1.01f) {
+                                panX = 0f
+                                panY = 0f
+                            }
+                        },
+                        onResetZoom = {
+                            zoomScale = 1f
+                            panX = 0f
+                            panY = 0f
+                        },
+                        deviceState = deviceState,
+                        devices = devices,
+                        activeDeviceIndex = activeDeviceIndex
+                    )
+
+                    if (!isFullscreen) {
+                        // TopAppBar padding overlay, чтобы видео не уходило под AppBar когда он виден
+                        Spacer(
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .fillMaxWidth()
+                                .height(padding.calculateTopPadding())
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (showAddDialog) {
+        AddVideoDialog(
+            onDismiss = { showAddDialog = false },
+            onGalleryClick = {
+                galleryLauncher.launch(
+                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
+                )
+            },
+            onUrlClick = { showUrlDialog = true },
+            onBatchClick = { showBatchDialog = true },
+            onWebViewClick = { showWebViewDialog = true }
+        )
+    }
+
+    if (showUrlDialog) {
+        UrlInputDialog(
+            onDismiss = { showUrlDialog = false },
+            onDownload = { url ->
+                viewModel.importVideoFromUrl(url)
+            }
+        )
+    }
+
+    if (showBatchDialog) {
+        BatchImportDialog(
+            onDismiss = { showBatchDialog = false },
+            onImport = { urls, progressCallback ->
+                viewModel.importVideosFromUrls(urls, progressCallback)
+            }
+        )
+    }
+
+    if (showWebViewDialog) {
+        WebViewUrlDialog(
+            onDismiss = { showWebViewDialog = false },
+            onOpen = { url ->
+                viewModel.pauseForWebView()
+                context.startActivity(
+                    Intent(context, WebViewActivity::class.java).apply {
+                        putExtra(WebViewActivity.EXTRA_URL, url)
+                    }
+                )
+            }
+        )
+    }
+}

@@ -29,8 +29,8 @@
 ### Task 1: Catalog query
 
 **Files:**
-- Create: `app/src/main/java/ru/spgsroot/vibeplayer/manga/CatalogQuery.kt`
-- Test: `app/src/test/java/ru/spgsroot/vibeplayer/manga/CatalogQueryTest.kt`
+- Create: `app/src/main/java/ru/spgsroot/peachy/manga/CatalogQuery.kt`
+- Test: `app/src/test/java/ru/spgsroot/peachy/manga/CatalogQueryTest.kt`
 
 **Interfaces:**
 - Produces: `TagMode`, `TagFilter`, `SortKey`, `PagesFilter`, `CatalogQuery`, `CatalogQuery.toSearchQuery()`, `SortKey.toApi()`, `CatalogQuery.nextTagMode()`
@@ -79,7 +79,7 @@ class CatalogQueryTest {
 
 - [ ] **Step 2: Run the test and confirm it fails to compile**
 
-Run: `./gradlew :app:testDebugUnitTest --tests ru.spgsroot.vibeplayer.manga.CatalogQueryTest`
+Run: `./gradlew :app:testDebugUnitTest --tests ru.spgsroot.peachy.manga.CatalogQueryTest`
 Expected: unresolved `CatalogQuery`.
 
 - [ ] **Step 3: Implement the types**
@@ -91,7 +91,7 @@ Expected: unresolved `CatalogQuery`.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/src/main/java/ru/spgsroot/vibeplayer/manga/CatalogQuery.kt app/src/test/java/ru/spgsroot/vibeplayer/manga/CatalogQueryTest.kt
+git add app/src/main/java/ru/spgsroot/peachy/manga/CatalogQuery.kt app/src/test/java/ru/spgsroot/peachy/manga/CatalogQueryTest.kt
 git commit -m "Add the nhentai catalog query builder"
 ```
 
@@ -100,12 +100,12 @@ git commit -m "Add the nhentai catalog query builder"
 ### Task 2: Search request and parser
 
 **Files:**
-- Modify: `app/src/main/java/ru/spgsroot/vibeplayer/manga/NhentaiRequest.kt`
-- Modify: `app/src/main/java/ru/spgsroot/vibeplayer/manga/NhentaiParser.kt`
-- Modify: `app/src/main/java/ru/spgsroot/vibeplayer/data/manga/NhentaiApi.kt`
-- Modify: `app/src/main/java/ru/spgsroot/vibeplayer/ui/manga/MangaViewModel.kt` so the current call still compiles with `sort=date`
-- Test: `app/src/test/java/ru/spgsroot/vibeplayer/manga/NhentaiRequestTest.kt`
-- Test: `app/src/test/java/ru/spgsroot/vibeplayer/manga/NhentaiParserTest.kt`
+- Modify: `app/src/main/java/ru/spgsroot/peachy/manga/NhentaiRequest.kt`
+- Modify: `app/src/main/java/ru/spgsroot/peachy/manga/NhentaiParser.kt`
+- Modify: `app/src/main/java/ru/spgsroot/peachy/data/manga/NhentaiApi.kt`
+- Modify: `app/src/main/java/ru/spgsroot/peachy/ui/manga/MangaViewModel.kt` so the current call still compiles with `sort=date`
+- Test: `app/src/test/java/ru/spgsroot/peachy/manga/NhentaiRequestTest.kt`
+- Test: `app/src/test/java/ru/spgsroot/peachy/manga/NhentaiParserTest.kt`
 
 **Interfaces:**
 - Consumes: `SortKey.toApi()`
@@ -136,12 +136,12 @@ git commit -m "Pass catalog sort and gallery tags through the nhentai client"
 ### Task 3: Reader motion, blacklist, and search history
 
 **Files:**
-- Create: `app/src/main/java/ru/spgsroot/vibeplayer/manga/ReaderMotion.kt`
-- Create: `app/src/main/java/ru/spgsroot/vibeplayer/manga/TagBlacklist.kt`
-- Create: `app/src/main/java/ru/spgsroot/vibeplayer/manga/SearchHistory.kt`
-- Test: `app/src/test/java/ru/spgsroot/vibeplayer/manga/ReaderMotionTest.kt`
-- Test: `app/src/test/java/ru/spgsroot/vibeplayer/manga/TagBlacklistTest.kt`
-- Test: `app/src/test/java/ru/spgsroot/vibeplayer/manga/SearchHistoryTest.kt`
+- Create: `app/src/main/java/ru/spgsroot/peachy/manga/ReaderMotion.kt`
+- Create: `app/src/main/java/ru/spgsroot/peachy/manga/TagBlacklist.kt`
+- Create: `app/src/main/java/ru/spgsroot/peachy/manga/SearchHistory.kt`
+- Test: `app/src/test/java/ru/spgsroot/peachy/manga/ReaderMotionTest.kt`
+- Test: `app/src/test/java/ru/spgsroot/peachy/manga/TagBlacklistTest.kt`
+- Test: `app/src/test/java/ru/spgsroot/peachy/manga/SearchHistoryTest.kt`
 
 **Interfaces:**
 - Produces: `PageTurnGate.onPage(page, idle): Boolean`, `centerPage(centers, viewportCenter): Int`, `tapZone(x, width, mirror): TapZone`, `startPage(saved, pageCount): Int`, `blocks(tagIds, tagNames, blockedIds, blockedNames): Boolean`, `rememberQuery(current, query): List<String>`, `isGalleryId(raw): Boolean`
@@ -188,10 +188,10 @@ git commit -m "Define reader motion, blacklist matching, and search history"
 **Review:** per-task. This changes the Room schema. A bad migration loses read progress on upgrade.
 
 **Files:**
-- Modify: `app/src/main/java/ru/spgsroot/vibeplayer/data/db/AppDatabase.kt`
-- Modify: `app/src/main/java/ru/spgsroot/vibeplayer/di/DatabaseModule.kt`
-- Create: `app/src/main/java/ru/spgsroot/vibeplayer/data/manga/MangaCatalogStore.kt`
-- Test: `app/src/test/java/ru/spgsroot/vibeplayer/data/manga/MangaMigrationSqlTest.kt`
+- Modify: `app/src/main/java/ru/spgsroot/peachy/data/db/AppDatabase.kt`
+- Modify: `app/src/main/java/ru/spgsroot/peachy/di/DatabaseModule.kt`
+- Create: `app/src/main/java/ru/spgsroot/peachy/data/manga/MangaCatalogStore.kt`
+- Test: `app/src/test/java/ru/spgsroot/peachy/data/manga/MangaMigrationSqlTest.kt`
 
 **Interfaces:**
 - Consumes: `rememberQuery`, `blocks`
@@ -232,7 +232,7 @@ data class TagBlacklistEntity(val kind: String, val value: String)
 
 `MangaCatalogStore` upserts history, lists it newest `readAt` first, remembers a query through `rememberQuery` then replaces the `search_history` rows, and lists blacklist ids and lowercase names. It does not filter the saved library.
 
-Room writes `app/schemas/ru.spgsroot.vibeplayer.data.db.AppDatabase/6.json` on compile. Commit that file.
+Room writes `app/schemas/ru.spgsroot.peachy.data.db.AppDatabase/6.json` on compile. Commit that file.
 
 - [ ] **Step 4: Run the SQL test and `./gradlew :app:assembleDebug`**
 
@@ -247,11 +247,11 @@ git commit -m "Store manga progress, search history, and the tag blacklist"
 ### Task 5: Catalog hub
 
 **Files:**
-- Create: `app/src/main/java/ru/spgsroot/vibeplayer/ui/manga/MangaHubScreen.kt`
-- Create: `app/src/main/java/ru/spgsroot/vibeplayer/ui/manga/CatalogScreen.kt`
-- Create: `app/src/main/java/ru/spgsroot/vibeplayer/ui/manga/FilterSheet.kt`
-- Modify: `app/src/main/java/ru/spgsroot/vibeplayer/ui/manga/MangaViewModel.kt`
-- Modify: `app/src/main/java/ru/spgsroot/vibeplayer/ui/MainActivity.kt`
+- Create: `app/src/main/java/ru/spgsroot/peachy/ui/manga/MangaHubScreen.kt`
+- Create: `app/src/main/java/ru/spgsroot/peachy/ui/manga/CatalogScreen.kt`
+- Create: `app/src/main/java/ru/spgsroot/peachy/ui/manga/FilterSheet.kt`
+- Modify: `app/src/main/java/ru/spgsroot/peachy/ui/manga/MangaViewModel.kt`
+- Modify: `app/src/main/java/ru/spgsroot/peachy/ui/MainActivity.kt`
 - Modify: both `strings.xml` files
 
 **Interfaces:**
@@ -285,8 +285,8 @@ git commit -m "Open the manga hub on the player library icon"
 ### Task 6: Native reader
 
 **Files:**
-- Modify: `app/src/main/java/ru/spgsroot/vibeplayer/ui/manga/MangaScreens.kt`
-- Modify: `app/src/main/java/ru/spgsroot/vibeplayer/ui/manga/MangaViewModel.kt`
+- Modify: `app/src/main/java/ru/spgsroot/peachy/ui/manga/MangaScreens.kt`
+- Modify: `app/src/main/java/ru/spgsroot/peachy/ui/manga/MangaViewModel.kt`
 - Modify: both `strings.xml` files
 
 **Interfaces:**

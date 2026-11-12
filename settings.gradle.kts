@@ -22,7 +22,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "VibePlayer"
+rootProject.name = "Peachy"
 include(":app")
 include(":buttplug-core")
 include(":buttplug-compose")

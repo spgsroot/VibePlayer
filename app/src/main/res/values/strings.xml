@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">VibePlayer</string>
+    <string name="app_name">Peachy</string>
     <!-- Auth -->
     <string name="enter_pin">Введите PIN-код</string>
     <string name="verifying">Проверка...</string>
@@ -38,7 +38,7 @@
     <string name="language_system">Системный</string>
 
     <!-- Onboarding -->
-    <string name="welcome_title">Добро пожаловать в VibePlayer</string>
+    <string name="welcome_title">Добро пожаловать в Peachy</string>
     <string name="onboarding_step_1">1. Добавьте видео из галереи или по URL</string>
     <string name="onboarding_step_2">2. Подключите устройство через Intiface Central</string>
     <string name="onboarding_step_3">3. Настройте таймер и скорость</string>
