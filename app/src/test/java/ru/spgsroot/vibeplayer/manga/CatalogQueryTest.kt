@@ -6,6 +6,30 @@ import org.junit.Test
 
 class CatalogQueryTest {
     @Test
+    fun numericSearchOpensGallery() {
+        assertEquals(SearchDestination.OpenGallery(1225), searchDestination("1225"))
+        assertEquals(SearchDestination.OpenGallery(1225), searchDestination("  1225 \n"))
+    }
+
+    @Test
+    fun textAndTagSearchRunSearch() {
+        assertEquals(SearchDestination.RunSearch, searchDestination("tag:english"))
+        assertEquals(SearchDestination.RunSearch, searchDestination("school"))
+        assertEquals(SearchDestination.RunSearch, searchDestination(" "))
+        assertEquals(SearchDestination.RunSearch, searchDestination("12a"))
+    }
+
+    @Test
+    fun customDatesOmitBlankBoundsAndRejectReversedRange() {
+        assertEquals("uploaded:>2026-01-01 uploaded:<2026-02-01", customUploadedRange("2026-01-01", "2026-02-01"))
+        assertEquals("uploaded:>2026-01-01", customUploadedRange("2026-01-01", ""))
+        assertEquals("uploaded:<2026-02-01", customUploadedRange("", "2026-02-01"))
+        assertEquals("", customUploadedRange("", ""))
+        assertEquals("", customUploadedRange("2026-02-01", "2026-01-01"))
+        assertEquals("uploaded:>2026-01-01 uploaded:<2026-01-01", customUploadedRange("2026-01-01", "2026-01-01"))
+    }
+
+    @Test
     fun spacedIncludeAndExcludeAreQuotedAndSortStaysOut() {
         val query = CatalogQuery(
             text = "  school  ",

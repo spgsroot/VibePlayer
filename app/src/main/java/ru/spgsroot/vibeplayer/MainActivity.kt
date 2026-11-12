@@ -32,7 +32,7 @@ import ru.spgsroot.vibeplayer.locale.LocaleManager
 import ru.spgsroot.vibeplayer.ui.auth.AuthScreen
 import ru.spgsroot.vibeplayer.security.AuthSession
 import ru.spgsroot.vibeplayer.ui.gallery.GalleryScreen
-import ru.spgsroot.vibeplayer.ui.manga.MangaLibraryScreen
+import ru.spgsroot.vibeplayer.ui.manga.MangaHubScreen
 import ru.spgsroot.vibeplayer.ui.manga.MangaReaderScreen
 import ru.spgsroot.vibeplayer.ui.gallery.GalleryViewModel
 import ru.spgsroot.vibeplayer.ui.onboarding.OnboardingScreen
@@ -222,7 +222,7 @@ fun AppNavigation(authManager: AuthManager, authSession: AuthSession) {
                 GalleryScreen(navController = navController, viewModel = galleryViewModel)
             }
             composable("manga") {
-                MangaLibraryScreen(navController = navController)
+                MangaHubScreen(navController = navController)
             }
             composable(
                 "manga/{id}",

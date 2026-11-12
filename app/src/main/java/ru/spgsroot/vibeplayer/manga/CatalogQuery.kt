@@ -1,5 +1,26 @@
 package ru.spgsroot.vibeplayer.manga
 
+sealed class SearchDestination {
+    data class OpenGallery(val id: Int) : SearchDestination()
+    data object RunSearch : SearchDestination()
+}
+
+fun searchDestination(raw: String): SearchDestination {
+    val id = raw.trim().takeIf(::isGalleryId)?.toIntOrNull()
+    return if (id != null) SearchDestination.OpenGallery(id) else SearchDestination.RunSearch
+}
+
+fun customUploadedRange(start: String, end: String): String {
+    if (start.isNotBlank() && end.isNotBlank() && end < start) return ""
+    return buildString {
+        if (start.isNotBlank()) append("uploaded:>").append(start)
+        if (end.isNotBlank()) {
+            separatePart()
+            append("uploaded:<").append(end)
+        }
+    }
+}
+
 enum class TagMode { Include, Exclude }
 
 data class TagFilter(

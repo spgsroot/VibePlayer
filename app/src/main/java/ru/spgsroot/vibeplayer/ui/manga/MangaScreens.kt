@@ -16,14 +16,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -34,6 +32,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,89 +50,37 @@ import ru.spgsroot.vibeplayer.R
 import ru.spgsroot.vibeplayer.manga.LibraryGallery
 import ru.spgsroot.vibeplayer.manga.NhentaiCdn
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MangaLibraryScreen(
     navController: NavController,
-    viewModel: MangaViewModel = hiltViewModel()
+    viewModel: MangaViewModel
 ) {
     val library by viewModel.libraryItems.collectAsStateWithLifecycle()
-    val search by viewModel.search.collectAsStateWithLifecycle()
-    val error by viewModel.error.collectAsStateWithLifecycle()
-    var query by remember { mutableStateOf("") }
-    var favoritesOnly by remember { mutableStateOf(false) }
+    var favoritesOnly by rememberSaveable { mutableStateOf(false) }
     val shown = if (favoritesOnly) library.filter { it.favorite } else library
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.manga_library)) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.content_description_back))
-                    }
-                }
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            FilterChip(
+                selected = favoritesOnly,
+                onClick = { favoritesOnly = !favoritesOnly },
+                label = { Text(stringResource(R.string.manga_favorites)) }
             )
         }
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text(stringResource(R.string.manga_search)) },
-                    singleLine = true,
-                    trailingIcon = {
-                        IconButton(onClick = { viewModel.search(query) }) {
-                            Icon(Icons.Default.Search, stringResource(R.string.manga_search))
-                        }
-                    }
-                )
-            }
-            item {
-                FilterChip(
-                    selected = favoritesOnly,
-                    onClick = { favoritesOnly = !favoritesOnly },
-                    label = { Text(stringResource(R.string.manga_favorites)) }
-                )
-            }
-            error?.let { message ->
-                item { Text(message, color = MaterialTheme.colorScheme.error) }
-            }
-            item { Text(stringResource(R.string.manga_saved), style = MaterialTheme.typography.titleMedium) }
-            if (shown.isEmpty()) {
-                item { Text(stringResource(R.string.manga_none), style = MaterialTheme.typography.bodyMedium) }
-            }
-            items(shown, key = { it.id }) { item ->
-                LibraryCard(
-                    item = item,
-                    onOpen = { navController.navigate("manga/${item.id}") },
-                    onRemove = { viewModel.remove(item.id) }
-                )
-            }
-            if (search.isNotEmpty()) {
-                item { Text(stringResource(R.string.manga_results), style = MaterialTheme.typography.titleMedium) }
-                items(search, key = { "search-${it.id}" }) { item ->
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Cover(item.thumbnailPath)
-                            Text(item.title, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                            TextButton(onClick = { navController.navigate("manga/${item.id}") }) {
-                                Text(stringResource(R.string.manga_open))
-                            }
-                        }
-                    }
-                }
-            }
+        item { Text(stringResource(R.string.manga_saved), style = MaterialTheme.typography.titleMedium) }
+        if (shown.isEmpty()) {
+            item { Text(stringResource(R.string.manga_none), style = MaterialTheme.typography.bodyMedium) }
+        }
+        items(shown, key = { it.id }) { item ->
+            LibraryCard(
+                item = item,
+                onOpen = { navController.navigate("manga/${item.id}") },
+                onRemove = { viewModel.remove(item.id) }
+            )
         }
     }
 }
