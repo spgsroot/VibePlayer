@@ -29,10 +29,18 @@ class ProviderSettingsEditTest {
     }
 
     @Test
+    fun storedKeyIsNotCarriedToAnotherHost() {
+        val moved = saved.edited("https://elsewhere.example.org/v1", "m1", "")
+        assertEquals("", moved.apiKey)
+        assertFalse(moved.isConfigured)
+        assertEquals("fresh", saved.edited("https://elsewhere.example.org/v1", "m1", "fresh").apiKey)
+    }
+
+    @Test
     fun otherHostAsksForConsentAgain() {
         val moved = saved.edited("https://elsewhere.example.org/v1", "m1", "")
         assertFalse(moved.consented)
-        assertEquals("secret", moved.apiKey)
+        assertEquals("", moved.apiKey)
     }
 
     @Test

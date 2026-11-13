@@ -206,6 +206,32 @@ class TranslationClientTest {
     }
 
     @Test
+    fun checkPassesWhenTheModelSpentItsWholeBudgetThinking() {
+        // A reasoning model may use every token on thinking and answer with nothing: the provider still works.
+        reply("")
+        runBlocking { client().check(settings) }
+    }
+
+    @Test
+    fun openAiBodyAsksForCompletionTokensAndNoTemperature() {
+        val body = JSONObject().put("model", "m").put("temperature", 0.2).put("max_tokens", 4096)
+        val adapted = TranslationClient.adaptLimits(body, "https://api.openai.com/v1")
+        assertEquals(4096, adapted.getInt("max_completion_tokens"))
+        assertFalse(adapted.has("max_tokens"))
+        assertFalse(adapted.has("temperature"))
+        assertEquals("m", adapted.getString("model"))
+    }
+
+    @Test
+    fun otherProvidersKeepTheOlderFields() {
+        val body = JSONObject().put("temperature", 0.2).put("max_tokens", 4096)
+        val adapted = TranslationClient.adaptLimits(body, "https://openrouter.ai/api/v1")
+        assertEquals(4096, adapted.getInt("max_tokens"))
+        assertEquals(0.2, adapted.getDouble("temperature"), 0.0)
+        assertFalse(adapted.has("max_completion_tokens"))
+    }
+
+    @Test
     fun checkReportsAuth() {
         server.enqueue(MockResponse().setResponseCode(401))
         assertEquals(TranslationError.Auth, failureOf { runBlocking { client().check(settings) } })

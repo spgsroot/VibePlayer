@@ -32,16 +32,18 @@ data class ProviderSettings(
         "ProviderSettings(baseUrl=$baseUrl, model=$model, apiKey=${if (apiKey.isEmpty()) "" else "***"}, consented=$consented)"
 
     /**
-     * Applies what the provider dialog collected. A blank key keeps the stored one; a different host
-     * drops the consent, because the user agreed to send pages to the host that was named, not to this one.
+     * Applies what the provider dialog collected. A blank key keeps the stored one, but only for the same
+     * host: a key belongs to the service that issued it and must not be sent to another. A different host
+     * also drops the consent, because the user agreed to send pages to the host that was named.
      */
     fun edited(baseUrl: String, model: String, apiKey: String): ProviderSettings {
         val url = ProviderUrl.normalized(baseUrl)
+        val sameHost = ProviderUrl.host(url) == ProviderUrl.host(this.baseUrl)
         return copy(
             baseUrl = url,
             model = model.trim(),
-            apiKey = if (apiKey.isBlank()) this.apiKey else apiKey.trim(),
-            consented = consented && ProviderUrl.host(url) == ProviderUrl.host(this.baseUrl)
+            apiKey = if (apiKey.isNotBlank()) apiKey.trim() else if (sameHost) this.apiKey else "",
+            consented = consented && sameHost
         )
     }
 }
@@ -76,6 +78,12 @@ object ProviderUrl {
         val host = parse(url)?.host?.lowercase() ?: return false
         return host == "opencode.ai" || host.endsWith(".opencode.ai")
     }
+
+    /**
+     * OpenAI's current models reject `max_tokens` and any temperature but the default, and want
+     * `max_completion_tokens` instead. Other OpenAI-compatible services still expect the older fields.
+     */
+    fun usesCompletionTokens(url: String): Boolean = host(url) == "api.openai.com"
 
     private fun parse(url: String): URI? = try {
         URI(url.trim())

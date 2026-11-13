@@ -1,12 +1,16 @@
 package ru.spgsroot.peachy.ui.dialog
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import ru.spgsroot.peachy.R
 import ru.spgsroot.peachy.translate.ProviderKey
+import ru.spgsroot.peachy.translate.ProviderPresets
 import ru.spgsroot.peachy.translate.ProviderSettings
 import ru.spgsroot.peachy.translate.ProviderUrl
 import ru.spgsroot.peachy.translate.TranslationError
@@ -62,6 +67,22 @@ fun ProviderDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.provider_hint), style = MaterialTheme.typography.bodyMedium)
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    ProviderPresets.all.forEach { preset ->
+                        FilterChip(
+                            selected = ProviderPresets.find(baseUrl)?.id == preset.id,
+                            onClick = {
+                                baseUrl = preset.baseUrl
+                                model = preset.model
+                                result = null
+                            },
+                            label = { Text(preset.name) }
+                        )
+                    }
+                }
                 OutlinedTextField(
                     value = baseUrl,
                     onValueChange = { baseUrl = it; result = null },
@@ -86,7 +107,9 @@ fun ProviderDialog(
                     onValueChange = { apiKey = it; result = null },
                     label = { Text(stringResource(R.string.provider_key)) },
                     placeholder = {
-                        if (current.apiKey.isNotBlank()) Text(stringResource(R.string.provider_key_kept))
+                        if (current.edited(baseUrl, model, "").apiKey.isNotBlank()) {
+                            Text(stringResource(R.string.provider_key_kept))
+                        }
                     },
                     isError = keyInvalid,
                     supportingText = if (!keyInvalid) null else {

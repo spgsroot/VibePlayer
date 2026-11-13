@@ -73,7 +73,12 @@ class TranslationClient(
                 .put("model", provider.model)
                 .put("max_tokens", 8)
                 .put("messages", JSONArray().put(message("user", PagePrompt.CHECK)))
-            send(provider, body, sessionHeader(provider.baseUrl, CHECK_SESSION_ID))
+            try {
+                send(provider, body, sessionHeader(provider.baseUrl, CHECK_SESSION_ID))
+            } catch (e: TranslationException) {
+                // A model that spent its whole small budget thinking still proves address, key and model work.
+                if (e.error != TranslationError.Refused) throw e
+            }
         }
     }
 
@@ -103,7 +108,7 @@ class TranslationClient(
                 .header("Authorization", "Bearer ${provider.apiKey}")
                 .header("User-Agent", userAgent)
                 .apply { session?.let { header("x-opencode-session", it) } }
-                .post(body.toString().toRequestBody(JSON))
+                .post(adaptLimits(body, provider.baseUrl).toString().toRequestBody(JSON))
                 .build()
             execute(http.newCall(request))
         } catch (e: CancellationException) {
@@ -169,7 +174,17 @@ class TranslationClient(
         return content
     }
 
-    private companion object {
-        val JSON = "application/json".toMediaType()
+    companion object {
+        private val JSON = "application/json".toMediaType()
+
+        /** Renames the output limit and drops the temperature for providers that reject the older fields. */
+        internal fun adaptLimits(body: JSONObject, baseUrl: String): JSONObject {
+            if (!ProviderUrl.usesCompletionTokens(baseUrl)) return body
+            val limit = body.opt("max_tokens")
+            body.remove("max_tokens")
+            body.remove("temperature")
+            if (limit != null) body.put("max_completion_tokens", limit)
+            return body
+        }
     }
 }
