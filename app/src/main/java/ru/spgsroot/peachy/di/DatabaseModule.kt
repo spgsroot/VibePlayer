@@ -58,4 +58,7 @@ object DatabaseModule {
 
     @Provides
     fun provideSavedPageDao(database: AppDatabase): SavedPageDao = database.savedPageDao()
+
+    @Provides
+    fun providePageTranslationDao(database: AppDatabase): PageTranslationDao = database.pageTranslationDao()
 }

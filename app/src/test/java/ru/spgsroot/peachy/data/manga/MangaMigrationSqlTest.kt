@@ -137,6 +137,33 @@ class MangaMigrationSqlTest {
             statements[2]
         )
     }
+
+    @Test
+    fun migration10To11CreatesTranslationCacheAndLeavesSavedPagesAlone() {
+        val statements = mutableListOf<String>()
+        val database = Proxy.newProxyInstance(
+            SupportSQLiteDatabase::class.java.classLoader,
+            arrayOf(SupportSQLiteDatabase::class.java)
+        ) { _, method, args ->
+            check(method.name == "execSQL") { "Unexpected database call: ${method.name}" }
+            statements += args!![0] as String
+            null
+        } as SupportSQLiteDatabase
+
+        val migration = MangaMigrations.MIGRATION_10_11
+        assertEquals(10, migration.startVersion)
+        assertEquals(11, migration.endVersion)
+        migration.migrate(database)
+
+        assertEquals(
+            listOf(
+                "CREATE TABLE IF NOT EXISTS page_translations (galleryId INTEGER NOT NULL, page INTEGER NOT NULL, " +
+                    "lang TEXT NOT NULL, model TEXT NOT NULL, json TEXT NOT NULL, createdAt INTEGER NOT NULL, " +
+                    "PRIMARY KEY(galleryId, page, lang))"
+            ),
+            statements
+        )
+    }
 }
 
 private class MemorySearchHistoryDao : SearchHistoryDao() {

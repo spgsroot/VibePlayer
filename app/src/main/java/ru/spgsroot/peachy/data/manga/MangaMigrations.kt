@@ -42,4 +42,15 @@ object MangaMigrations {
             )
         }
     }
+
+    /** Adds the cache of page translations; nothing else is touched. */
+    val MIGRATION_10_11 = object : Migration(10, 11) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS page_translations (galleryId INTEGER NOT NULL, page INTEGER NOT NULL, " +
+                    "lang TEXT NOT NULL, model TEXT NOT NULL, json TEXT NOT NULL, createdAt INTEGER NOT NULL, " +
+                    "PRIMARY KEY(galleryId, page, lang))"
+            )
+        }
+    }
 }

@@ -11,6 +11,7 @@ import net.sqlcipher.database.SupportFactory
 import ru.spgsroot.peachy.data.manga.MangaMigrations.MIGRATION_5_6
 import ru.spgsroot.peachy.data.manga.MangaMigrations.MIGRATION_6_7
 import ru.spgsroot.peachy.data.manga.MangaMigrations.MIGRATION_9_10
+import ru.spgsroot.peachy.data.manga.MangaMigrations.MIGRATION_10_11
 import ru.spgsroot.peachy.data.browser.BrowserMigrations.MIGRATION_7_8
 import ru.spgsroot.peachy.data.notes.NoteDao
 import ru.spgsroot.peachy.data.notes.NoteEntity
@@ -21,9 +22,9 @@ import ru.spgsroot.peachy.data.notes.NoteMigrations.MIGRATION_8_9
         VideoEntity::class, SettingsEntity::class, PlaybackStateEntity::class, LibraryGalleryEntity::class,
         ReadHistoryEntity::class, SearchHistoryEntity::class, TagBlacklistEntity::class, GalleryMemoryEntity::class,
         BookmarkEntity::class, BrowserHistoryEntity::class, AllowlistEntity::class, NoteEntity::class,
-        SavedPageEntity::class
+        SavedPageEntity::class, PageTranslationEntity::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -40,6 +41,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun allowlistDao(): AllowlistDao
     abstract fun noteDao(): NoteDao
     abstract fun savedPageDao(): SavedPageDao
+    abstract fun pageTranslationDao(): PageTranslationDao
 
     companion object {
         private const val DB_NAME = "peachy.db"
@@ -82,7 +84,7 @@ abstract class AppDatabase : RoomDatabase() {
                 .openHelperFactory(factory)
                 .addMigrations(
                     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
-                    MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10
+                    MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11
                 )
                 .fallbackToDestructiveMigration()
                 .build()

@@ -10,6 +10,7 @@ import ru.spgsroot.peachy.manga.GalleryDetail
 import ru.spgsroot.peachy.manga.LibraryGallery
 import ru.spgsroot.peachy.manga.MangaLibraryPolicy
 import ru.spgsroot.peachy.manga.NhentaiCdn
+import ru.spgsroot.peachy.translate.TranslationStore
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,7 +18,8 @@ import javax.inject.Singleton
 class MangaLibraryRepository @Inject constructor(
     private val dao: LibraryGalleryDao,
     private val api: NhentaiApi,
-    private val files: MangaFiles
+    private val files: MangaFiles,
+    private val translations: TranslationStore
 ) {
     private val policy = MangaLibraryPolicy()
 
@@ -61,6 +63,7 @@ class MangaLibraryRepository @Inject constructor(
         withContext(Dispatchers.IO) {
             dao.deleteById(galleryId)
             files.deleteGallery(galleryId)
+            translations.deleteGallery(galleryId)
         }
     }
 
