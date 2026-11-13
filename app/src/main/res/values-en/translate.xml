@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="translate_button">Translate page</string>
+    <string name="translate_idle">Press ↻ to translate this page</string>
+    <string name="translate_loading">Translating…</string>
+    <string name="translate_empty">No text on this page</string>
+    <string name="translate_again">Translate again</string>
+    <string name="translate_expand">Expand translation</string>
+    <string name="translate_collapse">Collapse translation</string>
+    <string name="translate_close">Hide translation panel</string>
+    <string name="translate_cancel">Cancel</string>
+    <string name="translate_batch_progress">Translating gallery: %1$d / %2$d</string>
+    <string name="translate_provider_link">Set up provider</string>
+    <string name="translate_mode">Translation</string>
+    <string name="translate_mode_manual">On request</string>
+    <string name="translate_mode_on_turn">On page turn</string>
+    <string name="translate_mode_whole">Whole gallery</string>
+    <string name="translate_error_not_configured">Provider is not set up: a key and an address are needed</string>
+    <string name="translate_error_auth">The provider did not accept the key</string>
+    <string name="translate_error_rate_limit">Too many requests, wait a little</string>
+    <string name="translate_error_network">Cannot reach the provider or the page</string>
+    <string name="translate_error_bad_response">The provider did not answer as expected</string>
+    <string name="translate_error_refused">The model refused to read this page</string>
+    <string name="translate_error_server">Provider error: %1$d</string>
+    <string name="provider_title">Page translation</string>
+    <string name="provider_hint">Manga pages go to a service whose model reads images. The key is your own and is stored encrypted on the phone.</string>
+    <string name="provider_base_url">API address</string>
+    <string name="provider_url_rejected">https is required; plain http is allowed only for localhost and the local network</string>
+    <string name="provider_model">Model</string>
+    <string name="provider_key">Key</string>
+    <string name="provider_key_kept">Saved; leave empty to keep it</string>
+    <string name="provider_show_key">Show key</string>
+    <string name="provider_test">Test</string>
+    <string name="provider_testing">Testing…</string>
+    <string name="provider_test_ok">The provider answered</string>
+    <string name="consent_title">Send pages?</string>
+    <string name="consent_text">To translate, the page image is sent to %1$s and nowhere else. The key stays on the phone and is sent only as a request header. That service may handle the content under its own rules.</string>
+    <string name="consent_accept">Allow</string>
+    <string name="consent_decline">Do not allow</string>
+    <string name="settings_translation_row">Page translation</string>
+</resources>

@@ -29,6 +29,20 @@ data class ProviderSettings(
 
     override fun toString(): String =
         "ProviderSettings(baseUrl=$baseUrl, model=$model, apiKey=${if (apiKey.isEmpty()) "" else "***"}, consented=$consented)"
+
+    /**
+     * Applies what the provider dialog collected. A blank key keeps the stored one; a different host
+     * drops the consent, because the user agreed to send pages to the host that was named, not to this one.
+     */
+    fun edited(baseUrl: String, model: String, apiKey: String): ProviderSettings {
+        val url = ProviderUrl.normalized(baseUrl)
+        return copy(
+            baseUrl = url,
+            model = model.trim(),
+            apiKey = if (apiKey.isBlank()) this.apiKey else apiKey.trim(),
+            consented = consented && ProviderUrl.host(url) == ProviderUrl.host(this.baseUrl)
+        )
+    }
 }
 
 object ProviderUrl {
@@ -45,6 +59,9 @@ object ProviderUrl {
     }
 
     fun normalized(url: String): String = url.trim().trimEnd('/')
+
+    /** The lower-case host of [url], or null when it has none. */
+    fun host(url: String): String? = parse(url)?.host?.lowercase()?.takeIf { it.isNotEmpty() }
 
     /** Only the OpenCode service asks clients to identify a conversation. */
     fun sendsSessionHeader(url: String): Boolean {

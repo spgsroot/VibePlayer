@@ -36,6 +36,8 @@ import ru.spgsroot.peachy.locale.LocaleManager
 import ru.spgsroot.peachy.ui.dialog.DeviceScanDialog
 import ru.spgsroot.peachy.ui.dialog.PasswordChangeDialog
 import ru.spgsroot.peachy.ui.dialog.PasswordSetupDialog
+import ru.spgsroot.peachy.ui.dialog.ProviderDialog
+import ru.spgsroot.peachy.ui.manga.TranslationViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,6 +52,9 @@ fun SettingsDrawer(
     var showPasswordDialog by remember { mutableStateOf(false) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
     var showDeviceDialog by remember { mutableStateOf(false) }
+    val translation: TranslationViewModel = hiltViewModel()
+    val translationProvider by translation.provider.collectAsStateWithLifecycle()
+    var showProviderDialog by remember { mutableStateOf(false) }
 
     val vaultModel: VaultViewModel = hiltViewModel()
     val vaultState by vaultModel.state.collectAsStateWithLifecycle()
@@ -226,6 +231,19 @@ fun SettingsDrawer(
                 }
             }
 
+            // Page translation section
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedButton(
+                    onClick = { showProviderDialog = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.settings_translation_row))
+                }
+            }
+
             // Backup section
             item {
                 Spacer(modifier = Modifier.height(16.dp))
@@ -327,6 +345,15 @@ fun SettingsDrawer(
                 importUri = null
                 vaultModel.reset()
             }
+        )
+    }
+
+    if (showProviderDialog) {
+        ProviderDialog(
+            current = translationProvider,
+            onSave = { url, model, key -> translation.saveProvider { it.edited(url, model, key) } },
+            onTest = translation::testProvider,
+            onDismiss = { showProviderDialog = false }
         )
     }
 

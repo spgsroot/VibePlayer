@@ -99,6 +99,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import androidx.compose.material.icons.filled.Translate
 import coil.imageLoader
 import coil.request.ImageRequest
 import kotlinx.coroutines.delay
@@ -115,6 +116,11 @@ import ru.spgsroot.peachy.manga.TapZone
 import ru.spgsroot.peachy.manga.centerPage
 import ru.spgsroot.peachy.manga.startPage
 import ru.spgsroot.peachy.manga.tapZone
+import ru.spgsroot.peachy.manga.TranslateMode
+import ru.spgsroot.peachy.translate.PageState
+import ru.spgsroot.peachy.translate.ProviderUrl
+import ru.spgsroot.peachy.ui.dialog.ProviderDialog
+import ru.spgsroot.peachy.ui.dialog.TranslateConsentDialog
 
 /** Pages fetched ahead of the one on screen, so turning the page does not wait for the network. */
 private const val PRELOAD_PAGES = 3
@@ -174,6 +180,13 @@ private fun NativeReader(
     val progress by viewModel.progress.collectAsStateWithLifecycle()
     var chrome by rememberSaveable { mutableStateOf(false) }
     var sheet by rememberSaveable { mutableStateOf(false) }
+    val translation: TranslationViewModel = hiltViewModel()
+    val pageStates by translation.pages.collectAsStateWithLifecycle()
+    val batch by translation.batch.collectAsStateWithLifecycle()
+    val needsConsent by translation.needsConsent.collectAsStateWithLifecycle()
+    val provider by translation.provider.collectAsStateWithLifecycle()
+    var panelOpen by rememberSaveable { mutableStateOf(false) }
+    var providerDialog by rememberSaveable { mutableStateOf(false) }
     var currentPage by rememberSaveable { mutableIntStateOf(startPage(initialPage, gallery.pagePaths.size)) }
     var hints by remember { mutableStateOf(!settings.hideHints) }
     val gate = remember { PageTurnGate() }
@@ -186,6 +199,7 @@ private fun NativeReader(
     LaunchedEffect(viewModel) {
         viewModel.setIntensity(prefs.getFloat("intensity", PageTurnHaptic.DEFAULT_INTENSITY))
     }
+    LaunchedEffect(gallery.id) { translation.open(gallery.id, gallery.pagePaths) }
     LaunchedEffect(chrome, currentPage) {
         if (chrome) thumbnails.animateScrollToItem(currentPage)
     }
@@ -224,6 +238,7 @@ private fun NativeReader(
                             if (gate.onPage(page, idle)) {
                                 viewModel.onPageTurned()
                                 viewModel.saveReadHistory(latestGallery, page)
+                                translation.onPageSettled(page, settings.translateMode)
                             }
                         }
                     }
@@ -233,6 +248,7 @@ private fun NativeReader(
                     if (gate.onPage(page, idle = true)) {
                         viewModel.onPageTurned()
                         viewModel.saveReadHistory(latestGallery, page)
+                        translation.onPageSettled(page, settings.translateMode)
                     }
                 }
             }
@@ -344,6 +360,13 @@ private fun NativeReader(
                         }
                     },
                     actions = {
+                        IconButton(onClick = {
+                            panelOpen = true
+                            if (settings.translateMode == TranslateMode.Whole) translation.startWhole()
+                            else translation.translateNow(visiblePage)
+                        }) {
+                            Icon(Icons.Default.Translate, stringResource(R.string.translate_button))
+                        }
                         IconButton(onClick = { viewModel.toggleSavedPage(visiblePage) }) {
                             Icon(
                                 if (pageSaved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
@@ -362,38 +385,54 @@ private fun NativeReader(
                         }
                     }
                 )
-                Surface(
-                    Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
-                ) {
-                    Column(Modifier.navigationBarsPadding()) {
-                        error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(8.dp)) }
-                        progress?.let { Text(it, modifier = Modifier.padding(8.dp)) }
-                        LazyRow(
-                            state = thumbnails,
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            items(total, key = { it }) { index ->
-                                val selected = index == visiblePage
-                                val shape = RoundedCornerShape(14.dp)
-                                AsyncImage(
-                                    model = remember(gallery.id, gallery.pagePaths[index]) {
-                                        viewModel.pageModel(gallery.id, gallery.pagePaths[index])
-                                    },
-                                    contentDescription = stringResource(R.string.manga_jump_page, index + 1),
-                                    modifier = Modifier
-                                        .size(64.dp, 88.dp)
-                                        .clip(shape)
-                                        .alpha(if (selected) 1f else 0.55f)
-                                        .border(
-                                            if (selected) 2.dp else 0.dp,
-                                            if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                                            shape
-                                        )
-                                        .clickable { jump(index) },
-                                    contentScale = ContentScale.Crop
-                                )
+            }
+            Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth()) {
+                if (panelOpen) {
+                    TranslationPanel(
+                        state = pageStates[visiblePage] ?: PageState.Idle,
+                        batch = batch,
+                        onAgain = { translation.translateNow(visiblePage, force = true) },
+                        onProvider = { providerDialog = true },
+                        onCancelBatch = translation::cancelWhole,
+                        onHide = { panelOpen = false },
+                        modifier = Modifier.fillMaxWidth()
+                            .then(if (chrome) Modifier else Modifier.navigationBarsPadding())
+                    )
+                }
+                if (chrome) {
+                    Surface(
+                        Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
+                    ) {
+                        Column(Modifier.navigationBarsPadding()) {
+                            error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(8.dp)) }
+                            progress?.let { Text(it, modifier = Modifier.padding(8.dp)) }
+                            LazyRow(
+                                state = thumbnails,
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                items(total, key = { it }) { index ->
+                                    val selected = index == visiblePage
+                                    val shape = RoundedCornerShape(14.dp)
+                                    AsyncImage(
+                                        model = remember(gallery.id, gallery.pagePaths[index]) {
+                                            viewModel.pageModel(gallery.id, gallery.pagePaths[index])
+                                        },
+                                        contentDescription = stringResource(R.string.manga_jump_page, index + 1),
+                                        modifier = Modifier
+                                            .size(64.dp, 88.dp)
+                                            .clip(shape)
+                                            .alpha(if (selected) 1f else 0.55f)
+                                            .border(
+                                                if (selected) 2.dp else 0.dp,
+                                                if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                                shape
+                                            )
+                                            .clickable { jump(index) },
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
                             }
                         }
                     }
@@ -460,6 +499,37 @@ private fun NativeReader(
                         SwitchRow(Icons.Default.VisibilityOff, R.string.reader_hide_hints, settings.hideHints) {
                             change(settings.copy(hideHints = it))
                         }
+                        SettingRow(
+                            Icons.Default.Translate, R.string.translate_mode,
+                            onClick = {
+                                val next = TranslateMode.entries[(settings.translateMode.ordinal + 1) % TranslateMode.entries.size]
+                                val before = settings.translateMode
+                                change(settings.copy(translateMode = next))
+                                if (next == TranslateMode.Whole) {
+                                    panelOpen = true
+                                    translation.startWhole()
+                                } else if (before == TranslateMode.Whole) {
+                                    translation.cancelWhole()
+                                }
+                            }
+                        ) {
+                            Text(
+                                stringResource(
+                                    when (settings.translateMode) {
+                                        TranslateMode.Manual -> R.string.translate_mode_manual
+                                        TranslateMode.OnTurn -> R.string.translate_mode_on_turn
+                                        TranslateMode.Whole -> R.string.translate_mode_whole
+                                    }
+                                ),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        SettingRow(
+                            Icons.Default.Settings, R.string.settings_translation_row,
+                            onClick = { providerDialog = true }
+                        ) {
+                            Text(ProviderUrl.host(provider.baseUrl).orEmpty(), color = MaterialTheme.colorScheme.primary, maxLines = 1)
+                        }
                         Text(stringResource(R.string.manga_haptic), modifier = Modifier.padding(top = 12.dp))
                         Slider(
                             value = intensity,
@@ -474,6 +544,17 @@ private fun NativeReader(
                 }
             }
         }
+    }
+    if (needsConsent) {
+        TranslateConsentDialog(provider.baseUrl, translation::acceptConsent, translation::declineConsent)
+    }
+    if (providerDialog) {
+        ProviderDialog(
+            current = provider,
+            onSave = { url, model, key -> translation.saveProvider { it.edited(url, model, key) } },
+            onTest = translation::testProvider,
+            onDismiss = { providerDialog = false }
+        )
     }
 }
 

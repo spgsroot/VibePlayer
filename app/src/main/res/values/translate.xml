@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="translate_button">Перевести страницу</string>
+    <string name="translate_idle">Нажмите ↻, чтобы перевести эту страницу</string>
+    <string name="translate_loading">Перевожу…</string>
+    <string name="translate_empty">На этой странице нет текста</string>
+    <string name="translate_again">Перевести заново</string>
+    <string name="translate_expand">Развернуть перевод</string>
+    <string name="translate_collapse">Свернуть перевод</string>
+    <string name="translate_close">Скрыть панель перевода</string>
+    <string name="translate_cancel">Отмена</string>
+    <string name="translate_batch_progress">Перевод галереи: %1$d / %2$d</string>
+    <string name="translate_provider_link">Настроить провайдера</string>
+    <string name="translate_mode">Перевод</string>
+    <string name="translate_mode_manual">По кнопке</string>
+    <string name="translate_mode_on_turn">При листании</string>
+    <string name="translate_mode_whole">Вся галерея</string>
+    <string name="translate_error_not_configured">Провайдер не настроен: нужен ключ и адрес</string>
+    <string name="translate_error_auth">Провайдер не принял ключ</string>
+    <string name="translate_error_rate_limit">Слишком много запросов, подождите немного</string>
+    <string name="translate_error_network">Нет связи с провайдером или страницей</string>
+    <string name="translate_error_bad_response">Провайдер ответил не тем, чего мы ждали</string>
+    <string name="translate_error_refused">Модель отказалась читать эту страницу</string>
+    <string name="translate_error_server">Ошибка провайдера: %1$d</string>
+    <string name="provider_title">Перевод страниц</string>
+    <string name="provider_hint">Страницы манги уходят на сервис с моделью, которая читает картинки. Ключ ваш собственный, он хранится в зашифрованном виде на телефоне.</string>
+    <string name="provider_base_url">Адрес API</string>
+    <string name="provider_url_rejected">Нужен https; http допустим только для localhost и локальной сети</string>
+    <string name="provider_model">Модель</string>
+    <string name="provider_key">Ключ</string>
+    <string name="provider_key_kept">Сохранён; оставьте пустым, чтобы не менять</string>
+    <string name="provider_show_key">Показать ключ</string>
+    <string name="provider_test">Проверить</string>
+    <string name="provider_testing">Проверяю…</string>
+    <string name="provider_test_ok">Провайдер ответил</string>
+    <string name="consent_title">Отправлять страницы?</string>
+    <string name="consent_text">Для перевода картинка страницы уходит на %1$s, и больше никуда. Ключ остаётся на телефоне и передаётся только как заголовок запроса. Содержимое сторонний сервис может обрабатывать по своим правилам.</string>
+    <string name="consent_accept">Разрешить</string>
+    <string name="consent_decline">Не разрешать</string>
+    <string name="settings_translation_row">Перевод страниц</string>
+</resources>
