@@ -7,6 +7,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import ru.spgsroot.peachy.data.db.*
+import ru.spgsroot.peachy.data.notes.NoteDao
 import javax.inject.Singleton
 
 @Module
@@ -51,4 +52,7 @@ object DatabaseModule {
 
     @Provides
     fun provideAllowlistDao(database: AppDatabase): AllowlistDao = database.allowlistDao()
+
+    @Provides
+    fun provideNoteDao(database: AppDatabase): NoteDao = database.noteDao()
 }

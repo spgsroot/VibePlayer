@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ru.spgsroot.peachy.browser.FoundVideo
@@ -17,13 +18,16 @@ import ru.spgsroot.peachy.data.browser.AdblockService
 import ru.spgsroot.peachy.data.browser.BrowserStore
 import ru.spgsroot.peachy.data.db.BookmarkEntity
 import ru.spgsroot.peachy.data.db.BrowserHistoryEntity
+import ru.spgsroot.peachy.data.notes.NoteKind
+import ru.spgsroot.peachy.data.notes.NoteRepository
 import ru.spgsroot.peachy.data.storage.VideoImporter
 
 @HiltViewModel
 class BrowserViewModel @Inject constructor(
     private val store: BrowserStore,
     private val adblock: AdblockService,
-    private val importer: VideoImporter
+    private val importer: VideoImporter,
+    private val notes: NoteRepository
 ) : ViewModel() {
 
     val bookmarks: StateFlow<List<BookmarkEntity>> = store.bookmarks
@@ -43,6 +47,15 @@ class BrowserViewModel @Inject constructor(
     }
 
     fun allowedNow(): Set<String> = allowedHosts.value
+
+    /** Text of each page note, by the same address key the bookmarks use. */
+    val pageNotes: StateFlow<Map<String, String>> = notes.observeAll()
+        .map { rows -> rows.filter { it.kind == NoteKind.PAGE }.associate { it.ref to it.text } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
+    fun savePageNote(pageKey: String, text: String) {
+        viewModelScope.launch { notes.save(NoteKind.PAGE, pageKey, text) }
+    }
 
     fun toggleBookmark(url: String, title: String, saved: Boolean) {
         viewModelScope.launch { store.toggleBookmark(url, title, saved) }

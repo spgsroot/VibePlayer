@@ -24,6 +24,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.EditNote
+import androidx.compose.material.icons.filled.StickyNote2
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -40,7 +42,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,6 +64,7 @@ import ru.spgsroot.peachy.manga.GalleryTag
 import ru.spgsroot.peachy.manga.NhentaiCdn
 import ru.spgsroot.peachy.manga.TagFilter
 import ru.spgsroot.peachy.manga.TagMode
+import ru.spgsroot.peachy.ui.dialog.NoteDialog
 import java.text.DateFormat
 import java.util.Date
 
@@ -81,6 +86,19 @@ fun GalleryDetailScreen(
     val saved = library.any { it.id == galleryId }
     val favorite = library.any { it.id == galleryId && it.favorite }
     val detail = state.detail
+    val note by remember(galleryId) { viewModel.note(galleryId) }.collectAsStateWithLifecycle(initialValue = null)
+    var editingNote by remember { mutableStateOf(false) }
+    if (editingNote) {
+        NoteDialog(
+            title = stringResource(R.string.note_title_gallery),
+            initial = note.orEmpty(),
+            onSave = { text ->
+                viewModel.saveNote(galleryId, text)
+                editingNote = false
+            },
+            onDismiss = { editingNote = false }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -121,7 +139,9 @@ fun GalleryDetailScreen(
                         onRead = { navController.navigate("manga/$galleryId/read") },
                         onDownload = viewModel::download,
                         onDeleteDownload = viewModel::removeDownload,
-                        onFavorite = viewModel::toggleFavorite
+                        onFavorite = viewModel::toggleFavorite,
+                        hasNote = note != null,
+                        onNote = { editingNote = true }
                     )
                 }
                 actionError?.let { message ->
@@ -246,7 +266,9 @@ private fun Actions(
     onRead: () -> Unit,
     onDownload: () -> Unit,
     onDeleteDownload: () -> Unit,
-    onFavorite: () -> Unit
+    onFavorite: () -> Unit,
+    hasNote: Boolean,
+    onNote: () -> Unit
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         Button(onClick = onRead, enabled = detail.pagePaths.isNotEmpty(), modifier = Modifier.weight(1f)) {
@@ -276,6 +298,13 @@ private fun Actions(
                 if (favorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                 stringResource(R.string.manga_favorites),
                 tint = if (favorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        IconButton(onClick = onNote) {
+            Icon(
+                if (hasNote) Icons.Filled.StickyNote2 else Icons.Filled.EditNote,
+                stringResource(R.string.content_description_note),
+                tint = if (hasNote) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="menu_note_add">Add note</string>
+    <string name="menu_note_edit">Note</string>
+    <string name="note_hint">Only you can see this note; it is kept in the encrypted database</string>
+    <string name="note_title_video">Note: %1$s</string>
+    <string name="note_title_gallery">Gallery note</string>
+    <string name="note_title_page">Page note</string>
+    <string name="browser_note_page">Note for this page</string>
+    <string name="content_description_note">Note</string>
+</resources>

@@ -20,6 +20,15 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.saveable.rememberSaveable
+import ru.spgsroot.peachy.ui.dialog.VaultDialog
+import ru.spgsroot.peachy.data.vault.VaultManager
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import ru.spgsroot.peachy.R
 import ru.spgsroot.peachy.device.buttplug.ButtplugDevice
 import ru.spgsroot.peachy.device.buttplug.DeviceState
@@ -41,6 +50,27 @@ fun SettingsDrawer(
     var showPasswordDialog by remember { mutableStateOf(false) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
     var showDeviceDialog by remember { mutableStateOf(false) }
+
+    val vaultModel: VaultViewModel = hiltViewModel()
+    val vaultState by vaultModel.state.collectAsStateWithLifecycle()
+    var vaultMode by rememberSaveable { mutableIntStateOf(VAULT_NONE) }
+    var importUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    // Held only until the system file chooser answers; never written to saved state.
+    var exportPassword by remember { mutableStateOf<CharArray?>(null) }
+    val exportPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { uri ->
+        val password = exportPassword
+        exportPassword = null
+        if (uri != null && password != null) vaultModel.export(uri, password)
+    }
+    val importPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            importUri = uri
+            vaultModel.reset()
+            vaultMode = VAULT_IMPORT
+        }
+    }
 
     val context = LocalContext.current
     val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
@@ -196,6 +226,30 @@ fun SettingsDrawer(
                 }
             }
 
+            // Backup section
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(stringResource(R.string.vault_section), style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = {
+                        vaultModel.reset()
+                        vaultMode = VAULT_EXPORT
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.vault_export_button))
+                }
+                OutlinedButton(
+                    onClick = { importPicker.launch(arrayOf("*/*")) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.vault_import_button))
+                }
+            }
+
             // Divider
             item {
                 Spacer(modifier = Modifier.height(16.dp))
@@ -251,6 +305,27 @@ fun SettingsDrawer(
                         passwordError = true
                     }
                 )
+            }
+        )
+    }
+
+    if (vaultMode != VAULT_NONE) {
+        VaultDialog(
+            export = vaultMode == VAULT_EXPORT,
+            state = vaultState,
+            onStart = { password ->
+                if (vaultMode == VAULT_EXPORT) {
+                    exportPassword = password
+                    exportPicker.launch(vaultFileName())
+                } else {
+                    importUri?.let { vaultModel.import(it, password) }
+                }
+            },
+            onCancel = vaultModel::cancel,
+            onClose = {
+                vaultMode = VAULT_NONE
+                importUri = null
+                vaultModel.reset()
             }
         )
     }
@@ -413,3 +488,10 @@ fun applyLocale(context: Context, languageCode: String) {
         localeManager.applicationLocales = android.os.LocaleList(locale)
     }
 }
+
+private const val VAULT_NONE = 0
+private const val VAULT_EXPORT = 1
+private const val VAULT_IMPORT = 2
+
+private fun vaultFileName(): String =
+    "peachy-${SimpleDateFormat("yyyyMMdd", Locale.US).format(Date())}.${VaultManager.FILE_EXTENSION}"

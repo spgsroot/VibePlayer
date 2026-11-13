@@ -11,6 +11,9 @@ interface LibraryGalleryDao {
     @Query("SELECT * FROM library_galleries ORDER BY addedAt DESC")
     fun observeAll(): Flow<List<LibraryGalleryEntity>>
 
+    @Query("SELECT * FROM library_galleries")
+    suspend fun getAll(): List<LibraryGalleryEntity>
+
     @Query("SELECT * FROM library_galleries WHERE id = :id")
     suspend fun getById(id: Int): LibraryGalleryEntity?
 

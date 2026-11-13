@@ -11,14 +11,17 @@ import net.sqlcipher.database.SupportFactory
 import ru.spgsroot.peachy.data.manga.MangaMigrations.MIGRATION_5_6
 import ru.spgsroot.peachy.data.manga.MangaMigrations.MIGRATION_6_7
 import ru.spgsroot.peachy.data.browser.BrowserMigrations.MIGRATION_7_8
+import ru.spgsroot.peachy.data.notes.NoteDao
+import ru.spgsroot.peachy.data.notes.NoteEntity
+import ru.spgsroot.peachy.data.notes.NoteMigrations.MIGRATION_8_9
 
 @Database(
     entities = [
         VideoEntity::class, SettingsEntity::class, PlaybackStateEntity::class, LibraryGalleryEntity::class,
         ReadHistoryEntity::class, SearchHistoryEntity::class, TagBlacklistEntity::class, GalleryMemoryEntity::class,
-        BookmarkEntity::class, BrowserHistoryEntity::class, AllowlistEntity::class
+        BookmarkEntity::class, BrowserHistoryEntity::class, AllowlistEntity::class, NoteEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -33,6 +36,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun bookmarkDao(): BookmarkDao
     abstract fun browserHistoryDao(): BrowserHistoryDao
     abstract fun allowlistDao(): AllowlistDao
+    abstract fun noteDao(): NoteDao
 
     companion object {
         private const val DB_NAME = "peachy.db"
@@ -75,7 +79,7 @@ abstract class AppDatabase : RoomDatabase() {
                 .openHelperFactory(factory)
                 .addMigrations(
                     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
-                    MIGRATION_7_8
+                    MIGRATION_7_8, MIGRATION_8_9
                 )
                 .fallbackToDestructiveMigration()
                 .build()

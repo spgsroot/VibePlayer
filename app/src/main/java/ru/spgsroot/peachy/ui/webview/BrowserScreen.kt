@@ -29,12 +29,14 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SaveAlt
+import androidx.compose.material.icons.filled.StickyNote2
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
@@ -81,6 +83,7 @@ import ru.spgsroot.peachy.browser.BrowserUrls
 import ru.spgsroot.peachy.browser.FoundVideo
 import ru.spgsroot.peachy.browser.MediaKind
 import ru.spgsroot.peachy.data.browser.BrowserStore
+import ru.spgsroot.peachy.ui.dialog.NoteDialog
 
 private enum class Sheet { TABS, BOOKMARKS, HISTORY, VIDEOS }
 
@@ -106,6 +109,20 @@ fun BrowserScreen(
     val pageKey = BrowserStore.pageKey(tab.url)
     val bookmarked = pageKey != null && bookmarks.any { it.url == pageKey }
     val blockerOff = BrowserStore.isBlockerOff(allowed, tab.host)
+    val pageNotes by viewModel.pageNotes.collectAsStateWithLifecycle()
+    val hasNote = pageKey != null && pageNotes.containsKey(pageKey)
+    var editingNote by remember { mutableStateOf(false) }
+    if (editingNote && pageKey != null) {
+        NoteDialog(
+            title = stringResource(R.string.note_title_page),
+            initial = pageNotes[pageKey].orEmpty(),
+            onSave = { text ->
+                viewModel.savePageNote(pageKey, text)
+                editingNote = false
+            },
+            onDismiss = { editingNote = false }
+        )
+    }
 
     val msgSaved = stringResource(R.string.browser_video_saved)
     val msgFailed = stringResource(R.string.browser_video_failed)
@@ -226,6 +243,12 @@ fun BrowserScreen(
                             leadingIcon = { Icon(Icons.Filled.History, null) },
                             text = { Text(stringResource(R.string.browser_history)) },
                             onClick = { menuOpen = false; sheet = Sheet.HISTORY }
+                        )
+                        DropdownMenuItem(
+                            leadingIcon = { Icon(if (hasNote) Icons.Filled.StickyNote2 else Icons.Filled.EditNote, null) },
+                            text = { Text(stringResource(R.string.browser_note_page)) },
+                            enabled = pageKey != null,
+                            onClick = { menuOpen = false; editingNote = true }
                         )
                         HorizontalDivider()
                         val host = tab.host

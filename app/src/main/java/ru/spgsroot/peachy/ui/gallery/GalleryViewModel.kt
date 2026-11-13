@@ -21,6 +21,8 @@ import ru.spgsroot.peachy.playback.queue.PlaylistManager
 import ru.spgsroot.peachy.data.storage.ExportItem
 import ru.spgsroot.peachy.data.storage.ExportResult
 import ru.spgsroot.peachy.data.storage.VideoExporter
+import ru.spgsroot.peachy.data.notes.NoteKind
+import ru.spgsroot.peachy.data.notes.NoteRepository
 import ru.spgsroot.peachy.playback.player.ExoPlayerWrapper
 import javax.inject.Inject
 
@@ -30,7 +32,8 @@ class GalleryViewModel @Inject constructor(
     private val internalStorageManager: InternalStorageManager,
     private val playlistManager: PlaylistManager,
     private val exoPlayerWrapper: ExoPlayerWrapper,
-    private val videoExporter: VideoExporter
+    private val videoExporter: VideoExporter,
+    private val notes: NoteRepository
 ) : ViewModel() {
 
     private val _videos = MutableStateFlow<List<Video>>(emptyList())
@@ -41,6 +44,19 @@ class GalleryViewModel @Inject constructor(
 
     val isSelectionMode: StateFlow<Boolean> = _selectedVideoIds.map { it.isNotEmpty() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    /** Text of each video's note, by video id; videos without a note are absent. */
+    val videoNotes: StateFlow<Map<Long, String>> = notes.observeAll()
+        .map { rows ->
+            rows.filter { it.kind == NoteKind.VIDEO }
+                .mapNotNull { row -> row.ref.toLongOrNull()?.let { it to row.text } }
+                .toMap()
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+    fun saveNote(videoId: Long, text: String) {
+        viewModelScope.launch { notes.save(NoteKind.VIDEO, videoId.toString(), text) }
+    }
 
     init {
         observeVideos()
@@ -124,6 +140,7 @@ class GalleryViewModel @Inject constructor(
             internalStorageManager.delete(video.id)
             // Delete from database
             videoRepository.deleteById(video.id)
+            notes.delete(NoteKind.VIDEO, video.id.toString())
         }
     }
 

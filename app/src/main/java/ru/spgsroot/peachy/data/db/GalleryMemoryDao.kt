@@ -11,6 +11,9 @@ interface GalleryMemoryDao {
     @Query("SELECT * FROM gallery_memory")
     fun observeAll(): Flow<List<GalleryMemoryEntity>>
 
+    @Query("SELECT * FROM gallery_memory")
+    suspend fun getAll(): List<GalleryMemoryEntity>
+
     @Query("SELECT * FROM gallery_memory WHERE galleryId = :galleryId")
     suspend fun getById(galleryId: Int): GalleryMemoryEntity?
 

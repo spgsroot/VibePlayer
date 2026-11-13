@@ -155,6 +155,7 @@ private class MemoryReadHistoryDao : ReadHistoryDao {
     private val rows = MutableStateFlow<List<ReadHistoryEntity>>(emptyList())
     override fun observeAll(): Flow<List<ReadHistoryEntity>> = rows.map { it.sortedByDescending { row -> row.readAt } }
     override suspend fun getById(galleryId: Int): ReadHistoryEntity? = rows.value.find { it.galleryId == galleryId }
+    override suspend fun getAll(): List<ReadHistoryEntity> = rows.value
     override suspend fun upsert(entity: ReadHistoryEntity) {
         rows.value = rows.value.filterNot { it.galleryId == entity.galleryId } + entity
     }

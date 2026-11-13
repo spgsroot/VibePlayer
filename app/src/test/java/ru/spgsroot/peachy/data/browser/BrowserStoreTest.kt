@@ -53,6 +53,7 @@ class BrowserStoreTest {
     private class MemoryAllowlist : AllowlistDao {
         val hosts = MutableStateFlow<List<String>>(emptyList())
         override fun observeHosts(): Flow<List<String>> = hosts
+        override suspend fun getHosts(): List<String> = hosts.value
         override suspend fun add(entity: AllowlistEntity) {
             if (entity.host !in hosts.value) hosts.value = hosts.value + entity.host
         }

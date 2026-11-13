@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="vault_section">Резервная копия</string>
+    <string name="vault_export_button">Выгрузить библиотеку в файл</string>
+    <string name="vault_import_button">Загрузить библиотеку из файла</string>
+    <string name="vault_export_title">Выгрузка библиотеки</string>
+    <string name="vault_import_title">Загрузка библиотеки</string>
+    <string name="vault_export_hint">Всё попадёт в один зашифрованный файл .peachy: видео с обложками, сохранённые галереи со страницами, история, теги, заметки, закладки. PIN и настройки устройства останутся на этом телефоне. Файл может быть большим.</string>
+    <string name="vault_import_hint">Введите пароль, с которым файл был выгружен. Данные добавятся к библиотеке; ничего на этом телефоне не перезаписывается и не удаляется.</string>
+    <string name="vault_password">Пароль</string>
+    <string name="vault_password_repeat">Повторите пароль</string>
+    <string name="vault_password_short">Не короче %1$d символов</string>
+    <string name="vault_password_mismatch">Пароли не совпадают</string>
+    <string name="vault_password_warning">Без этого пароля файл восстановить нельзя.</string>
+    <string name="vault_export_start">Выгрузить</string>
+    <string name="vault_import_start">Загрузить</string>
+    <string name="vault_exporting">Шифрую и записываю файл…</string>
+    <string name="vault_importing">Читаю и расшифровываю файл…</string>
+    <string name="vault_progress">%1$d из %2$d файлов</string>
+    <string name="vault_export_done">Выгружено: видео — %1$d, галерей — %2$d, заметок — %3$d.</string>
+    <string name="vault_import_done">Добавлено видео: %1$d (уже были: %2$d), галерей — %3$d, заметок — %4$d.</string>
+    <string name="vault_err_password">Неверный пароль или файл повреждён.</string>
+    <string name="vault_err_not_vault">Это не файл Peachy.</string>
+    <string name="vault_err_unsupported">Файл создан более новой версией Peachy. Обновите приложение.</string>
+    <string name="vault_err_damaged">Файл повреждён или неполный. Ничего не загружено.</string>
+    <string name="vault_err_space">Не хватает места на телефоне. Ничего не загружено.</string>
+    <string name="vault_err_io">Не удалось прочитать или записать файл.</string>
+    <string name="vault_err_unknown">Что-то пошло не так. Ничего не изменилось.</string>
+</resources>

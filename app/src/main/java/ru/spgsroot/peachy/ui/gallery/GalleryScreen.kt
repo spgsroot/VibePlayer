@@ -23,6 +23,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import ru.spgsroot.peachy.R
 import ru.spgsroot.peachy.domain.model.Video
+import ru.spgsroot.peachy.ui.dialog.NoteDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,6 +33,7 @@ fun GalleryScreen(
 ) {
     val videos by viewModel.videos.collectAsState()
     val selectedVideoIds by viewModel.selectedVideoIds.collectAsState()
+    val videoNotes by viewModel.videoNotes.collectAsState()
     val isSelectionMode by viewModel.isSelectionMode.collectAsState()
     val exportProgress by viewModel.exportProgress.collectAsState()
     val exportResult by viewModel.exportResult.collectAsState()
@@ -56,6 +58,7 @@ fun GalleryScreen(
 
     var videoToRename by remember { mutableStateOf<Video?>(null) }
     var videoForThumbnail by remember { mutableStateOf<Video?>(null) }
+    var videoForNote by remember { mutableStateOf<Video?>(null) }
 
     val thumbnailLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null && videoForThumbnail != null) {
@@ -72,6 +75,18 @@ fun GalleryScreen(
                 viewModel.renameVideo(videoToRename!!, newTitle)
                 videoToRename = null
             }
+        )
+    }
+
+    videoForNote?.let { video ->
+        NoteDialog(
+            title = stringResource(R.string.note_title_video, video.title),
+            initial = videoNotes[video.id].orEmpty(),
+            onSave = { text ->
+                viewModel.saveNote(video.id, text)
+                videoForNote = null
+            },
+            onDismiss = { videoForNote = null }
         )
     }
 
@@ -151,6 +166,8 @@ fun GalleryScreen(
                         videoForThumbnail = video
                         thumbnailLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                     },
+                    hasNote = video.id in videoNotes,
+                    onNoteClick = { videoForNote = video },
                     onDeleteClick = {
                         viewModel.clearSelection()
                         viewModel.toggleSelection(video.id)

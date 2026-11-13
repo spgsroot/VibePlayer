@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +15,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ru.spgsroot.peachy.data.manga.GalleryMemoryStore
+import ru.spgsroot.peachy.data.notes.NoteKind
+import ru.spgsroot.peachy.data.notes.NoteRepository
 import ru.spgsroot.peachy.data.manga.MangaCatalogStore
 import ru.spgsroot.peachy.data.manga.MangaLibraryRepository
 import ru.spgsroot.peachy.data.manga.NhentaiApi
@@ -44,7 +47,8 @@ class GalleryDetailViewModel @Inject constructor(
     private val api: NhentaiApi,
     private val library: MangaLibraryRepository,
     private val catalogStore: MangaCatalogStore,
-    private val memory: GalleryMemoryStore
+    private val memory: GalleryMemoryStore,
+    private val notes: NoteRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(DetailState())
     val state: StateFlow<DetailState> = _state
@@ -57,6 +61,13 @@ class GalleryDetailViewModel @Inject constructor(
 
     val libraryItems = library.observe()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** The private note on gallery [id], or null when there is none. */
+    fun note(id: Int): Flow<String?> = notes.observe(NoteKind.GALLERY, id.toString())
+
+    fun saveNote(id: Int, text: String) {
+        viewModelScope.launch { notes.save(NoteKind.GALLERY, id.toString(), text) }
+    }
 
     private var loadedId: Int? = null
 

@@ -25,6 +25,24 @@ class MangaFiles @Inject constructor(
         return file
     }
 
+    /** Every file saved for the gallery, for the vault export. */
+    fun listFiles(galleryId: Int): List<File> =
+        File(root, galleryId.toString()).listFiles()?.filter { it.isFile }.orEmpty()
+
+    /** Writes one page from [input] unless the file is already there; null when it is, or [name] is not a plain file name. */
+    fun restore(galleryId: Int, name: String, input: java.io.InputStream): File? {
+        val file = pageFile(galleryId, name) ?: return null
+        if (file.exists()) return null
+        file.parentFile?.mkdirs()
+        try {
+            file.outputStream().use { input.copyTo(it) }
+        } catch (e: Exception) {
+            file.delete()
+            throw e
+        }
+        return file
+    }
+
     fun deleteGallery(galleryId: Int) {
         File(root, galleryId.toString()).deleteRecursively()
     }

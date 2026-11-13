@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="menu_note_add">Добавить заметку</string>
+    <string name="menu_note_edit">Заметка</string>
+    <string name="note_hint">Заметка видна только вам и хранится в зашифрованной базе</string>
+    <string name="note_title_video">Заметка: %1$s</string>
+    <string name="note_title_gallery">Заметка к галерее</string>
+    <string name="note_title_page">Заметка к странице</string>
+    <string name="browser_note_page">Заметка к странице</string>
+    <string name="content_description_note">Заметка</string>
+</resources>

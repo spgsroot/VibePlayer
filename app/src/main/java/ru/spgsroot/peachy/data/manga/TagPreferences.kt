@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import ru.spgsroot.peachy.manga.TagLibrary
 import javax.inject.Inject
@@ -21,6 +22,8 @@ class TagPreferences @Inject constructor(
     private val libraryKey = stringPreferencesKey("library")
 
     val library: Flow<TagLibrary> = context.tagDataStore.data.map { TagLibrary.fromJson(it[libraryKey]) }
+
+    suspend fun snapshot(): TagLibrary = library.first()
 
     /** Applies [change] to the stored library atomically, so quick successive edits cannot overwrite each other. */
     suspend fun update(change: (TagLibrary) -> TagLibrary) {

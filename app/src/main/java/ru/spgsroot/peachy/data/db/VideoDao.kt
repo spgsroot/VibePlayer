@@ -8,6 +8,9 @@ interface VideoDao {
     @Query("SELECT * FROM videos ORDER BY addedAt DESC")
     fun getAll(): Flow<List<VideoEntity>>
 
+    @Query("SELECT * FROM videos")
+    suspend fun getAllNow(): List<VideoEntity>
+
     @Query("SELECT * FROM videos WHERE id = :id")
     suspend fun getById(id: Long): VideoEntity?
 

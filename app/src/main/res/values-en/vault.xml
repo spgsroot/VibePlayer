@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="vault_section">Backup</string>
+    <string name="vault_export_button">Export library to a file</string>
+    <string name="vault_import_button">Import library from a file</string>
+    <string name="vault_export_title">Export library</string>
+    <string name="vault_import_title">Import library</string>
+    <string name="vault_export_hint">Everything goes into one encrypted .peachy file: videos with covers, saved galleries and pages, history, tags, notes, bookmarks. The PIN and device settings stay on this phone. The file can be large.</string>
+    <string name="vault_import_hint">Enter the password the file was exported with. Imported data is added to the library; nothing on this phone is overwritten or deleted.</string>
+    <string name="vault_password">Password</string>
+    <string name="vault_password_repeat">Repeat password</string>
+    <string name="vault_password_short">At least %1$d characters</string>
+    <string name="vault_password_mismatch">Passwords do not match</string>
+    <string name="vault_password_warning">There is no way to recover the file without this password.</string>
+    <string name="vault_export_start">Export</string>
+    <string name="vault_import_start">Import</string>
+    <string name="vault_exporting">Encrypting and writing the file…</string>
+    <string name="vault_importing">Reading and decrypting the file…</string>
+    <string name="vault_progress">%1$d of %2$d files</string>
+    <string name="vault_export_done">Exported: %1$d videos, %2$d galleries, %3$d notes.</string>
+    <string name="vault_import_done">Added %1$d videos (%2$d already here), %3$d galleries, %4$d notes.</string>
+    <string name="vault_err_password">Wrong password, or the file is damaged.</string>
+    <string name="vault_err_not_vault">This is not a Peachy file.</string>
+    <string name="vault_err_unsupported">The file was made by a newer version of Peachy. Update the app.</string>
+    <string name="vault_err_damaged">The file is damaged or incomplete. Nothing was imported.</string>
+    <string name="vault_err_space">Not enough free space on this phone. Nothing was imported.</string>
+    <string name="vault_err_io">Could not read or write the file.</string>
+    <string name="vault_err_unknown">Something went wrong. Nothing was changed.</string>
+</resources>

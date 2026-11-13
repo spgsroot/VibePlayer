@@ -11,6 +11,9 @@ interface ReadHistoryDao {
     @Query("SELECT * FROM read_history ORDER BY readAt DESC")
     fun observeAll(): Flow<List<ReadHistoryEntity>>
 
+    @Query("SELECT * FROM read_history")
+    suspend fun getAll(): List<ReadHistoryEntity>
+
     @Query("SELECT * FROM read_history WHERE galleryId = :galleryId")
     suspend fun getById(galleryId: Int): ReadHistoryEntity?
 

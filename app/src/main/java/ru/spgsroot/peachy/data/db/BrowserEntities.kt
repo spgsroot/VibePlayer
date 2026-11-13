@@ -91,6 +91,9 @@ interface AllowlistDao {
     @Query("SELECT host FROM adblock_allowlist")
     fun observeHosts(): Flow<List<String>>
 
+    @Query("SELECT host FROM adblock_allowlist")
+    suspend fun getHosts(): List<String>
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun add(entity: AllowlistEntity)
 

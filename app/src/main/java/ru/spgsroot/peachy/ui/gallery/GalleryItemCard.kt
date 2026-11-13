@@ -38,6 +38,8 @@ fun GalleryItemCard(
     onLongClick: () -> Unit,
     onRenameClick: () -> Unit,
     onChangeThumbnailClick: () -> Unit,
+    hasNote: Boolean,
+    onNoteClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
     var showDropdown by remember { mutableStateOf(false) }
@@ -156,6 +158,16 @@ fun GalleryItemCard(
                         },
                         leadingIcon = {
                             Icon(Icons.Default.Image, null)
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(if (hasNote) R.string.menu_note_edit else R.string.menu_note_add)) },
+                        onClick = {
+                            showDropdown = false
+                            onNoteClick()
+                        },
+                        leadingIcon = {
+                            Icon(if (hasNote) Icons.Default.StickyNote2 else Icons.Default.EditNote, null)
                         }
                     )
                     DropdownMenuItem(
