@@ -35,3 +35,31 @@ The intensity slider calls `MangaViewModel.setIntensity`. Page turns retain the 
 Opening loads the saved zero-based history page through `startPage`. Invalid or absent positions start at zero. `PageTurnGate` suppresses the initial placement and repeated idle reports. Paged mode supplies its settled page; strip mode supplies the page whose center is nearest the viewport center together with the scroll-idle flag. A gate-approved change triggers one pulse and upserts reading history.
 
 Leaving the reader reads the current pager position or live strip layout, even during a fling, and upserts history without emitting a pulse. Writes are ordered and survive cancellation of the navigation-scoped ViewModel. History stores gallery ID, title, thumbnail path, zero-based page, page count, and read timestamp; library rows are not used to store reading progress.
+
+## On-device page text recognition
+
+`PageOcr` is bound through Hilt to the singleton `MlKitPageOcr`. It uses ML Kit's bundled Latin,
+Japanese, Chinese and Korean text-recognition models (16.0.1); recognition needs no model download
+and does not send page images to a server. `ja` and `auto` select Japanese (also reads Latin),
+`zh` selects Chinese, `ko` selects Korean, and other source codes select Latin. Each recognizer
+is created lazily and retained for the application's lifetime. Decoding and result processing run
+on `Dispatchers.Default`; invalid image bytes throw `IOException`.
+`auto` uses the contract's default left-to-right ordering and space-separated lines; selecting the
+Japanese recognizer does not change the requested source language's ordering.
+
+Each ML Kit text block remains one output block. Lines below 0.3 confidence, blank lines and
+symbol-only noise are removed. Japanese/Chinese lines join without spaces; Latin/Korean lines
+join with spaces. Boxes are clipped to the page and expressed as fractions of its dimensions.
+Reading order uses overlapping vertical extents to form rows, top-to-bottom; Japanese/Chinese
+rows read columns right-to-left and each column top-to-bottom, while Latin/Korean rows read
+left-to-right. The exact overlap rule and its limitations are documented in `OcrGrouping.kt`.
+Cancellation stops waiting immediately; because ML Kit cannot cancel its task, the task retains
+the decoded bitmap until recognition completes and then recycles it.
+
+Dependency references: [Android setup](https://developers.google.com/ml-kit/vision/text-recognition/v2/android)
+and [release notes](https://developers.google.com/ml-kit/release-notes). ML Kit requires API 23;
+the app retains minSdk 26. In the measured universal debug APK, ML Kit adds one
+`libmlkit_google_ocr_pipeline.so` per ABI. Its arm64-v8a and x86_64 ELF load segments are 16 KB
+aligned; its armeabi-v7a and x86 segments are 4 KB aligned. APK ZIP alignment passes
+`zipalign -c -P 16 4`. SQLCipher's existing 4 KB ELF alignment is unchanged; these OCR dependencies
+add no further 64-bit ELF alignment issue. The 16.0.1 release notes announce 16 KB page-size support.

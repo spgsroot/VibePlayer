@@ -79,6 +79,12 @@ dependencies {
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
 
+    // Bundled on-device OCR (no runtime model download)
+    implementation(libs.mlkit.text.recognition)
+    implementation(libs.mlkit.text.recognition.japanese)
+    implementation(libs.mlkit.text.recognition.chinese)
+    implementation(libs.mlkit.text.recognition.korean)
+
     // Navigation
     implementation(libs.androidx.navigation.compose)
 
