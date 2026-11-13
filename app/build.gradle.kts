@@ -108,6 +108,8 @@ dependencies {
     // Testing
     testImplementation(libs.junit)
     testImplementation("org.json:json:20240303")
+    testImplementation(libs.mockwebserver)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
