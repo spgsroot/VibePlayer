@@ -1,8 +1,23 @@
 # Peachy
 
-Private player and gallery for adult content: videos, image galleries and hentai manga in one app. It syncs playback with devices through the Buttplug protocol (Intiface Central). Native Android, Jetpack Compose. Version in this tree: `3.0.0` (`versionCode` 5). [Русская версия](README_RU.md).
+Private player and gallery for adult content: videos, image galleries and hentai manga in one app. It syncs playback with devices through the Buttplug protocol (Intiface Central). Native Android, Jetpack Compose. Version in this tree: `3.1.0` (`versionCode` 6). [Русская версия](README_RU.md).
 
-The player shot is a local sample clip. The gallery shows clips imported into the app. Catalog covers and titles are blurred. The reader shot is the screen after a failed open and does not contain page images.
+Screenshots use sample clips. Catalog covers and titles are pixelated, and the reader shot shows its settings dialog over a pixelated page.
+
+## Overview
+
+| Area | What you get |
+|---|---|
+| Player and devices | Local video on Media3 ExoPlayer, with playback speed and a timer that switches videos. Audio amplitude goes through one DSP path (bass range, smoothing, threshold, power boost) and drives vibration, oscillation, rotation or position on devices connected through Intiface Central. |
+| Library | A gallery of your videos: rename, change the cover, delete, export to a folder, compress with HEVC or H.264. Add videos from the phone, from a URL, from file-host links (Bunkr, Cyberdrop, Turbo, Pixeldrain, Filester) or from the built-in browser. Private notes on videos. |
+| Browser | Tabs, bookmarks, history and an ad and tracker blocker. It lists the video files a page loads and saves a chosen one to the library; HLS and DASH streams cannot be saved. A page's audio can drive haptics. |
+| Manga | nhentai in a native app: a catalog with tag filters, a tag browser with favorites and collections, a For you tab computed on the device, history, saved galleries, and a native reader with zoom, a thumbnail strip and saved pages. Tag names are shown in Russian when the interface is Russian. |
+| Privacy and backup | A 4-digit PIN with a growing wait after failures, an SQLCipher database, app windows marked `FLAG_SECURE`. The whole library exports to one password-protected `.peachy` file and imports on another phone. |
+| Languages | Russian and English, dark interface. |
+
+## Screenshots
+
+### Player and library
 
 | Onboarding | PIN | Player |
 |:---:|:---:|:---:|
@@ -10,17 +25,25 @@ The player shot is a local sample clip. The gallery shows clips imported into th
 
 | Settings | Device | Add video |
 |:---:|:---:|:---:|
-| <img src="repo/screens/settings.png" width="180" alt="Settings"/> | <img src="repo/screens/device.png" width="180" alt="Intiface dialog"/> | <img src="repo/screens/add-video.png" width="180" alt="Add video"/> |
+| <img src="repo/screens/settings.png" width="180" alt="Settings"/> | <img src="repo/screens/device.png" width="180" alt="Intiface dialog"/> | <img src="repo/screens/add-video.png" width="180" alt="Add video: gallery, URL, list, browser"/> |
 
-| Gallery | Catalog | Reader |
+| Gallery | Compress | Note |
 |:---:|:---:|:---:|
-| <img src="repo/screens/gallery.png" width="180" alt="Gallery with imported clips"/> | <img src="repo/screens/catalog.png" width="180" alt="Catalog search with covers blurred"/> | <img src="repo/screens/reader.png" width="180" alt="Reader with no pages loaded"/> |
+| <img src="repo/screens/gallery.png" width="180" alt="Gallery with two sample clips"/> | <img src="repo/screens/compress.png" width="180" alt="Compression presets and custom settings"/> | <img src="repo/screens/note.png" width="180" alt="Private note on a clip"/> |
 
-| Manga drawer | Tag browser |
-|:---:|:---:|
-| <img src="repo/screens/drawer.png" width="180" alt="Manga navigation drawer"/> | <img src="repo/screens/tags.png" width="180" alt="Tag browser"/> |
+### Browser and backup
 
-## What it does
+| Start page | Page videos | Backup |
+|:---:|:---:|:---:|
+| <img src="repo/screens/browser-start.png" width="180" alt="Browser start page with bookmarks and history"/> | <img src="repo/screens/browser-videos.png" width="180" alt="Video files found on a page, with a save button"/> | <img src="repo/screens/backup.png" width="180" alt="Export library dialog with a password"/> |
+
+### Manga
+
+| Catalog | Menu | Tags | Reader |
+|:---:|:---:|:---:|:---:|
+| <img src="repo/screens/catalog.png" width="180" alt="Catalog filtered by one tag, covers pixelated"/> | <img src="repo/screens/drawer.png" width="180" alt="Manga navigation drawer"/> | <img src="repo/screens/tags.png" width="180" alt="Tag browser"/> | <img src="repo/screens/reader.png" width="180" alt="Reader settings dialog over a pixelated page"/> |
+
+## Details
 
 - Plays local video with Media3 ExoPlayer. The gallery can rename an item, replace its cover, and delete one or many items.
 - Downloads a video from an `http` or `https` URL into the app library.

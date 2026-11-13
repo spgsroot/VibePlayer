@@ -9,7 +9,7 @@ data class NhentaiRequest(
     fun header(name: String): String? = headers[name]
 
     companion object {
-        const val USER_AGENT = "Peachy/3.0.0 (https://github.com/spgsroot/VibePlayer)"
+        const val USER_AGENT = "Peachy/3.1.0 (https://github.com/spgsroot/VibePlayer)"
 
         fun favorite(galleryId: Int, key: String, add: Boolean): NhentaiRequest {
             return NhentaiRequest(
