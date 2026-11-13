@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Menu
@@ -21,6 +22,8 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -61,6 +64,7 @@ import ru.spgsroot.peachy.manga.CatalogQuery
 import ru.spgsroot.peachy.manga.GalleryTag
 import ru.spgsroot.peachy.manga.TagFilter
 import ru.spgsroot.peachy.manga.TagMode
+import ru.spgsroot.peachy.manga.TagRef
 
 /** Hub sections that live inside the drawer; the tag browser and random gallery open other screens. */
 private enum class HubDestination(val label: Int, val icon: ImageVector) {
@@ -81,6 +85,7 @@ fun MangaHubScreen(
 ) {
     var destination by rememberSaveable { mutableStateOf(HubDestination.Catalog) }
     var catalogKey by rememberSaveable { mutableIntStateOf(0) }
+    var showFilters by rememberSaveable { mutableStateOf(false) }
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val tabState = rememberSaveableStateHolder()
@@ -89,6 +94,10 @@ fun MangaHubScreen(
     val randomFailed by viewModel.randomFailed.collectAsStateWithLifecycle()
     val randomError = stringResource(R.string.manga_random_error)
     LaunchedEffect(randomFailed) { if (randomFailed) snackbar.showSnackbar(randomError) }
+
+    val catalog by viewModel.catalog.collectAsStateWithLifecycle()
+    val tagLibrary by viewModel.tagLibrary.collectAsStateWithLifecycle()
+    val favoriteTags = remember(tagLibrary) { tagLibrary.favorites.toSet() }
 
     // Tag filters picked on another screen arrive through this entry's saved state.
     val handoff by entry.savedStateHandle.getStateFlow<List<String>?>(TAG_FILTERS_KEY, null)
@@ -170,6 +179,21 @@ fun MangaHubScreen(
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
                             Icon(Icons.Filled.Menu, stringResource(R.string.manga_menu_open))
                         }
+                    },
+                    actions = {
+                        if (destination == HubDestination.Catalog) {
+                            IconButton(onClick = { showFilters = true }) {
+                                BadgedBox(
+                                    badge = {
+                                        if (catalog.query.tags.isNotEmpty()) {
+                                            Badge { Text(catalog.query.tags.size.toString()) }
+                                        }
+                                    }
+                                ) {
+                                    Icon(Icons.Filled.FilterList, stringResource(R.string.manga_filters))
+                                }
+                            }
+                        }
                     }
                 )
             }
@@ -178,7 +202,12 @@ fun MangaHubScreen(
                 tabState.SaveableStateProvider(destination.name) {
                     when (destination) {
                         HubDestination.Catalog -> key(catalogKey) {
-                            CatalogScreen(viewModel, onOpen = { navController.navigate("manga/$it") })
+                            CatalogScreen(
+                                viewModel,
+                                onOpen = { navController.navigate("manga/$it") },
+                                showFilters = showFilters,
+                                onFiltersDismiss = { showFilters = false }
+                            )
                         }
                         HubDestination.Downloads -> MangaLibraryScreen(navController, viewModel, favoritesOnly = false)
                         HubDestination.Favorites -> MangaLibraryScreen(navController, viewModel, favoritesOnly = true)
@@ -186,11 +215,15 @@ fun MangaHubScreen(
                         HubDestination.History -> HistoryScreen(
                             viewModel,
                             onOpen = { navController.navigate("manga/$it") },
-                            onTag = ::searchTag
+                            onTag = ::searchTag,
+                            onTagLong = { viewModel.toggleFavoriteTag(TagRef(it.type, it.name)) },
+                            favoriteTags = favoriteTags
                         )
                         HubDestination.ForYou -> ForYouScreen(
                             onOpen = { navController.navigate("manga/$it") },
-                            onTag = ::searchTag
+                            onTag = ::searchTag,
+                            onTagLong = { viewModel.toggleFavoriteTag(TagRef(it.type, it.name)) },
+                            favoriteTags = favoriteTags
                         )
                     }
                 }
@@ -200,7 +233,13 @@ fun MangaHubScreen(
 }
 
 @Composable
-private fun HistoryScreen(viewModel: MangaViewModel, onOpen: (Int) -> Unit, onTag: (GalleryTag) -> Unit) {
+private fun HistoryScreen(
+    viewModel: MangaViewModel,
+    onOpen: (Int) -> Unit,
+    onTag: (GalleryTag) -> Unit,
+    onTagLong: (GalleryTag) -> Unit,
+    favoriteTags: Set<TagRef>
+) {
     val history by viewModel.history.collectAsStateWithLifecycle()
     val remembered by viewModel.remembered.collectAsStateWithLifecycle()
     if (history.isEmpty()) {
@@ -224,7 +263,9 @@ private fun HistoryScreen(viewModel: MangaViewModel, onOpen: (Int) -> Unit, onTa
                 favorites = memory?.numFavorites,
                 uploadedAt = memory?.uploadedAt,
                 onOpen = { onOpen(entry.galleryId) },
-                onTag = onTag
+                onTag = onTag,
+                onTagLong = onTagLong,
+                favoriteTags = favoriteTags
             )
         }
     }

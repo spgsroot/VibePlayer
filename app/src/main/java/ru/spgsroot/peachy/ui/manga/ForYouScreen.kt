@@ -27,11 +27,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.spgsroot.peachy.R
 import ru.spgsroot.peachy.manga.GalleryTag
+import ru.spgsroot.peachy.manga.TagRef
 
 @Composable
 fun ForYouScreen(
     onOpen: (Int) -> Unit,
     onTag: (GalleryTag) -> Unit,
+    onTagLong: (GalleryTag) -> Unit,
+    favoriteTags: Set<TagRef>,
     viewModel: ForYouViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -82,7 +85,9 @@ fun ForYouScreen(
                     favorites = gallery.numFavorites,
                     uploadedAt = null,
                     onOpen = { onOpen(gallery.id) },
-                    onTag = onTag
+                    onTag = onTag,
+                    onTagLong = onTagLong,
+                    favoriteTags = favoriteTags
                 )
                 if (recommendation.because.isNotEmpty()) {
                     Text(

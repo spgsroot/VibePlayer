@@ -98,9 +98,6 @@
     <string name="manga_retry">Повторить</string>
     <string name="manga_no_results">Ничего не найдено. Некоторые результаты могут быть скрыты чёрным списком.</string>
     <string name="manga_catalog_hint">Введите запрос или ID галереи, чтобы начать</string>
-    <string name="manga_previous">Назад</string>
-    <string name="manga_next">Далее</string>
-    <string name="manga_catalog_page">Страница %1$d</string>
     <string name="manga_page_count">Страниц: %1$d</string>
     <string name="manga_tags">Теги</string>
     <string name="manga_tag_cycle">Нажмите тег: включить → исключить → убрать</string>

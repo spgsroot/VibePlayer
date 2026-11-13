@@ -37,6 +37,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.ui.window.Dialog
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -55,7 +57,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -400,66 +402,76 @@ private fun NativeReader(
         }
     }
     if (sheet) {
-        ModalBottomSheet(onDismissRequest = { sheet = false }) {
-            Column(
-                Modifier.fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp)
-                    .navigationBarsPadding(),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                Text(
-                    stringResource(R.string.manga_reader_settings),
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                SettingRow(
-                    Icons.Default.SwapVert, R.string.reader_orientation,
-                    onClick = {
-                        change(settings.copy(orientation = if (vertical) ReaderOrientation.Horizontal else ReaderOrientation.Vertical))
+        Dialog(onDismissRequest = { sheet = false }) {
+            Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface) {
+                Column(Modifier.fillMaxWidth()) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(start = 24.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            stringResource(R.string.manga_reader_settings),
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(onClick = { sheet = false }) {
+                            Icon(Icons.Default.Close, stringResource(R.string.btn_close))
+                        }
                     }
-                ) {
-                    Text(
-                        stringResource(if (vertical) R.string.reader_vertical else R.string.reader_horizontal),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                SettingRow(
-                    Icons.Default.FitScreen, R.string.manga_reader_fit,
-                    onClick = {
-                        change(settings.copy(fit = if (settings.fit == ReaderFit.Contain) ReaderFit.Width else ReaderFit.Contain))
+                    HorizontalDivider()
+                    Column(
+                        Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        SettingRow(
+                            Icons.Default.SwapVert, R.string.reader_orientation,
+                            onClick = {
+                                change(settings.copy(orientation = if (vertical) ReaderOrientation.Horizontal else ReaderOrientation.Vertical))
+                            }
+                        ) {
+                            Text(
+                                stringResource(if (vertical) R.string.reader_vertical else R.string.reader_horizontal),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        SettingRow(
+                            Icons.Default.FitScreen, R.string.manga_reader_fit,
+                            onClick = {
+                                change(settings.copy(fit = if (settings.fit == ReaderFit.Contain) ReaderFit.Width else ReaderFit.Contain))
+                            }
+                        ) {
+                            Text(
+                                stringResource(if (settings.fit == ReaderFit.Contain) R.string.manga_fit_contain else R.string.manga_fit_width),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        SwitchRow(Icons.Default.TouchApp, R.string.reader_tap_to_switch, settings.tapToSwitch) {
+                            change(settings.copy(tapToSwitch = it))
+                        }
+                        SwitchRow(Icons.Default.SwapHoriz, R.string.reader_hand_swap, settings.handSwap) {
+                            change(settings.copy(handSwap = it))
+                        }
+                        SwitchRow(Icons.Default.Search, R.string.reader_inspect, settings.inspect) {
+                            change(settings.copy(inspect = it))
+                        }
+                        SwitchRow(Icons.Default.ViewAgenda, R.string.reader_continuous, settings.continuous) {
+                            change(settings.copy(continuous = it))
+                        }
+                        SwitchRow(Icons.Default.VisibilityOff, R.string.reader_hide_hints, settings.hideHints) {
+                            change(settings.copy(hideHints = it))
+                        }
+                        Text(stringResource(R.string.manga_haptic), modifier = Modifier.padding(top = 12.dp))
+                        Slider(
+                            value = intensity,
+                            onValueChange = {
+                                viewModel.setIntensity(it)
+                                prefs.edit().putFloat("intensity", it).apply()
+                            },
+                            valueRange = 0.1f..1f
+                        )
+                        TextButton(onClick = viewModel::saveCurrent) { Text(stringResource(R.string.manga_save)) }
                     }
-                ) {
-                    Text(
-                        stringResource(if (settings.fit == ReaderFit.Contain) R.string.manga_fit_contain else R.string.manga_fit_width),
-                        color = MaterialTheme.colorScheme.primary
-                    )
                 }
-                SwitchRow(Icons.Default.TouchApp, R.string.reader_tap_to_switch, settings.tapToSwitch) {
-                    change(settings.copy(tapToSwitch = it))
-                }
-                SwitchRow(Icons.Default.SwapHoriz, R.string.reader_hand_swap, settings.handSwap) {
-                    change(settings.copy(handSwap = it))
-                }
-                SwitchRow(Icons.Default.Search, R.string.reader_inspect, settings.inspect) {
-                    change(settings.copy(inspect = it))
-                }
-                SwitchRow(Icons.Default.ViewAgenda, R.string.reader_continuous, settings.continuous) {
-                    change(settings.copy(continuous = it))
-                }
-                SwitchRow(Icons.Default.VisibilityOff, R.string.reader_hide_hints, settings.hideHints) {
-                    change(settings.copy(hideHints = it))
-                }
-                Text(stringResource(R.string.manga_haptic), modifier = Modifier.padding(top = 12.dp))
-                Slider(
-                    value = intensity,
-                    onValueChange = {
-                        viewModel.setIntensity(it)
-                        prefs.edit().putFloat("intensity", it).apply()
-                    },
-                    valueRange = 0.1f..1f
-                )
-                TextButton(onClick = viewModel::saveCurrent) { Text(stringResource(R.string.manga_save)) }
             }
         }
     }
@@ -603,3 +615,4 @@ private fun ReaderPage(
         }
     }
 }
+

@@ -4,7 +4,7 @@
     <string name="reader_zoom_out">Отдалить</string>
     <string name="reader_save_page">Сохранить этот лист</string>
     <string name="reader_unsave_page">Убрать из сохранённых листов</string>
-    <string name="reader_orientation">Направление чтения</string>
+    <string name="reader_orientation">Ориентация</string>
     <string name="reader_vertical">Вертикально</string>
     <string name="reader_horizontal">Горизонтально</string>
     <string name="reader_tap_to_switch">Листать касанием краёв экрана</string>

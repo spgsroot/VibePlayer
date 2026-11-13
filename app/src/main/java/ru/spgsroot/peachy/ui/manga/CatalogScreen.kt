@@ -1,7 +1,8 @@
 package ru.spgsroot.peachy.ui.manga
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
@@ -38,10 +40,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,23 +70,40 @@ import ru.spgsroot.peachy.manga.GallerySummary
 import ru.spgsroot.peachy.manga.GalleryTag
 import ru.spgsroot.peachy.manga.NhentaiCdn
 import ru.spgsroot.peachy.manga.SearchDestination
-import ru.spgsroot.peachy.manga.TagFilter
+import ru.spgsroot.peachy.manga.TagRef
+import ru.spgsroot.peachy.manga.cycled
 import ru.spgsroot.peachy.manga.TagMode
 import ru.spgsroot.peachy.manga.nextTagMode
 import ru.spgsroot.peachy.manga.searchDestination
 
 private const val CARD_TAG_LIMIT = 4
 private const val COVER_ASPECT = 0.7f
+/** How many items before the end of the list the next page starts loading. */
+private const val LOAD_MORE_AHEAD = 6
 
 @Composable
-fun CatalogScreen(viewModel: MangaViewModel, onOpen: (Int) -> Unit) {
+fun CatalogScreen(
+    viewModel: MangaViewModel,
+    onOpen: (Int) -> Unit,
+    showFilters: Boolean,
+    onFiltersDismiss: () -> Unit
+) {
     val catalog by viewModel.catalog.collectAsStateWithLifecycle()
     val queries by viewModel.queries.collectAsStateWithLifecycle()
     val blockedIds by viewModel.blockedIds.collectAsStateWithLifecycle()
     val uploadDates by viewModel.uploadDates.collectAsStateWithLifecycle()
     val blockedNames by viewModel.blockedNames.collectAsStateWithLifecycle()
     var text by rememberSaveable(catalog.query.text) { mutableStateOf(catalog.query.text) }
-    var showFilters by rememberSaveable { mutableStateOf(false) }
+    val tagLibrary by viewModel.tagLibrary.collectAsStateWithLifecycle()
+    val favoriteTags = remember(tagLibrary) { tagLibrary.favorites.toSet() }
+    val gridState = rememberLazyGridState()
+    val nearEnd by remember {
+        derivedStateOf {
+            val info = gridState.layoutInfo
+            val last = info.visibleItemsInfo.lastOrNull()?.index ?: -1
+            info.totalItemsCount > 0 && last >= info.totalItemsCount - LOAD_MORE_AHEAD
+        }
+    }
 
     fun submit(query: CatalogQuery) {
         when (val destination = searchDestination(query.text)) {
@@ -96,6 +117,12 @@ fun CatalogScreen(viewModel: MangaViewModel, onOpen: (Int) -> Unit) {
         if (!catalog.searched && !catalog.loading) viewModel.search(catalog.query)
     }
 
+    // Scrolling near the end appends the next page. Every state change re-checks, so a page that leaves the list
+    // short keeps loading; a failed page waits for the retry button instead of looping.
+    LaunchedEffect(nearEnd, catalog.page, catalog.searched, catalog.loading, catalog.loadingMore) {
+        if (nearEnd) viewModel.loadMore()
+    }
+
     if (showFilters) {
         FilterSheet(
             query = catalog.query.copy(text = text),
@@ -105,15 +132,16 @@ fun CatalogScreen(viewModel: MangaViewModel, onOpen: (Int) -> Unit) {
             onUnblockId = viewModel::unblockId,
             onBlockName = viewModel::blockName,
             onUnblockName = viewModel::unblockName,
-            onDismiss = { showFilters = false },
+            onDismiss = onFiltersDismiss,
             onApply = { query ->
-                showFilters = false
+                onFiltersDismiss()
                 submit(query)
             }
         )
     }
 
     LazyVerticalGrid(
+        state = gridState,
         columns = GridCells.Fixed(2),
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(12.dp),
@@ -136,9 +164,8 @@ fun CatalogScreen(viewModel: MangaViewModel, onOpen: (Int) -> Unit) {
                 }
             )
         }
-        fullWidth {
+        if (catalog.query.tags.isNotEmpty()) fullWidth {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = { showFilters = true }) { Text(stringResource(R.string.manga_filters)) }
                 LazyRow(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(catalog.query.tags, key = { it.type + ":" + it.name }) { filter ->
                         AssistChip(
@@ -204,23 +231,23 @@ fun CatalogScreen(viewModel: MangaViewModel, onOpen: (Int) -> Unit) {
                 uploadedAt = uploadDates[gallery.id],
                 onOpen = { onOpen(gallery.id) },
                 onTag = { tag ->
-                    val filter = TagFilter(tag.type, tag.name, TagMode.Include)
-                    val tags = catalog.query.tags.filterNot { it.type == filter.type && it.name == filter.name }
-                    submit(catalog.query.copy(text = text, tags = tags + filter))
-                }
+                    submit(catalog.query.copy(text = text, tags = catalog.query.tags.cycled(tag.type, tag.name)))
+                },
+                onTagLong = { tag -> viewModel.toggleFavoriteTag(TagRef(tag.type, tag.name)) },
+                favoriteTags = favoriteTags
             )
         }
-        if (catalog.searched) fullWidth {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                TextButton(
-                    enabled = !catalog.loading && catalog.page > 1,
-                    onClick = { viewModel.search(catalog.query, catalog.page - 1) }
-                ) { Text(stringResource(R.string.manga_previous)) }
-                Text(stringResource(R.string.manga_catalog_page, catalog.page))
-                TextButton(
-                    enabled = !catalog.loading && !catalog.failed && catalog.hasNext,
-                    onClick = { viewModel.search(catalog.query, catalog.page + 1) }
-                ) { Text(stringResource(R.string.manga_next)) }
+        if (catalog.loadingMore) fullWidth {
+            Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        }
+        if (catalog.moreFailed) fullWidth {
+            Column {
+                Text(stringResource(R.string.manga_search_error), color = MaterialTheme.colorScheme.error)
+                TextButton(onClick = { viewModel.loadMore(retry = true) }) {
+                    Text(stringResource(R.string.manga_retry))
+                }
             }
         }
     }
@@ -230,7 +257,10 @@ private fun LazyGridScope.fullWidth(content: @Composable () -> Unit) {
     item(span = { GridItemSpan(maxLineSpan) }) { content() }
 }
 
-/** The large cover card used by the catalog and by History. [onTag] null leaves the chips as plain labels. */
+/**
+ * The large cover card used by the catalog, For you and History. [onTag] null leaves the chips as plain labels;
+ * [onTagLong] marks a tag as a favorite and [favoriteTags] are drawn highlighted.
+ */
 @Composable
 internal fun GalleryGridCard(
     title: String,
@@ -240,7 +270,9 @@ internal fun GalleryGridCard(
     favorites: Int?,
     uploadedAt: Long?,
     onOpen: () -> Unit,
-    onTag: ((GalleryTag) -> Unit)?
+    onTag: ((GalleryTag) -> Unit)?,
+    onTagLong: ((GalleryTag) -> Unit)? = null,
+    favoriteTags: Set<TagRef> = emptySet()
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Card(onClick = onOpen, modifier = Modifier.fillMaxWidth().aspectRatio(COVER_ASPECT)) {
@@ -273,7 +305,7 @@ internal fun GalleryGridCard(
             overflow = TextOverflow.Ellipsis
         )
         GalleryMetaLine(tags, pages, uploadedAt)
-        OneLineTagChips(cardTags(tags), onTag)
+        OneLineTagChips(cardTags(tags), onTag, onTagLong, favoriteTags)
     }
 }
 
@@ -308,22 +340,38 @@ internal fun cardTags(tags: List<GalleryTag>): List<GalleryTag> = tags
  * Small chips in one row that never wrap or grow tall: a chip that would not fit whole is left out, so no chip
  * is ever shown cut off.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-internal fun OneLineTagChips(tags: List<GalleryTag>, onTag: ((GalleryTag) -> Unit)?) {
+internal fun OneLineTagChips(
+    tags: List<GalleryTag>,
+    onTag: ((GalleryTag) -> Unit)?,
+    onTagLong: ((GalleryTag) -> Unit)? = null,
+    favoriteTags: Set<TagRef> = emptySet()
+) {
     if (tags.isEmpty()) return
     val gap = 4.dp
     Layout(
         content = {
             tags.forEach { tag ->
+                val favorite = TagRef(tag.type, tag.name) in favoriteTags
                 Text(
                     "#" + tag.name,
                     style = MaterialTheme.typography.labelSmall,
+                    color = if (favorite) MaterialTheme.colorScheme.onPrimaryContainer else Color.Unspecified,
                     maxLines = 1,
                     softWrap = false,
                     modifier = Modifier
                         .clip(RoundedCornerShape(5.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .let { chip -> if (onTag == null) chip else chip.clickable { onTag(tag) } }
+                        .background(
+                            if (favorite) MaterialTheme.colorScheme.primaryContainer
+                            else MaterialTheme.colorScheme.surfaceVariant
+                        )
+                        .let { chip ->
+                            if (onTag == null) chip else chip.combinedClickable(
+                                onClick = { onTag(tag) },
+                                onLongClick = onTagLong?.let { long -> { long(tag) } }
+                            )
+                        }
                         .padding(horizontal = 5.dp, vertical = 2.dp)
                 )
             }

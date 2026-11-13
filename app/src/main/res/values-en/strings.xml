@@ -98,9 +98,6 @@
     <string name="manga_retry">Retry</string>
     <string name="manga_no_results">No results. Some results may be hidden by the blacklist.</string>
     <string name="manga_catalog_hint">Enter a query or gallery ID to begin</string>
-    <string name="manga_previous">Previous</string>
-    <string name="manga_next">Next</string>
-    <string name="manga_catalog_page">Page %1$d</string>
     <string name="manga_page_count">Pages: %1$d</string>
     <string name="manga_tags">Tags</string>
     <string name="manga_tag_cycle">Tap a tag: include → exclude → remove</string>

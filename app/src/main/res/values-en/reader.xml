@@ -4,7 +4,7 @@
     <string name="reader_zoom_out">Zoom out</string>
     <string name="reader_save_page">Save this page</string>
     <string name="reader_unsave_page">Remove from saved pages</string>
-    <string name="reader_orientation">Reading direction</string>
+    <string name="reader_orientation">Orientation</string>
     <string name="reader_vertical">Vertical</string>
     <string name="reader_horizontal">Horizontal</string>
     <string name="reader_tap_to_switch">Tap screen edges to turn pages</string>

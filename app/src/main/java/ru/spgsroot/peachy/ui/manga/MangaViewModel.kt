@@ -12,6 +12,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import ru.spgsroot.peachy.data.manga.TagPreferences
+import ru.spgsroot.peachy.manga.TagLibrary
+import ru.spgsroot.peachy.manga.TagRef
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -49,7 +52,10 @@ data class CatalogState(
     val loading: Boolean = false,
     val failed: Boolean = false,
     val searched: Boolean = false,
-    val hasNext: Boolean = false
+    val hasNext: Boolean = false,
+    /** The next page is being fetched; the results already shown stay. */
+    val loadingMore: Boolean = false,
+    val moreFailed: Boolean = false
 )
 
 @HiltViewModel
@@ -60,10 +66,18 @@ class MangaViewModel @Inject constructor(
     private val catalogStore: MangaCatalogStore,
     private val memory: GalleryMemoryStore,
     private val savedPagesRepository: SavedPagesRepository,
-    private val exporter: VideoExporter
+    private val exporter: VideoExporter,
+    private val tagPreferences: TagPreferences
 ) : ViewModel() {
     val libraryItems: StateFlow<List<LibraryGallery>> = library.observe()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val tagLibrary: StateFlow<TagLibrary> = tagPreferences.library
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TagLibrary())
+
+    fun toggleFavoriteTag(tag: TagRef) {
+        viewModelScope.launch { tagPreferences.update { it.toggleFavorite(tag) } }
+    }
 
     val history = catalogStore.history
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -129,6 +143,33 @@ class MangaViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 _catalog.value = _catalog.value.copy(loading = false, failed = true)
+            }
+        }
+    }
+
+    /**
+     * Appends the page after the last one shown. Called when the list nears its end; a new search cancels it,
+     * and a failure keeps the list and waits for [retry] instead of looping.
+     */
+    fun loadMore(retry: Boolean = false) {
+        val state = _catalog.value
+        if (!state.searched || state.loading || state.loadingMore || state.failed || !state.hasNext) return
+        if (state.moreFailed && !retry) return
+        val page = state.page + 1
+        val query = state.query
+        _catalog.value = state.copy(loadingMore = true, moreFailed = false)
+        searchJob = viewModelScope.launch {
+            try {
+                val results = withContext(Dispatchers.IO) {
+                    api.search(query.toSearchQuery(), query.sort.toApi(), page)
+                }
+                rawResults = (rawResults + results).distinctBy { it.id }
+                _catalog.value = _catalog.value.copy(page = page, loadingMore = false, hasNext = results.isNotEmpty())
+                refreshVisibleResults()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _catalog.value = _catalog.value.copy(loadingMore = false, moreFailed = true)
             }
         }
     }
