@@ -1,7 +1,9 @@
 package ru.spgsroot.peachy.translate
 
 import kotlinx.coroutines.runBlocking
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.ResponseBody.Companion.toResponseBody
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.json.JSONArray
@@ -178,5 +180,19 @@ class TranslationClientTest {
     fun checkReportsAuth() {
         server.enqueue(MockResponse().setResponseCode(401))
         assertEquals(TranslationError.Auth, failureOf { runBlocking { client().check() } })
+    }
+
+    @Test
+    fun checkOnTheOpencodeHostCarriesTheSessionHeaderTheServiceRequires() {
+        var seen: String? = null
+        val http = OkHttpClient.Builder().addInterceptor { chain ->
+            seen = chain.request().header("x-opencode-session")
+            okhttp3.Response.Builder()
+                .request(chain.request()).protocol(okhttp3.Protocol.HTTP_1_1).code(200).message("OK")
+                .body(envelope("ok").toResponseBody("application/json".toMediaType())).build()
+        }.build()
+        val provider = ProviderSettings(baseUrl = "https://opencode.ai/inference/go/v1", apiKey = "k")
+        runBlocking { TranslationClient(http, { provider }, agent).check() }
+        assertTrue(seen?.startsWith("peachy-") == true)
     }
 }

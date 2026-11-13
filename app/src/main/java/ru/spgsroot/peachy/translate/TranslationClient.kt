@@ -29,6 +29,9 @@ interface PageTranslator {
 internal fun sessionHeader(baseUrl: String, galleryId: Int): String? =
     if (ProviderUrl.sendsSessionHeader(baseUrl)) "peachy-$galleryId" else null
 
+/** The test request belongs to no gallery; OpenCode still wants every request to name a session. */
+private const val CHECK_SESSION_ID = 0
+
 /** One OpenAI-compatible `chat/completions` call per page, with the page as a data URI. */
 class TranslationClient(
     http: OkHttpClient,
@@ -62,7 +65,7 @@ class TranslationClient(
                 .put("model", provider.model)
                 .put("max_tokens", 8)
                 .put("messages", JSONArray().put(message("user", PagePrompt.CHECK)))
-            send(provider, body, null)
+            send(provider, body, sessionHeader(provider.baseUrl, CHECK_SESSION_ID))
         }
     }
 
