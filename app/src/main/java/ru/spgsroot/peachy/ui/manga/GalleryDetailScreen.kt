@@ -1,5 +1,6 @@
 package ru.spgsroot.peachy.ui.manga
 
+import ru.spgsroot.peachy.manga.TagNames
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -331,7 +332,7 @@ private fun TagGroup(type: String, tags: List<GalleryTag>, onTag: (GalleryTag) -
                     color = MaterialTheme.colorScheme.surfaceVariant
                 ) {
                     Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(tag.name, style = MaterialTheme.typography.bodyMedium)
+                        Text(TagNames.display(tag, tagLanguage()), style = MaterialTheme.typography.bodyMedium)
                         tag.count?.let {
                             Text(it.toString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }

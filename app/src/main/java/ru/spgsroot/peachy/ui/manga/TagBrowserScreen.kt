@@ -1,5 +1,6 @@
 package ru.spgsroot.peachy.ui.manga
 
+import ru.spgsroot.peachy.manga.TagNames
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -189,7 +190,7 @@ private fun AllTab(
             items(list.tags, key = { it.id }) { tag ->
                 val ref = TagRef(tag.type, tag.name)
                 TagRow(
-                    label = tag.name,
+                    label = TagNames.display(tag.type, tag.name, tagLanguage()),
                     count = tag.count,
                     mode = selection.modeOf(ref),
                     onClick = { viewModel.cycle(ref) }
@@ -230,7 +231,7 @@ private fun FavoritesTab(library: TagLibrary, selection: List<TagFilter>, viewMo
     LazyColumn(Modifier.fillMaxSize()) {
         items(library.favorites, key = { it.type + ":" + it.name }) { ref ->
             TagRow(
-                label = ref.name,
+                label = TagNames.display(ref.type, ref.name, tagLanguage()),
                 count = null,
                 mode = selection.modeOf(ref),
                 onClick = { viewModel.cycle(ref) }
@@ -309,7 +310,7 @@ private fun CollectionsTab(library: TagLibrary, selection: List<TagFilter>, view
                     ) { Text(stringResource(R.string.manga_tag_collection_select)) }
                     collection.tags.forEach { ref ->
                         TagRow(
-                            label = ref.name,
+                            label = TagNames.display(ref.type, ref.name, tagLanguage()),
                             count = null,
                             mode = selection.modeOf(ref),
                             onClick = { viewModel.cycle(ref) }

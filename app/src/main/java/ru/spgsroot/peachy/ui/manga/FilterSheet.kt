@@ -1,5 +1,6 @@
 package ru.spgsroot.peachy.ui.manga
 
+import ru.spgsroot.peachy.manga.TagNames
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -132,7 +133,7 @@ fun FilterSheet(
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             tags.forEach { tag ->
                                 FilterChip(selected = tag.mode == TagMode.Include, onClick = { cycleTag(tag.type, tag.name) }, label = {
-                                    Text(stringResource(if (tag.mode == TagMode.Include) R.string.manga_tag_included else R.string.manga_tag_excluded, "${tag.type}:${tag.name}"))
+                                    Text(stringResource(if (tag.mode == TagMode.Include) R.string.manga_tag_included else R.string.manga_tag_excluded, "${tag.type}:${TagNames.display(tag.type, tag.name, tagLanguage())}"))
                                 })
                             }
                         }

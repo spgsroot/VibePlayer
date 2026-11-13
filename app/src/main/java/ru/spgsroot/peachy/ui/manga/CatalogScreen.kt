@@ -1,5 +1,6 @@
 package ru.spgsroot.peachy.ui.manga
 
+import ru.spgsroot.peachy.manga.TagNames
 import androidx.compose.foundation.background
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -178,7 +179,11 @@ fun CatalogScreen(
                             },
                             label = {
                                 val sign = if (filter.mode == TagMode.Exclude) "-" else "#"
-                                Text(sign + filter.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(
+                                    sign + TagNames.display(filter.type, filter.name, tagLanguage()),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
                             }
                         )
                     }
@@ -312,7 +317,8 @@ internal fun GalleryGridCard(
 /** Language, page count and, when the app has seen one, the upload date, on a single line. */
 @Composable
 internal fun GalleryMetaLine(tags: List<GalleryTag>, pages: Int, uploadedAt: Long?) {
-    val language = tags.firstOrNull { it.type == "language" && it.name != "translated" }?.name
+    val language = tags.firstOrNull { it.type == "language" && it.name != "translated" }
+        ?.let { TagNames.display(it, tagLanguage()) }
     val parts = listOfNotNull(
         language,
         stringResource(R.string.manga_page_count, pages),
@@ -350,12 +356,13 @@ internal fun OneLineTagChips(
 ) {
     if (tags.isEmpty()) return
     val gap = 4.dp
+    val language = tagLanguage()
     Layout(
         content = {
             tags.forEach { tag ->
                 val favorite = TagRef(tag.type, tag.name) in favoriteTags
                 Text(
-                    "#" + tag.name,
+                    "#" + TagNames.display(tag, language),
                     style = MaterialTheme.typography.labelSmall,
                     color = if (favorite) MaterialTheme.colorScheme.onPrimaryContainer else Color.Unspecified,
                     maxLines = 1,
