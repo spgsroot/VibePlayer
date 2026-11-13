@@ -11,6 +11,11 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.ViewAgenda
+import androidx.compose.material.icons.filled.ViewColumn
+import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.filled.Compress
 import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.ui.Alignment
@@ -62,6 +67,8 @@ fun GalleryScreen(
     val compression by viewModel.compression.collectAsState()
     val compressDialog by viewModel.compressDialog.collectAsState()
     val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("gallery", Context.MODE_PRIVATE) }
+    var layout by remember { mutableStateOf(GalleryLayoutStore.load(prefs)) }
 
     var videoToRename by remember { mutableStateOf<Video?>(null) }
     var videoForThumbnail by remember { mutableStateOf<Video?>(null) }
@@ -169,6 +176,11 @@ fun GalleryScreen(
                         IconButton(onClick = { viewModel.deleteSelected() }) {
                             Icon(Icons.Default.Delete, stringResource(R.string.content_description_delete_selected))
                         }
+                    } else if (videos.isNotEmpty()) {
+                        LayoutMenu(layout) {
+                            layout = it
+                            GalleryLayoutStore.save(prefs, it)
+                        }
                     }
                 }
             )
@@ -186,17 +198,18 @@ fun GalleryScreen(
             }
         } else {
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+            columns = GridCells.Fixed(if (layout == GalleryLayout.One || layout == GalleryLayout.List) 1 else 2),
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
             contentPadding = PaddingValues(16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(if (layout == GalleryLayout.List) 8.dp else 12.dp)
         ) {
             items(videos, key = { it.id }) { video ->
                 GalleryItemCard(
                     video = video,
+                    layout = layout,
                     isSelected = selectedVideoIds.contains(video.id),
                     onVideoClick = {
                         if (isSelectionMode) {
@@ -224,4 +237,42 @@ fun GalleryScreen(
         }
         }
     }
+}
+
+/** The header button for choosing how the gallery lays its videos out. */
+@Composable
+private fun LayoutMenu(current: GalleryLayout, onPick: (GalleryLayout) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { open = true }) {
+            Icon(current.icon(), stringResource(R.string.content_description_gallery_layout))
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            for (option in GalleryLayout.entries) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(option.label())) },
+                    onClick = {
+                        open = false
+                        onPick(option)
+                    },
+                    leadingIcon = { Icon(option.icon(), null) },
+                    trailingIcon = { if (option == current) Icon(Icons.Default.Check, null) }
+                )
+            }
+        }
+    }
+}
+
+private fun GalleryLayout.icon() = when (this) {
+    GalleryLayout.Large -> Icons.Default.ViewColumn
+    GalleryLayout.Two -> Icons.Default.GridView
+    GalleryLayout.One -> Icons.Default.ViewAgenda
+    GalleryLayout.List -> Icons.Default.ViewList
+}
+
+private fun GalleryLayout.label() = when (this) {
+    GalleryLayout.Large -> R.string.gallery_layout_large
+    GalleryLayout.Two -> R.string.gallery_layout_two
+    GalleryLayout.One -> R.string.gallery_layout_one
+    GalleryLayout.List -> R.string.gallery_layout_list
 }

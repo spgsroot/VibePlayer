@@ -19,3 +19,5 @@ build/
 /.claude/
 /.kotlin/
 agents/
+# local build log
+build-out.txt

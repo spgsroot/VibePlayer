@@ -45,7 +45,7 @@ Screenshots use sample clips. Catalog covers and titles are pixelated, and the r
 
 ## Details
 
-- Plays local video with Media3 ExoPlayer. The gallery can rename an item, replace its cover, and delete one or many items.
+- Plays local video with Media3 ExoPlayer. The gallery can rename an item, replace its cover, and delete one or many items. The button in the gallery header switches the view between large portrait covers, two per row, one per row, and a list; the choice is remembered.
 - Downloads a video from an `http` or `https` URL into the app library.
 - Imports videos from file-host links: an album or a single file on Bunkr, Cyberdrop, Turbo, Pixeldrain or Filester. An album link brings every video in it; images and archives are skipped. Only public links work: password albums, GoFile and FileDitch are not supported. Turbo's CDN could not be reached from the test machine, so Turbo downloads are untested.
 - Exports selected gallery videos to a folder you choose. The app gets access to that folder only, and a failed copy is removed instead of left half-written.
