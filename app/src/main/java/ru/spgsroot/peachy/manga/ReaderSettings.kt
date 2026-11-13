@@ -6,6 +6,15 @@ enum class ReaderOrientation { Vertical, Horizontal }
 
 enum class ReaderFit { Contain, Width }
 
+/** When the reader asks for a translation: only on request, on every settled page, or for the whole gallery. */
+enum class TranslateMode(val wire: String) {
+    Manual("manual"), OnTurn("on_turn"), Whole("whole");
+
+    companion object {
+        fun fromWire(value: String?): TranslateMode = entries.firstOrNull { it.wire == value } ?: Manual
+    }
+}
+
 /** How the native reader behaves; one set for every gallery. */
 data class ReaderSettings(
     val orientation: ReaderOrientation,
@@ -17,7 +26,8 @@ data class ReaderSettings(
     val inspect: Boolean = false,
     /** One endless strip instead of one page at a time. */
     val continuous: Boolean = false,
-    val hideHints: Boolean = false
+    val hideHints: Boolean = false,
+    val translateMode: TranslateMode = TranslateMode.Manual
 )
 
 object ReaderSettingsStore {
@@ -28,6 +38,7 @@ object ReaderSettingsStore {
     private const val INSPECT = "inspect"
     private const val CONTINUOUS = "continuous"
     private const val HIDE_HINTS = "hide_hints"
+    private const val TRANSLATE_MODE = "translate_mode"
     private const val LEGACY_MODE = "mode"
 
     /** Reads the settings, carrying over the older "paged"/"strip" choice when nothing newer was stored. */
@@ -45,7 +56,8 @@ object ReaderSettingsStore {
             handSwap = prefs.getBoolean(HAND_SWAP, false),
             inspect = prefs.getBoolean(INSPECT, false),
             continuous = prefs.getBoolean(CONTINUOUS, legacyStrip),
-            hideHints = prefs.getBoolean(HIDE_HINTS, false)
+            hideHints = prefs.getBoolean(HIDE_HINTS, false),
+            translateMode = TranslateMode.fromWire(prefs.getString(TRANSLATE_MODE, null))
         )
     }
 
@@ -58,6 +70,7 @@ object ReaderSettingsStore {
             .putBoolean(INSPECT, settings.inspect)
             .putBoolean(CONTINUOUS, settings.continuous)
             .putBoolean(HIDE_HINTS, settings.hideHints)
+            .putString(TRANSLATE_MODE, settings.translateMode.wire)
             .apply()
     }
 }

@@ -67,4 +67,29 @@ class ReaderSettingsTest {
         assertEquals(ReaderOrientation.Horizontal, s.orientation)
         assertFalse(s.continuous)
     }
+
+    @Test
+    fun translateModeDefaultsToManual() {
+        assertEquals(TranslateMode.Manual, ReaderSettingsStore.load(prefs()).translateMode)
+    }
+
+    @Test
+    fun everyTranslateModeComesBackUnchanged() {
+        for (mode in TranslateMode.entries) {
+            val store = prefs()
+            ReaderSettingsStore.save(store, ReaderSettings(orientation = ReaderOrientation.Horizontal, translateMode = mode))
+            assertEquals(mode, ReaderSettingsStore.load(store).translateMode)
+        }
+    }
+
+    @Test
+    fun storedTranslateModeValuesAreStable() {
+        assertEquals(TranslateMode.OnTurn, ReaderSettingsStore.load(prefs(mapOf("translate_mode" to "on_turn"))).translateMode)
+        assertEquals(TranslateMode.Whole, ReaderSettingsStore.load(prefs(mapOf("translate_mode" to "whole"))).translateMode)
+    }
+
+    @Test
+    fun unknownTranslateModeFallsBackToManual() {
+        assertEquals(TranslateMode.Manual, ReaderSettingsStore.load(prefs(mapOf("translate_mode" to "always"))).translateMode)
+    }
 }

@@ -9,6 +9,9 @@ import dagger.hilt.components.SingletonComponent
 import ru.spgsroot.peachy.data.repository.SettingsRepository
 import ru.spgsroot.peachy.domain.model.DspConfig
 import ru.spgsroot.peachy.domain.model.Settings
+import ru.spgsroot.peachy.translate.ProviderSettingsStore
+import ru.spgsroot.peachy.translate.TranslationClient
+import okhttp3.OkHttpClient
 import javax.inject.Singleton
 
 @Module
@@ -24,6 +27,20 @@ object AppModule {
             playbackSpeed = 1.0f,
             dspConfig = DspConfig(),
             autoLockTimeoutMs = 30000L
+        )
+    }
+
+    @Provides
+    @Singleton
+    fun provideTranslationClient(
+        @ApplicationContext context: Context,
+        providerStore: ProviderSettingsStore
+    ): TranslationClient {
+        val version = context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "unknown"
+        return TranslationClient(
+            OkHttpClient(),
+            { providerStore.settings.value },
+            "Peachy/$version (+https://github.com/spgsroot/VibePlayer)"
         )
     }
 }
