@@ -9,34 +9,39 @@ import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
-import android.webkit.WebResourceRequest
-import android.webkit.WebSettings
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.viewinterop.AndroidView
+import androidx.activity.viewModels
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import ru.spgsroot.peachy.R
+import ru.spgsroot.peachy.data.browser.BrowserStore
 import ru.spgsroot.peachy.domain.dsp.HapticInputRouter
 import ru.spgsroot.peachy.domain.dsp.HapticSource
 import ru.spgsroot.peachy.playback.service.WebViewAudioCaptureService
-import javax.inject.Inject
+import ru.spgsroot.peachy.ui.theme.PeachyTheme
 
+/**
+ * The in-app browser. Page audio can drive the haptics: the capture is started on request
+ * (the launching dialog or the menu switch) and always stops when the screen is left.
+ */
 @AndroidEntryPoint
 class WebViewActivity : ComponentActivity() {
 
     @Inject
     lateinit var hapticInputRouter: HapticInputRouter
 
-    private var webView: WebView? = null
+    private val viewModel: BrowserViewModel by viewModels()
+    private lateinit var controller: BrowserController
     private var captureStarted = false
+    private var captureOn by mutableStateOf(false)
 
     private val recordAudioPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -71,18 +76,30 @@ class WebViewActivity : ComponentActivity() {
             WindowManager.LayoutParams.FLAG_SECURE,
             WindowManager.LayoutParams.FLAG_SECURE
         )
+        enableEdgeToEdge()
+
+        controller = BrowserController(
+            activity = this,
+            engine = { viewModel.engine.value },
+            blockerOff = { host -> BrowserStore.isBlockerOff(viewModel.allowedNow(), host) },
+            onVisit = viewModel::recordVisit
+        )
 
         val url = intent.getStringExtra(EXTRA_URL).orEmpty().trim()
-        if (!isOpenableWebViewUrl(url)) {
-            Toast.makeText(this, R.string.error_webview_https, Toast.LENGTH_SHORT).show()
-            finish()
-            return
-        }
+        if (url.isNotEmpty()) controller.navigate(controller.active, url)
 
         setContent {
-            WebViewContent(url)
+            PeachyTheme {
+                BrowserScreen(
+                    controller = controller,
+                    viewModel = viewModel,
+                    captureOn = captureOn,
+                    onCaptureChange = { wanted -> if (wanted) beginAudioCaptureFlow() else stopCapture() },
+                    onClose = ::finish
+                )
+            }
         }
-        beginAudioCaptureFlow()
+        if (intent.getBooleanExtra(EXTRA_CAPTURE, false)) beginAudioCaptureFlow()
     }
 
     override fun onStop() {
@@ -92,21 +109,19 @@ class WebViewActivity : ComponentActivity() {
 
     override fun onDestroy() {
         stopCapture()
-        webView?.apply {
-            stopLoading()
-            destroy()
-        }
-        webView = null
+        controller.destroyAll()
         super.onDestroy()
     }
 
     private fun stopCapture() {
-        if (!captureStarted && webView == null) return
-        runCatching {
-            stopService(WebViewAudioCaptureService.stopIntent(applicationContext))
+        if (captureStarted) {
+            runCatching {
+                stopService(WebViewAudioCaptureService.stopIntent(applicationContext))
+            }
         }
         hapticInputRouter.release(HapticSource.WEBVIEW)
         captureStarted = false
+        captureOn = false
     }
 
     private fun beginAudioCaptureFlow() {
@@ -138,6 +153,7 @@ class WebViewActivity : ComponentActivity() {
 
     private fun startAudioCaptureService(resultCode: Int, data: Intent) {
         captureStarted = true
+        captureOn = true
         ContextCompat.startForegroundService(
             applicationContext,
             WebViewAudioCaptureService.captureIntent(
@@ -148,40 +164,8 @@ class WebViewActivity : ComponentActivity() {
         )
     }
 
-    @Composable
-    private fun WebViewContent(url: String) {
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = { context ->
-                WebView(context).apply {
-                    webView = this
-                    webViewClient = object : WebViewClient() {
-                        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                            val target = request.url?.toString().orEmpty()
-                            if (isOpenableWebViewUrl(target)) return false
-                            Toast.makeText(this@WebViewActivity, R.string.error_webview_https, Toast.LENGTH_SHORT).show()
-                            return true
-                        }
-                    }
-                    settings.javaScriptEnabled = true
-                    settings.domStorageEnabled = true
-                    settings.mediaPlaybackRequiresUserGesture = true
-                    settings.allowFileAccess = false
-                    settings.allowContentAccess = false
-                    @Suppress("DEPRECATION")
-                    settings.allowFileAccessFromFileURLs = false
-                    @Suppress("DEPRECATION")
-                    settings.allowUniversalAccessFromFileURLs = false
-                    settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-                    loadUrl(url)
-                }
-            }
-        )
-    }
-
     companion object {
         const val EXTRA_URL = "extra_url"
-
-        fun isOpenableWebViewUrl(url: String): Boolean = url.trim().startsWith("https://")
+        const val EXTRA_CAPTURE = "extra_capture"
     }
 }

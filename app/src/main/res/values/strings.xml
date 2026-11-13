@@ -209,8 +209,7 @@
     <string name="add_from_gallery">Выбрать из галереи</string>
     <string name="add_from_url">Вставить ссылку</string>
     <string name="add_batch">Импорт списка</string>
-    <string name="add_open_webview">Открыть WebView</string>
-    <string name="dialog_webview_url">Открыть сайт с вибрацией</string>
+    <string name="add_open_webview">Браузер</string>
     <string name="webview_audio_capture_hint">Звук WebView будет использоваться для генерации вибрации. Android запросит доступ к захвату аудиовыхода; пока WebView открыт, другой медиазвук тоже может попасть в анализ.</string>
     <string name="btn_open_webview">Открыть</string>
 

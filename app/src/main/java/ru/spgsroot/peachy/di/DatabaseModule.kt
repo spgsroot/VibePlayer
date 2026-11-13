@@ -42,4 +42,13 @@ object DatabaseModule {
 
     @Provides
     fun provideGalleryMemoryDao(database: AppDatabase): GalleryMemoryDao = database.galleryMemoryDao()
+
+    @Provides
+    fun provideBookmarkDao(database: AppDatabase): BookmarkDao = database.bookmarkDao()
+
+    @Provides
+    fun provideBrowserHistoryDao(database: AppDatabase): BrowserHistoryDao = database.browserHistoryDao()
+
+    @Provides
+    fun provideAllowlistDao(database: AppDatabase): AllowlistDao = database.allowlistDao()
 }

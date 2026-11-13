@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="browser_address_hint">Address or search</string>
+    <string name="browser_too_many_tabs">Too many tabs</string>
+    <string name="browser_download_offered">Video added to the page videos list</string>
+    <string name="browser_download_unsupported">Downloading this kind of file is not supported</string>
+    <string name="browser_page_crashed">The page crashed, reload it</string>
+    <string name="browser_tabs">Tabs</string>
+    <string name="browser_new_tab">New tab</string>
+    <string name="browser_close_tab">Close tab</string>
+    <string name="browser_bookmarks">Bookmarks</string>
+    <string name="browser_history">History</string>
+    <string name="browser_videos">Page videos</string>
+    <string name="browser_menu">Menu</string>
+    <string name="browser_add_bookmark">Add bookmark</string>
+    <string name="browser_remove_bookmark">Remove bookmark</string>
+    <string name="browser_block_ads">Block ads on this site</string>
+    <string name="browser_blocked_count">Blocked on this page: %1$d</string>
+    <string name="browser_update_filters">Update filter lists</string>
+    <string name="browser_filters_updating">Downloading lists…</string>
+    <string name="browser_filters_updated">Lists updated, rules: %1$d</string>
+    <string name="browser_filters_failed">Could not update the lists; the previous ones stay</string>
+    <string name="browser_capture">Vibrate from page audio</string>
+    <string name="browser_home">Start page</string>
+    <string name="browser_close_browser">Close browser</string>
+    <string name="browser_clear_history">Clear history</string>
+    <string name="browser_no_bookmarks">No bookmarks yet. Add a page from the menu.</string>
+    <string name="browser_no_history">History is empty</string>
+    <string name="browser_no_videos">No video found on this page. Start a video and open the list again.</string>
+    <string name="browser_video_stream">Streaming video (HLS/DASH) cannot be saved</string>
+    <string name="browser_video_save">Save to library</string>
+    <string name="browser_video_saving">Saving…</string>
+    <string name="browser_video_saved">Video added to the library</string>
+    <string name="browser_video_failed">Could not save the video</string>
+    <string name="browser_untitled">New tab</string>
+    <string name="browser_back">Back</string>
+    <string name="browser_forward">Forward</string>
+    <string name="browser_reload">Reload</string>
+    <string name="browser_stop">Stop</string>
+    <string name="browser_delete">Delete</string>
+    <string name="dialog_browser_title">Browser</string>
+    <string name="dialog_browser_url_hint">Address (optional)</string>
+    <string name="dialog_browser_capture">Vibrate from page audio</string>
+</resources>

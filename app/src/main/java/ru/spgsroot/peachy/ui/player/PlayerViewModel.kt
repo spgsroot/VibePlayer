@@ -1,7 +1,6 @@
 package ru.spgsroot.peachy.ui.player
 
 import android.content.Context
-import android.media.MediaMetadataRetriever
 import android.net.Uri
 import androidx.annotation.OptIn
 import androidx.lifecycle.ViewModel
@@ -24,6 +23,7 @@ import ru.spgsroot.peachy.data.hosts.HostImporter
 import ru.spgsroot.peachy.data.repository.SettingsRepository
 import ru.spgsroot.peachy.data.repository.VideoRepository
 import ru.spgsroot.peachy.data.storage.InternalStorageManager
+import ru.spgsroot.peachy.data.storage.VideoImporter
 import ru.spgsroot.peachy.domain.model.Settings
 import ru.spgsroot.peachy.domain.model.Video
 import ru.spgsroot.peachy.playback.player.ExoPlayerWrapper
@@ -45,6 +45,7 @@ class PlayerViewModel @Inject constructor(
     private val videoRepository: VideoRepository,
     private val storageManager: InternalStorageManager,
     private val externalDownloader: ExternalDownloader,
+    private val videoImporter: VideoImporter,
     private val hostImporter: HostImporter
 ) : ViewModel() {
 
@@ -193,7 +194,7 @@ class PlayerViewModel @Inject constructor(
                 val inputStream = context.contentResolver.openInputStream(uri) ?: return@withContext
                 val fileName = "${System.currentTimeMillis()}.mp4"
                 val savedFile = storageManager.save(inputStream, fileName)
-                persistSavedVideo(savedFile)
+                videoImporter.persist(savedFile)
             }
         }
     }
@@ -295,11 +296,7 @@ class PlayerViewModel @Inject constructor(
         return entries.map { entry -> ImportItem(entry.label) { importHostEntry(entry) } }
     }
 
-    private suspend fun importDirectUrl(url: String): Result<Unit> =
-        externalDownloader.download(url = url, fileName = buildDownloadFileName(url)).fold(
-            onSuccess = { persistSavedVideo(it) },
-            onFailure = { Result.failure(it) }
-        )
+    private suspend fun importDirectUrl(url: String): Result<Unit> = videoImporter.importUrl(url)
 
     private suspend fun importHostEntry(entry: HostEntry): Result<Unit> {
         val link = try {
@@ -312,74 +309,17 @@ class PlayerViewModel @Inject constructor(
             fileName = "${System.currentTimeMillis()}.${link.name.substringAfterLast('.', "mp4").lowercase()}",
             headers = link.headers
         ).fold(
-            onSuccess = { persistSavedVideo(it, title = link.name.substringBeforeLast('.')) },
+            onSuccess = { videoImporter.persist(it, title = link.name.substringBeforeLast('.')) },
             onFailure = { Result.failure(it) }
         )
     }
 
-    private suspend fun persistSavedVideo(savedFile: File, title: String? = null): Result<Unit> = withContext(Dispatchers.IO) {
-        runCatching {
-            val metadata = extractMetadata(savedFile)
-            val video = Video(
-                id = 0,
-                title = title?.takeIf { it.isNotBlank() } ?: metadata.title,
-                filePath = savedFile.absolutePath,
-                duration = metadata.duration,
-                thumbnailPath = null,
-                addedAt = System.currentTimeMillis(),
-                fileSize = savedFile.length(),
-                isCorrupted = false
-            )
-            videoRepository.insert(video)
-            Unit
-        }.onFailure {
-            savedFile.delete()
-        }
-    }
-
-    private fun buildDownloadFileName(url: String): String {
-        val lastSegment = runCatching { Uri.parse(url).lastPathSegment.orEmpty() }
-            .getOrDefault("")
-
-        val extension = lastSegment
-            .substringAfterLast('.', "mp4")
-            .substringBefore('?')
-            .substringBefore('#')
-            .lowercase()
-            .takeIf { it.matches(Regex("[a-z0-9]{1,5}")) }
-            ?: "mp4"
-
-        return "${System.currentTimeMillis()}.$extension"
-    }
-
-    private fun extractMetadata(file: File): VideoMetadata {
-        val retriever = MediaMetadataRetriever()
-        return try {
-            retriever.setDataSource(file.absolutePath)
-            val duration = retriever
-                .extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
-                ?.toLongOrNull()
-                ?: 0L
-            val title = file.nameWithoutExtension
-            VideoMetadata(
-                title = title,
-                duration = duration
-            )
-        } finally {
-            retriever.release()
-        }
-    }
 
     override fun onCleared() {
         timerController.stop()
         super.onCleared()
     }
 }
-
-data class VideoMetadata(
-    val title: String,
-    val duration: Long
-)
 
 sealed interface PlayerUiState {
     data object Empty : PlayerUiState

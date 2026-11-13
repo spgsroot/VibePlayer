@@ -218,11 +218,12 @@ fun PlayerScreen(
     if (showWebViewDialog) {
         WebViewUrlDialog(
             onDismiss = { showWebViewDialog = false },
-            onOpen = { url ->
+            onOpen = { url, capture ->
                 viewModel.pauseForWebView()
                 context.startActivity(
                     Intent(context, WebViewActivity::class.java).apply {
                         putExtra(WebViewActivity.EXTRA_URL, url)
+                        putExtra(WebViewActivity.EXTRA_CAPTURE, capture)
                     }
                 )
             }

@@ -209,8 +209,7 @@
     <string name="add_from_gallery">Select from Gallery</string>
     <string name="add_from_url">Paste URL</string>
     <string name="add_batch">Import List</string>
-    <string name="add_open_webview">Open WebView</string>
-    <string name="dialog_webview_url">Open site with vibration</string>
+    <string name="add_open_webview">Browser</string>
     <string name="webview_audio_capture_hint">WebView audio will be used to generate vibration. Android will ask for audio output capture access; while WebView is open, other playing media can also be analyzed.</string>
     <string name="btn_open_webview">Open</string>
 

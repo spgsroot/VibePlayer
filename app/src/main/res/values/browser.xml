@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="browser_address_hint">Адрес или поисковый запрос</string>
+    <string name="browser_too_many_tabs">Слишком много вкладок</string>
+    <string name="browser_download_offered">Видео добавлено в список «Видео на странице»</string>
+    <string name="browser_download_unsupported">Скачивание таких файлов не поддерживается</string>
+    <string name="browser_page_crashed">Страница аварийно закрылась, обновите её</string>
+    <string name="browser_tabs">Вкладки</string>
+    <string name="browser_new_tab">Новая вкладка</string>
+    <string name="browser_close_tab">Закрыть вкладку</string>
+    <string name="browser_bookmarks">Закладки</string>
+    <string name="browser_history">История</string>
+    <string name="browser_videos">Видео на странице</string>
+    <string name="browser_menu">Меню</string>
+    <string name="browser_add_bookmark">Добавить в закладки</string>
+    <string name="browser_remove_bookmark">Убрать из закладок</string>
+    <string name="browser_block_ads">Блокировать рекламу на сайте</string>
+    <string name="browser_blocked_count">Заблокировано на странице: %1$d</string>
+    <string name="browser_update_filters">Обновить списки фильтров</string>
+    <string name="browser_filters_updating">Загрузка списков…</string>
+    <string name="browser_filters_updated">Списки обновлены, правил: %1$d</string>
+    <string name="browser_filters_failed">Не удалось обновить списки, остались прежние</string>
+    <string name="browser_capture">Вибрация от звука страницы</string>
+    <string name="browser_home">Стартовая страница</string>
+    <string name="browser_close_browser">Закрыть браузер</string>
+    <string name="browser_clear_history">Очистить историю</string>
+    <string name="browser_no_bookmarks">Закладок пока нет. Добавьте страницу через меню.</string>
+    <string name="browser_no_history">История пуста</string>
+    <string name="browser_no_videos">На странице видео не найдено. Запустите видео и откройте список снова.</string>
+    <string name="browser_video_stream">Потоковое видео (HLS/DASH) сохранить нельзя</string>
+    <string name="browser_video_save">Сохранить в библиотеку</string>
+    <string name="browser_video_saving">Сохранение…</string>
+    <string name="browser_video_saved">Видео добавлено в библиотеку</string>
+    <string name="browser_video_failed">Не удалось сохранить видео</string>
+    <string name="browser_untitled">Новая вкладка</string>
+    <string name="browser_back">Назад</string>
+    <string name="browser_forward">Вперёд</string>
+    <string name="browser_reload">Обновить</string>
+    <string name="browser_stop">Остановить</string>
+    <string name="browser_delete">Удалить</string>
+    <string name="dialog_browser_title">Браузер</string>
+    <string name="dialog_browser_url_hint">Адрес (необязательно)</string>
+    <string name="dialog_browser_capture">Вибрация от звука страницы</string>
+</resources>
