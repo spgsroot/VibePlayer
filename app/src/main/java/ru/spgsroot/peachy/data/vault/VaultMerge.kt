@@ -1,10 +1,12 @@
 package ru.spgsroot.peachy.data.vault
 
+import ru.spgsroot.peachy.data.db.PageTranslationEntity
 import ru.spgsroot.peachy.data.db.ReadHistoryEntity
 import ru.spgsroot.peachy.data.db.SearchHistoryEntity
 import ru.spgsroot.peachy.data.notes.NoteEntity
 import ru.spgsroot.peachy.manga.TagCollection
 import ru.spgsroot.peachy.manga.TagLibrary
+import ru.spgsroot.peachy.translate.PageTranslation
 
 /** How an imported vault is folded into what is already on the device. Nothing local is ever lost to an import. */
 object VaultMerge {
@@ -51,5 +53,24 @@ object VaultMerge {
             }
         }
         return TagLibrary(favorites, collections)
+    }
+
+    /**
+     * The rows an import has to write: pages the device has no translation for, and pages whose imported
+     * copy is strictly newer. A tie keeps the local row, and an imported row that no longer parses is
+     * skipped so it cannot replace a good one. Nothing is deleted.
+     */
+    fun translations(current: List<PageTranslationEntity>, incoming: List<PageTranslationEntity>): List<PageTranslationEntity> {
+        val local = current.associateBy { Triple(it.galleryId, it.page, it.lang) }
+        val newest = LinkedHashMap<Triple<Int, Int, String>, PageTranslationEntity>()
+        for (row in incoming) {
+            if (PageTranslation.parse(row.json) == null) continue
+            val key = Triple(row.galleryId, row.page, row.lang)
+            val have = local[key]
+            if (have != null && row.createdAt <= have.createdAt) continue
+            val seen = newest[key]
+            if (seen == null || row.createdAt > seen.createdAt) newest[key] = row
+        }
+        return newest.values.toList()
     }
 }

@@ -27,6 +27,16 @@ data class VaultVideo(
     val thumbnailEntryName: String get() = "thumb/$id"
 }
 
+/** One cached page translation; [json] is what `PageTranslation.toJson` wrote. */
+data class VaultTranslation(
+    val galleryId: Int,
+    val page: Int,
+    val lang: String,
+    val model: String,
+    val json: String,
+    val createdAt: Long
+)
+
 /**
  * Everything the vault carries besides files, as one JSON document. [entryCount] is the number of
  * file entries after it, so an import can show progress.
@@ -43,7 +53,9 @@ data class VaultData(
     val bookmarks: List<BookmarkEntity>,
     val browserHistory: List<BrowserHistoryEntity>,
     val allowlist: List<String>,
-    val tagLibrary: String?
+    val tagLibrary: String?,
+    /** Absent in vaults made before page translation existed; read as empty. */
+    val translations: List<VaultTranslation> = emptyList()
 ) {
     fun toJson(): String = JSONObject()
         .put("format", FORMAT)
@@ -80,6 +92,10 @@ data class VaultData(
         })
         .put("allowlist", JSONArray(allowlist))
         .put("tagLibrary", tagLibrary ?: JSONObject.NULL)
+        .put("translations", array(translations) {
+            JSONObject().put("galleryId", it.galleryId).put("page", it.page).put("lang", it.lang)
+                .put("model", it.model).put("json", it.json).put("createdAt", it.createdAt)
+        })
         .toString()
 
     companion object {
@@ -137,7 +153,13 @@ data class VaultData(
                         val items = root.getJSONArray("allowlist")
                         for (i in 0 until items.length()) add(items.getString(i))
                     },
-                    tagLibrary = if (root.isNull("tagLibrary")) null else root.getString("tagLibrary")
+                    tagLibrary = if (root.isNull("tagLibrary")) null else root.getString("tagLibrary"),
+                    translations = if (root.isNull("translations")) emptyList() else list(root, "translations") {
+                        VaultTranslation(
+                            it.getInt("galleryId"), it.getInt("page"), it.getString("lang"), it.getString("model"),
+                            it.getString("json"), it.getLong("createdAt")
+                        )
+                    }
                 )
             } catch (e: JSONException) {
                 throw VaultException(VaultError.CORRUPT, "Vault data is unreadable: ${e.message}")

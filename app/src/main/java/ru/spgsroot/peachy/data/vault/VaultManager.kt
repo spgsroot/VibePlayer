@@ -17,6 +17,8 @@ import ru.spgsroot.peachy.data.db.BookmarkDao
 import ru.spgsroot.peachy.data.db.BrowserHistoryDao
 import ru.spgsroot.peachy.data.db.GalleryMemoryDao
 import ru.spgsroot.peachy.data.db.LibraryGalleryDao
+import ru.spgsroot.peachy.data.db.PageTranslationDao
+import ru.spgsroot.peachy.data.db.PageTranslationEntity
 import ru.spgsroot.peachy.data.db.ReadHistoryDao
 import ru.spgsroot.peachy.data.db.SearchHistoryDao
 import ru.spgsroot.peachy.data.db.TagBlacklistDao
@@ -61,6 +63,7 @@ class VaultManager @Inject constructor(
     private val browserHistoryDao: BrowserHistoryDao,
     private val allowlistDao: AllowlistDao,
     private val tagPreferences: TagPreferences,
+    private val pageTranslationDao: PageTranslationDao,
     private val storage: InternalStorageManager,
     private val mangaFiles: MangaFiles
 ) {
@@ -102,7 +105,10 @@ class VaultManager @Inject constructor(
                 bookmarks = bookmarkDao.getAll(),
                 browserHistory = browserHistoryDao.getAll(),
                 allowlist = allowlistDao.getHosts(),
-                tagLibrary = tagPreferences.snapshot().toJson()
+                tagLibrary = tagPreferences.snapshot().toJson(),
+                translations = pageTranslationDao.getAll().map {
+                    VaultTranslation(it.galleryId, it.page, it.lang, it.model, it.json, it.createdAt)
+                }
             )
 
             val raw = resolver.openOutputStream(target, "wt") ?: throw IOException("Could not open the file")
@@ -274,6 +280,11 @@ class VaultManager @Inject constructor(
             browserHistoryDao.upsertAll(data.browserHistory.filter { it.url !in haveVisits })
             browserHistoryDao.trim(BrowserHistoryDao.MAX_ROWS)
             data.allowlist.forEach { allowlistDao.add(AllowlistEntity(it)) }
+
+            val haveTranslations = pageTranslationDao.getAll()
+            val incoming = data.translations.map { PageTranslationEntity(it.galleryId, it.page, it.lang, it.model, it.json, it.createdAt) }
+            val toWrite = VaultMerge.translations(haveTranslations, incoming)
+            if (toWrite.isNotEmpty()) pageTranslationDao.upsertAll(toWrite)
         }
         data.tagLibrary?.let { raw ->
             val incoming = TagLibrary.fromJson(raw)

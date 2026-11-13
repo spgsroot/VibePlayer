@@ -8,6 +8,10 @@ import ru.spgsroot.peachy.data.db.BookmarkEntity
 import ru.spgsroot.peachy.data.db.GalleryMemoryEntity
 import ru.spgsroot.peachy.data.db.LibraryGalleryEntity
 import ru.spgsroot.peachy.data.db.ReadHistoryEntity
+import ru.spgsroot.peachy.data.db.PageTranslationEntity
+import ru.spgsroot.peachy.translate.LineKind
+import ru.spgsroot.peachy.translate.PageTranslation
+import ru.spgsroot.peachy.translate.TranslatedLine
 import ru.spgsroot.peachy.data.db.SearchHistoryEntity
 import ru.spgsroot.peachy.data.notes.NoteEntity
 import ru.spgsroot.peachy.manga.TagCollection
@@ -109,5 +113,57 @@ class VaultMergeTest {
         assertEquals(VaultError.UNSUPPORTED_VERSION, assertThrows(VaultException::class.java) { VaultData.fromJson(newer) }.error)
         assertEquals(VaultError.CORRUPT, assertThrows(VaultException::class.java) { VaultData.fromJson("{\"format\":1}") }.error)
         assertEquals(VaultError.CORRUPT, assertThrows(VaultException::class.java) { VaultData.fromJson("not json") }.error)
+    }
+
+    private fun json(text: String) =
+        PageTranslation("ja", listOf(TranslatedLine(LineKind.Speech, "t", text))).toJson()
+
+    private fun tr(gallery: Int, page: Int, lang: String, text: String, at: Long) =
+        PageTranslationEntity(gallery, page, lang, "m", json(text), at)
+
+    @Test
+    fun newerIncomingTranslationWins() {
+        val write = VaultMerge.translations(listOf(tr(1, 0, "ru", "old", 10)), listOf(tr(1, 0, "ru", "new", 20)))
+        assertEquals(listOf(json("new")), write.map { it.json })
+    }
+
+    @Test
+    fun olderIncomingTranslationIsIgnored() {
+        val write = VaultMerge.translations(listOf(tr(1, 0, "ru", "local", 50)), listOf(tr(1, 0, "ru", "stale", 5)))
+        assertEquals(emptyList<PageTranslationEntity>(), write)
+    }
+
+    @Test
+    fun translationOnlyOnOneSideIsKept() {
+        val write = VaultMerge.translations(
+            listOf(tr(1, 0, "ru", "local only", 1)),
+            listOf(tr(1, 1, "ru", "page two", 1), tr(1, 0, "en", "other language", 1))
+        )
+        assertEquals(setOf(1 to "ru", 0 to "en"), write.map { it.page to it.lang }.toSet())
+    }
+
+    @Test
+    fun translationForAGalleryTheDeviceDoesNotHaveIsStillImported() {
+        val write = VaultMerge.translations(emptyList(), listOf(tr(999, 3, "ru", "x", 1)))
+        assertEquals(listOf(999), write.map { it.galleryId })
+    }
+
+    @Test
+    fun identicalTimestampKeepsTheLocalRow() {
+        val write = VaultMerge.translations(listOf(tr(1, 0, "ru", "local", 7)), listOf(tr(1, 0, "ru", "import", 7)))
+        assertEquals(emptyList<PageTranslationEntity>(), write)
+    }
+
+    @Test
+    fun aNewerImportThatDoesNotParseNeverReplacesAGoodRow() {
+        val broken = PageTranslationEntity(1, 0, "ru", "m", "{\"sourceLang", 999)
+        assertEquals(emptyList<PageTranslationEntity>(), VaultMerge.translations(listOf(tr(1, 0, "ru", "good", 1)), listOf(broken)))
+        assertEquals(emptyList<PageTranslationEntity>(), VaultMerge.translations(emptyList(), listOf(broken)))
+    }
+
+    @Test
+    fun twoImportedCopiesOfOnePageWriteOnlyTheNewest() {
+        val write = VaultMerge.translations(emptyList(), listOf(tr(1, 0, "ru", "b", 9), tr(1, 0, "ru", "a", 3)))
+        assertEquals(listOf(json("b")), write.map { it.json })
     }
 }
