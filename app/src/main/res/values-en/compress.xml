@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="content_description_compress">Compress selected</string>
+    <string name="compress_title">Compress videos: %1$d</string>
+    <string name="compress_preset_lossless">Visually lossless</string>
+    <string name="compress_preset_lossless_desc">HEVC, same frame size and rate. No visible difference.</string>
+    <string name="compress_preset_compact">Compact, visually lossless</string>
+    <string name="compress_preset_compact_desc">HEVC, same frame size and rate, lower bitrate. Clean on a phone screen.</string>
+    <string name="compress_preset_smaller">Smaller</string>
+    <string name="compress_preset_smaller_desc">HEVC, up to 1080p, low bitrate.</string>
+    <string name="compress_preset_smallest">Smallest</string>
+    <string name="compress_preset_smallest_desc">HEVC, up to 720p and 30 fps, lowest bitrate.</string>
+    <string name="compress_lossy_note">Quality drops visibly</string>
+    <string name="compress_custom">Custom</string>
+    <string name="compress_codec">Codec</string>
+    <string name="compress_hevc_missing">This phone cannot encode HEVC at this size for %1$d video(s): H.264 at a higher bitrate is used for them.</string>
+    <string name="compress_rate">How to set the bitrate</string>
+    <string name="compress_rate_quality">By quality</string>
+    <string name="compress_rate_bitrate">By hand</string>
+    <string name="compress_quality_value">Quality: %1$s bits per pixel</string>
+    <string name="compress_quality_hint">The bitrate follows frame size and rate. For HEVC, 0.08–0.12 is hard to tell from the source.</string>
+    <string name="compress_bitrate_value">Video bitrate: %1$s Mbps</string>
+    <string name="compress_cap">Never exceed a share of the source bitrate</string>
+    <string name="compress_cap_value">At most %1$d%% of the source</string>
+    <string name="compress_height">Maximum frame height</string>
+    <string name="compress_fps">Maximum frame rate</string>
+    <string name="compress_original">Original</string>
+    <string name="compress_audio">Audio</string>
+    <string name="compress_audio_keep">Keep</string>
+    <string name="compress_audio_remove">Remove</string>
+    <string name="compress_reading">Reading the selected files…</string>
+    <string name="compress_estimate">Now %1$s, about %2$s after (−%3$d%%)</string>
+    <string name="compress_skipped_note">Skipped: %1$d (already small enough for these settings)</string>
+    <string name="compress_unreadable_note">Files that could not be read: %1$d</string>
+    <string name="compress_footer">The original is replaced only when the new file is smaller and passes a check. Otherwise it stays as it was. Keep the app open while it runs.</string>
+    <string name="compress_start">Compress</string>
+    <string name="compress_progress_title">Compressing %1$d of %2$d</string>
+    <string name="compress_progress_detail">%1$d%%. Saved so far: %2$s</string>
+    <string name="compress_progress_hint">Cancelling is safe: originals are not touched.</string>
+    <string name="compress_result">Saved %1$s. Compressed: %2$d, skipped: %3$d, failed: %4$d</string>
+    <string name="compress_result_cancelled">Cancelled. Saved %1$s, compressed: %2$d</string>
+</resources>

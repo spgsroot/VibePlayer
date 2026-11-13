@@ -24,7 +24,17 @@ import ru.spgsroot.peachy.data.storage.VideoExporter
 import ru.spgsroot.peachy.data.notes.NoteKind
 import ru.spgsroot.peachy.data.notes.NoteRepository
 import ru.spgsroot.peachy.playback.player.ExoPlayerWrapper
+import ru.spgsroot.peachy.compress.CompressionManager
+import ru.spgsroot.peachy.compress.CompressionSettings
+import ru.spgsroot.peachy.compress.CompressionState
+import ru.spgsroot.peachy.compress.SourceInfo
+import ru.spgsroot.peachy.compress.VideoProbe
+import java.io.File
 import javax.inject.Inject
+
+
+/** What the compression dialog needs: how many videos, their facts once read. */
+data class CompressDialogState(val count: Int, val sources: List<SourceInfo>?)
 
 @HiltViewModel
 class GalleryViewModel @Inject constructor(
@@ -33,7 +43,8 @@ class GalleryViewModel @Inject constructor(
     private val playlistManager: PlaylistManager,
     private val exoPlayerWrapper: ExoPlayerWrapper,
     private val videoExporter: VideoExporter,
-    private val notes: NoteRepository
+    private val notes: NoteRepository,
+    private val compressionManager: CompressionManager
 ) : ViewModel() {
 
     private val _videos = MutableStateFlow<List<Video>>(emptyList())
@@ -87,6 +98,38 @@ class GalleryViewModel @Inject constructor(
     fun selectAll() {
         _selectedVideoIds.value = _videos.value.map { it.id }.toSet()
     }
+
+    private val _compressDialog = MutableStateFlow<CompressDialogState?>(null)
+    /** Non-null while the compression dialog is open. */
+    val compressDialog: StateFlow<CompressDialogState?> = _compressDialog.asStateFlow()
+
+    val compression: StateFlow<CompressionState> = compressionManager.state
+
+    /** Opens the dialog at once and fills in the facts about the selected files as they are read. */
+    fun openCompress() {
+        val chosen = _videos.value.filter { it.id in _selectedVideoIds.value }
+        if (chosen.isEmpty() || compression.value is CompressionState.Running) return
+        _compressDialog.value = CompressDialogState(chosen.size, null)
+        viewModelScope.launch {
+            val sources = withContext(Dispatchers.IO) { chosen.mapNotNull { VideoProbe.read(File(it.filePath)) } }
+            _compressDialog.value = _compressDialog.value?.copy(sources = sources)
+        }
+    }
+
+    fun closeCompress() {
+        _compressDialog.value = null
+    }
+
+    fun compressSelected(settings: CompressionSettings) {
+        val chosen = _videos.value.filter { it.id in _selectedVideoIds.value }
+        _compressDialog.value = null
+        compressionManager.start(chosen, settings)
+        clearSelection()
+    }
+
+    fun cancelCompression() = compressionManager.cancel()
+
+    fun consumeCompressionResult() = compressionManager.consumeFinished()
 
     private val _exportProgress = MutableStateFlow<Pair<Int, Int>?>(null)
     /** (done, total) while an export runs, null otherwise. */

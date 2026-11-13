@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="content_description_compress">Сжать выбранное</string>
+    <string name="compress_title">Сжать видео: %1$d</string>
+    <string name="compress_preset_lossless">Без видимых потерь</string>
+    <string name="compress_preset_lossless_desc">HEVC, тот же размер кадра и частота. Разницы глазом не видно.</string>
+    <string name="compress_preset_compact">Компактно, без видимых потерь</string>
+    <string name="compress_preset_compact_desc">HEVC, тот же размер кадра и частота, битрейт ниже. На экране телефона чисто.</string>
+    <string name="compress_preset_smaller">Меньше</string>
+    <string name="compress_preset_smaller_desc">HEVC, не выше 1080p, низкий битрейт.</string>
+    <string name="compress_preset_smallest">Минимум</string>
+    <string name="compress_preset_smallest_desc">HEVC, не выше 720p и 30 кадров/с, самый низкий битрейт.</string>
+    <string name="compress_lossy_note">Качество заметно снижается</string>
+    <string name="compress_custom">Свои настройки</string>
+    <string name="compress_codec">Кодек</string>
+    <string name="compress_hevc_missing">Этот телефон не умеет кодировать HEVC в таком размере для видео: %1$d. Для них будет H.264 с повышенным битрейтом.</string>
+    <string name="compress_rate">Как задать битрейт</string>
+    <string name="compress_rate_quality">По качеству</string>
+    <string name="compress_rate_bitrate">Вручную</string>
+    <string name="compress_quality_value">Качество: %1$s бит на пиксель</string>
+    <string name="compress_quality_hint">Битрейт считается из размера кадра и частоты. Для HEVC 0,08–0,12 почти неотличимо от исходника.</string>
+    <string name="compress_bitrate_value">Битрейт видео: %1$s Мбит/с</string>
+    <string name="compress_cap">Не больше доли от исходного битрейта</string>
+    <string name="compress_cap_value">Не больше %1$d%% исходного</string>
+    <string name="compress_height">Максимальная высота кадра</string>
+    <string name="compress_fps">Максимальная частота кадров</string>
+    <string name="compress_original">Как есть</string>
+    <string name="compress_audio">Звук</string>
+    <string name="compress_audio_keep">Оставить</string>
+    <string name="compress_audio_remove">Убрать</string>
+    <string name="compress_reading">Читаю выбранные файлы…</string>
+    <string name="compress_estimate">Было %1$s, станет около %2$s (−%3$d%%)</string>
+    <string name="compress_skipped_note">Пропущено: %1$d (уже достаточно малы для этих настроек)</string>
+    <string name="compress_unreadable_note">Не удалось прочитать файлов: %1$d</string>
+    <string name="compress_footer">Оригинал заменяется только если новый файл меньше и прошёл проверку. Иначе остаётся как был. Пока идёт сжатие, держите приложение открытым.</string>
+    <string name="compress_start">Сжать</string>
+    <string name="compress_progress_title">Сжатие: %1$d из %2$d</string>
+    <string name="compress_progress_detail">%1$d%%. Уже сэкономлено: %2$s</string>
+    <string name="compress_progress_hint">Отмена безопасна: оригиналы не меняются.</string>
+    <string name="compress_result">Сэкономлено %1$s. Сжато: %2$d, пропущено: %3$d, ошибок: %4$d</string>
+    <string name="compress_result_cancelled">Отменено. Сэкономлено %1$s, сжато: %2$d</string>
+</resources>

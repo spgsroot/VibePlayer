@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Compress
 import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.ui.Alignment
 import androidx.compose.material3.*
@@ -23,7 +24,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import ru.spgsroot.peachy.R
 import ru.spgsroot.peachy.domain.model.Video
+import ru.spgsroot.peachy.compress.CompressionState
+import ru.spgsroot.peachy.ui.dialog.CompressDialog
+import ru.spgsroot.peachy.ui.dialog.CompressProgressDialog
 import ru.spgsroot.peachy.ui.dialog.NoteDialog
+import androidx.compose.ui.platform.LocalView
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,6 +59,8 @@ fun GalleryScreen(
             viewModel.consumeExportResult()
         }
     }
+    val compression by viewModel.compression.collectAsState()
+    val compressDialog by viewModel.compressDialog.collectAsState()
     val context = LocalContext.current
 
     var videoToRename by remember { mutableStateOf<Video?>(null) }
@@ -90,6 +97,39 @@ fun GalleryScreen(
         )
     }
 
+    compressDialog?.let { dialog ->
+        CompressDialog(
+            sources = dialog.sources,
+            videoCount = dialog.count,
+            onStart = viewModel::compressSelected,
+            onDismiss = viewModel::closeCompress
+        )
+    }
+    (compression as? CompressionState.Running)?.let { running ->
+        CompressProgressDialog(running, onCancel = viewModel::cancelCompression)
+    }
+    val view = LocalView.current
+    val compressing = compression is CompressionState.Running
+    DisposableEffect(compressing) {
+        view.keepScreenOn = compressing
+        onDispose { view.keepScreenOn = false }
+    }
+    val finished = compression as? CompressionState.Finished
+    val finishedText = finished?.let {
+        val saved = android.text.format.Formatter.formatFileSize(context, it.savedBytes)
+        if (it.cancelled) {
+            stringResource(R.string.compress_result_cancelled, saved, it.compressed)
+        } else {
+            stringResource(R.string.compress_result, saved, it.compressed, it.skipped, it.failed)
+        }
+    }
+    LaunchedEffect(finished) {
+        if (finishedText != null) {
+            snackbarHostState.showSnackbar(finishedText)
+            viewModel.consumeCompressionResult()
+        }
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -119,6 +159,12 @@ fun GalleryScreen(
                             onClick = { folderLauncher.launch(null) }
                         ) {
                             Icon(Icons.Default.SaveAlt, stringResource(R.string.content_description_export_selected))
+                        }
+                        IconButton(
+                            enabled = compression !is CompressionState.Running,
+                            onClick = { viewModel.openCompress() }
+                        ) {
+                            Icon(Icons.Default.Compress, stringResource(R.string.content_description_compress))
                         }
                         IconButton(onClick = { viewModel.deleteSelected() }) {
                             Icon(Icons.Default.Delete, stringResource(R.string.content_description_delete_selected))
