@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
 import dagger.hilt.android.qualifiers.ApplicationContext
+import ru.spgsroot.peachy.data.downloader.copyDownloadedFile
 import java.io.File
 import java.io.IOException
 import javax.inject.Inject
@@ -59,9 +60,10 @@ class VideoExporter @Inject constructor(
         val target = DocumentsContract.createDocument(resolver, parent, mimeFor(source.extension), name)
             ?: throw IOException("could not create $name")
         try {
-            val out = resolver.openOutputStream(target) ?: throw IOException("could not open $name")
-            out.use { sink -> source.inputStream().use { it.copyTo(sink) } }
-        } catch (e: IOException) {
+            copyDownloadedFile(source) {
+                resolver.openOutputStream(target) ?: throw IOException("could not open $name")
+            }.getOrThrow()
+        } catch (e: Exception) {
             // A half-written copy would look like a real video; remove it.
             runCatching { DocumentsContract.deleteDocument(resolver, target) }
             throw e

@@ -1,0 +1,14 @@
+<resources>
+    <string name="download_in_app">В приложении</string>
+    <string name="download_another_app">Скачать через другое приложение</string>
+    <string name="download_external_hint">«Скачать» откроет ссылку в загрузчике или браузере. Для приложений, принимающих ссылки через «Поделиться», нажмите «Передать ссылку». Файл останется в том приложении, а не в Peachy. После загрузки отправьте видео в Peachy через «Поделиться», чтобы добавить его в библиотеку.</string>
+    <string name="download_send_link">Передать ссылку</string>
+    <string name="download_external_unavailable">Нет приложения, которое может открыть или принять ссылку. Установите загрузчик или браузер и попробуйте снова.</string>
+    <string name="download_folder_hint">Можно также сохранить копию в папку. Копии находятся вне приватной библиотеки Peachy и не защищены её PIN-кодом.</string>
+    <string name="download_pick_folder">Также копировать в папку…</string>
+    <string name="download_change_folder">Сменить папку</string>
+    <string name="download_clear_folder">Не копировать</string>
+    <string name="download_folder_selected">Выбранная папка</string>
+    <string name="download_folder_permission_error">Не удалось сохранить доступ к папке. Выберите другую папку через системный диалог.</string>
+    <string name="download_copy_failed">Сохранено в Peachy, но не удалось создать одну или несколько копий в папке. Видео в библиотеке в безопасности. Проверьте доступ к папке и свободное место или выберите другую папку.</string>
+</resources>
