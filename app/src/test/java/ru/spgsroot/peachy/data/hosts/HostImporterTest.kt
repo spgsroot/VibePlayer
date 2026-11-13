@@ -25,7 +25,7 @@ private class FakeHttp(private val routes: Map<String, String>) : Http {
 class HostImporterTest {
     private fun importer(vararg routes: Pair<String, String>): Pair<HostImporter, FakeHttp> {
         val http = FakeHttp(routes.toMap())
-        return HostImporter(HostImporter.defaultHosts(http)) to http
+        return HostImporter.withHttp(http) to http
     }
 
     @Test
@@ -122,6 +122,76 @@ class HostImporterTest {
         val link = importer.resolve(entries[0])
         assertEquals("https://dl100.turbocdn.st/turbo/data/A294l8fYosRYn.mp4?exp=1&token=t&fn=wAvr.mp4", link.url)
         assertEquals("https://turbo.cr/", link.headers["Referer"])
+    }
+
+    private val findrAlbum = """
+        <div><a class="btn border-primary bg-primary" href="https://turbo.cr/a/yspN6j69B3z">Source<svg xmlns="http://www.w3.org/2000/svg"></svg></a>
+        <a href="https://discord.gg/BFF72z3Nds">Discord</a>
+        <a href="https://turbo.cr/v/A294l8fYosRYn" aria-hidden="true"></a></div>
+    """.trimIndent()
+
+    private val turboAlbum = """
+        <h1 class="truncate">Test</h1>
+        <script>const FILES = [
+          { id:"A294l8fYosRYn", name:"wAvr.mp4", size: 1436337 , views: 0 },
+          { id:"8sCFIDzIe0WC-", name:"cover.jpg", size: 184220 , views: 0 }
+        ];</script>
+    """.trimIndent()
+
+    @Test
+    fun findrAlbumLinksAreClaimedButLookalikesAndOtherPagesAreNot() {
+        val (importer, _) = importer()
+        assertTrue(importer.recognizes("https://findr.to/albums/1881459"))
+        assertTrue(importer.recognizes("https://www.findr.to/albums/1881459"))
+        assertFalse(importer.recognizes("https://findr.to/"))
+        assertFalse(importer.recognizes("https://findr.to/search?tag=video"))
+        assertFalse(importer.recognizes("https://findr.to/albums/abc"))
+        assertFalse(importer.recognizes("https://findr.to.evil.com/albums/1881459"))
+        assertFalse(importer.recognizes("https://notfindr.to/albums/1881459"))
+    }
+
+    @Test
+    fun findrAlbumImportsTheAlbumItPointsTo() {
+        val (importer, http) = importer(
+            "https://findr.to/albums/1881459" to findrAlbum,
+            "https://turbo.cr/a/yspN6j69B3z" to turboAlbum
+        )
+
+        val entries = importer.expand("https://findr.to/albums/1881459")
+
+        assertEquals(listOf("A294l8fYosRYn"), entries.map { it.file.id })
+        assertEquals(listOf("GET https://findr.to/albums/1881459", "GET https://turbo.cr/a/yspN6j69B3z"), http.requests)
+    }
+
+    @Test
+    fun findrAlwaysAsksFindrItselfNotTheHostOfTheLink() {
+        val (importer, http) = importer(
+            "https://findr.to/albums/7" to findrAlbum,
+            "https://turbo.cr/a/yspN6j69B3z" to turboAlbum
+        )
+        importer.expand("https://www.findr.to/albums/7")
+        assertEquals("GET https://findr.to/albums/7", http.requests.first())
+    }
+
+    @Test
+    fun findrAlbumWithoutASourceOrWithAnUnsupportedOneFailsClearly() {
+        val (importer, _) = importer(
+            "https://findr.to/albums/1" to "<html>nothing here</html>",
+            "https://findr.to/albums/2" to """<a href="https://example.com/a/x">Source<svg></svg></a>""",
+            "https://findr.to/albums/3" to """<a href="https://findr.to/albums/3">Source<svg></svg></a>"""
+        )
+        assertThrows(HostException::class.java) { importer.expand("https://findr.to/albums/1") }
+        assertThrows(HostException::class.java) { importer.expand("https://findr.to/albums/2") }
+        // A source that points back at findr must not loop.
+        assertThrows(HostException::class.java) { importer.expand("https://findr.to/albums/3") }
+    }
+
+    @Test
+    fun findrSourceLinkEntitiesAreDecoded() {
+        assertEquals(
+            "https://bunkr.cr/a/abcd1234?x=1&y=2",
+            FindrIndex.parseSource("""<a href="https://bunkr.cr/a/abcd1234?x=1&amp;y=2">Source<svg/></a>""")
+        )
     }
 
     @Test

@@ -15,18 +15,30 @@ data class HostEntry(val host: FileHost, val file: HostFile, val label: String)
 
 /** Turns album and file links of the supported hosts into downloadable videos. */
 @Singleton
-class HostImporter(private val hosts: List<FileHost>) {
+class HostImporter(private val hosts: List<FileHost>, private val findr: FindrIndex) {
     @Inject
-    constructor() : this(defaultHosts(OkHttpHttp()))
+    constructor() : this(OkHttpHttp())
 
-    /** True when [url] is a link one of the supported hosts owns, so the caller must not download it as-is. */
-    fun recognizes(url: String): Boolean = match(url) != null
+    private constructor(http: Http) : this(defaultHosts(http), FindrIndex(http))
+
+    /** True when [url] is a link one of the supported hosts, or an album page of findr.to, owns. */
+    fun recognizes(url: String): Boolean {
+        val parsed = url.trim().toHttpUrlOrNull() ?: return false
+        return findr.recognizes(parsed) || match(url) != null
+    }
 
     /**
      * The videos behind [url]: every video of an album, or the one file of a file link. Images and archives
      * are skipped. Fails when the album has no videos.
      */
     fun expand(url: String): List<HostEntry> {
+        val parsed = url.trim().toHttpUrlOrNull()
+        // findr.to only points at an album on one of the hosts; the album itself is imported from there.
+        if (parsed != null && findr.recognizes(parsed)) return expandHosted(findr.sourceOf(parsed))
+        return expandHosted(url)
+    }
+
+    private fun expandHosted(url: String): List<HostEntry> {
         val (host, link) = match(url) ?: throw HostException("Unsupported link")
         return when (link) {
             is HostLink.File -> listOf(host.single(link.id).let { HostEntry(host, it, it.name.ifBlank { url }) })
@@ -55,6 +67,8 @@ class HostImporter(private val hosts: List<FileHost>) {
     }
 
     companion object {
+        fun withHttp(http: Http): HostImporter = HostImporter(defaultHosts(http), FindrIndex(http))
+
         fun defaultHosts(http: Http): List<FileHost> = listOf(
             BunkrHost(http),
             CyberdropHost(http),
