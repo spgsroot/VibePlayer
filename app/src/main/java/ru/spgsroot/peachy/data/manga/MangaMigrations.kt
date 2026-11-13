@@ -31,4 +31,15 @@ object MangaMigrations {
             )
         }
     }
+
+    /** Adds the table of pages saved one by one from the reader; nothing else is touched. */
+    val MIGRATION_9_10 = object : Migration(9, 10) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS saved_pages (galleryId INTEGER NOT NULL, page INTEGER NOT NULL, " +
+                    "title TEXT NOT NULL, fileName TEXT NOT NULL, savedAt INTEGER NOT NULL, " +
+                    "PRIMARY KEY(galleryId, page))"
+            )
+        }
+    }
 }

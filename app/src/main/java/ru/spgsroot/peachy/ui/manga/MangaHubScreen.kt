@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Label
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.History
@@ -67,6 +68,7 @@ private enum class HubDestination(val label: Int, val icon: ImageVector) {
     ForYou(R.string.manga_for_you, Icons.Filled.Star),
     Downloads(R.string.manga_drawer_downloads, Icons.Filled.Download),
     Favorites(R.string.manga_favorites, Icons.Filled.Favorite),
+    SavedPages(R.string.manga_saved_pages, Icons.Filled.Bookmark),
     History(R.string.manga_history, Icons.Filled.History)
 }
 
@@ -180,6 +182,7 @@ fun MangaHubScreen(
                         }
                         HubDestination.Downloads -> MangaLibraryScreen(navController, viewModel, favoritesOnly = false)
                         HubDestination.Favorites -> MangaLibraryScreen(navController, viewModel, favoritesOnly = true)
+                        HubDestination.SavedPages -> SavedPagesScreen(navController, viewModel, snackbar)
                         HubDestination.History -> HistoryScreen(
                             viewModel,
                             onOpen = { navController.navigate("manga/$it") },

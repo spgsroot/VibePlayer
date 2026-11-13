@@ -95,5 +95,9 @@ internal fun mimeFor(extension: String): String = when (extension.lowercase()) {
     "mov" -> "video/quicktime"
     "avi" -> "video/x-msvideo"
     "3gp" -> "video/3gpp"
+    "jpg", "jpeg" -> "image/jpeg"
+    "png" -> "image/png"
+    "webp" -> "image/webp"
+    "gif" -> "image/gif"
     else -> "application/octet-stream"
 }

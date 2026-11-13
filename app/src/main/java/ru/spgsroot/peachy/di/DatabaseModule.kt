@@ -55,4 +55,7 @@ object DatabaseModule {
 
     @Provides
     fun provideNoteDao(database: AppDatabase): NoteDao = database.noteDao()
+
+    @Provides
+    fun provideSavedPageDao(database: AppDatabase): SavedPageDao = database.savedPageDao()
 }

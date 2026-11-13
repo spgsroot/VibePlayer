@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="reader_zoom_in">Приблизить</string>
+    <string name="reader_zoom_out">Отдалить</string>
+    <string name="reader_save_page">Сохранить этот лист</string>
+    <string name="reader_unsave_page">Убрать из сохранённых листов</string>
+    <string name="reader_orientation">Направление чтения</string>
+    <string name="reader_vertical">Вертикально</string>
+    <string name="reader_horizontal">Горизонтально</string>
+    <string name="reader_tap_to_switch">Листать касанием краёв экрана</string>
+    <string name="reader_hand_swap">Поменять левое и правое касание</string>
+    <string name="reader_inspect">Кнопки масштаба</string>
+    <string name="reader_continuous">Непрерывная прокрутка</string>
+    <string name="reader_hide_hints">Скрывать подсказки касаний</string>
+    <string name="reader_hint_next">Дальше</string>
+    <string name="reader_hint_back">Назад</string>
+    <string name="reader_hint_menu">Меню</string>
+    <string name="manga_saved_pages">Сохранённые листы</string>
+    <string name="saved_pages_empty">Здесь будут листы, которые вы сохранили в ридере.</string>
+    <string name="saved_pages_selected">Выбрано: %1$d</string>
+    <string name="saved_pages_export">Выгрузить выбранные листы</string>
+    <string name="saved_pages_delete">Удалить выбранные листы</string>
+    <string name="saved_pages_export_done">Выгружено листов: %1$d</string>
+    <string name="saved_pages_export_partial">Выгружено: %1$d, не удалось: %2$d</string>
+</resources>

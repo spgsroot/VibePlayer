@@ -33,6 +33,13 @@ import ru.spgsroot.peachy.manga.NhentaiCdn
 import ru.spgsroot.peachy.manga.PageTurnHaptic
 import ru.spgsroot.peachy.manga.startPage
 import ru.spgsroot.peachy.manga.filterSearchResults
+import ru.spgsroot.peachy.data.db.SavedPageEntity
+import ru.spgsroot.peachy.data.manga.SavedPagesRepository
+import ru.spgsroot.peachy.data.storage.ExportItem
+import ru.spgsroot.peachy.data.storage.ExportResult
+import ru.spgsroot.peachy.data.storage.VideoExporter
+import android.net.Uri
+import java.io.File
 import javax.inject.Inject
 
 data class CatalogState(
@@ -51,7 +58,9 @@ class MangaViewModel @Inject constructor(
     private val library: MangaLibraryRepository,
     private val commandSender: CommandSender,
     private val catalogStore: MangaCatalogStore,
-    private val memory: GalleryMemoryStore
+    private val memory: GalleryMemoryStore,
+    private val savedPagesRepository: SavedPagesRepository,
+    private val exporter: VideoExporter
 ) : ViewModel() {
     val libraryItems: StateFlow<List<LibraryGallery>> = library.observe()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -259,5 +268,54 @@ class MangaViewModel @Inject constructor(
     fun onPageTurned() {
         commandSender.pulse(_intensity.value, PageTurnHaptic.DEFAULT_DURATION_MS)
     }
+
+    val savedPages: StateFlow<List<SavedPageEntity>> = savedPagesRepository.observe()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun savedPageFile(page: SavedPageEntity): File = savedPagesRepository.fileOf(page)
+
+    /** Saves the page, or drops it from the saved pages when it is already there. */
+    fun toggleSavedPage(page: Int) {
+        val current = _detail.value ?: return
+        viewModelScope.launch {
+            _error.value = null
+            try {
+                if (savedPages.value.any { it.galleryId == current.id && it.page == page }) {
+                    savedPagesRepository.remove(current.id, page)
+                } else {
+                    savedPagesRepository.save(current, page)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Save failed"
+            }
+        }
+    }
+
+    fun removeSavedPage(page: SavedPageEntity) {
+        viewModelScope.launch { savedPagesRepository.remove(page.galleryId, page.page) }
+    }
+
+    private val _pageExport = MutableStateFlow<ExportResult?>(null)
+
+    /** Outcome of the last export of saved pages; null until one finishes or after [consumePageExport]. */
+    val pageExport: StateFlow<ExportResult?> = _pageExport
+
+    fun consumePageExport() {
+        _pageExport.value = null
+    }
+
+    /** Copies [pages] into the folder the user picked; a failed copy never stays half-written. */
+    fun exportSavedPages(folder: Uri, pages: List<SavedPageEntity>) {
+        if (pages.isEmpty()) return
+        viewModelScope.launch {
+            val items = pages.map {
+                ExportItem("${it.title} - ${it.page + 1}", savedPagesRepository.fileOf(it).absolutePath)
+            }
+            _pageExport.value = withContext(Dispatchers.IO) { exporter.export(folder, items) }
+        }
+    }
+
 
 }

@@ -1,0 +1,63 @@
+package ru.spgsroot.peachy.manga
+
+import android.content.SharedPreferences
+
+enum class ReaderOrientation { Vertical, Horizontal }
+
+enum class ReaderFit { Contain, Width }
+
+/** How the native reader behaves; one set for every gallery. */
+data class ReaderSettings(
+    val orientation: ReaderOrientation,
+    val fit: ReaderFit = ReaderFit.Contain,
+    val tapToSwitch: Boolean = true,
+    /** Swaps which side goes back and which goes forward. */
+    val handSwap: Boolean = false,
+    /** Shows zoom buttons; pinch and double tap work either way. */
+    val inspect: Boolean = false,
+    /** One endless strip instead of one page at a time. */
+    val continuous: Boolean = false,
+    val hideHints: Boolean = false
+)
+
+object ReaderSettingsStore {
+    private const val ORIENTATION = "orientation"
+    private const val FIT = "fit"
+    private const val TAP = "tap"
+    private const val HAND_SWAP = "mirror"
+    private const val INSPECT = "inspect"
+    private const val CONTINUOUS = "continuous"
+    private const val HIDE_HINTS = "hide_hints"
+    private const val LEGACY_MODE = "mode"
+
+    /** Reads the settings, carrying over the older "paged"/"strip" choice when nothing newer was stored. */
+    fun load(prefs: SharedPreferences): ReaderSettings {
+        val legacyStrip = prefs.getString(LEGACY_MODE, "paged") == "strip"
+        val orientation = when (prefs.getString(ORIENTATION, null)) {
+            "vertical" -> ReaderOrientation.Vertical
+            "horizontal" -> ReaderOrientation.Horizontal
+            else -> if (legacyStrip) ReaderOrientation.Vertical else ReaderOrientation.Horizontal
+        }
+        return ReaderSettings(
+            orientation = orientation,
+            fit = if (prefs.getString(FIT, "contain") == "width") ReaderFit.Width else ReaderFit.Contain,
+            tapToSwitch = prefs.getBoolean(TAP, true),
+            handSwap = prefs.getBoolean(HAND_SWAP, false),
+            inspect = prefs.getBoolean(INSPECT, false),
+            continuous = prefs.getBoolean(CONTINUOUS, legacyStrip),
+            hideHints = prefs.getBoolean(HIDE_HINTS, false)
+        )
+    }
+
+    fun save(prefs: SharedPreferences, settings: ReaderSettings) {
+        prefs.edit()
+            .putString(ORIENTATION, if (settings.orientation == ReaderOrientation.Vertical) "vertical" else "horizontal")
+            .putString(FIT, if (settings.fit == ReaderFit.Width) "width" else "contain")
+            .putBoolean(TAP, settings.tapToSwitch)
+            .putBoolean(HAND_SWAP, settings.handSwap)
+            .putBoolean(INSPECT, settings.inspect)
+            .putBoolean(CONTINUOUS, settings.continuous)
+            .putBoolean(HIDE_HINTS, settings.hideHints)
+            .apply()
+    }
+}
