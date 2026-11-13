@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="content_description_export_selected">Выгрузить выбранное</string>
+    <string name="gallery_exporting">Выгрузка: %1$d из %2$d</string>
+    <string name="gallery_export_done">Выгружено видео: %1$d</string>
+    <string name="gallery_export_partial">Выгружено: %1$d, не удалось: %2$d</string>
+</resources>

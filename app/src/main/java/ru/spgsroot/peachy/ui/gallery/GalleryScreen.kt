@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.ui.Alignment
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,6 +33,25 @@ fun GalleryScreen(
     val videos by viewModel.videos.collectAsState()
     val selectedVideoIds by viewModel.selectedVideoIds.collectAsState()
     val isSelectionMode by viewModel.isSelectionMode.collectAsState()
+    val exportProgress by viewModel.exportProgress.collectAsState()
+    val exportResult by viewModel.exportResult.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val folderLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) viewModel.exportSelected(uri)
+    }
+    val exportedText = exportResult?.let { r ->
+        if (r.failed.isEmpty()) {
+            stringResource(R.string.gallery_export_done, r.exported)
+        } else {
+            stringResource(R.string.gallery_export_partial, r.exported, r.failed.size)
+        }
+    }
+    LaunchedEffect(exportResult) {
+        if (exportedText != null) {
+            snackbarHostState.showSnackbar(exportedText)
+            viewModel.consumeExportResult()
+        }
+    }
     val context = LocalContext.current
 
     var videoToRename by remember { mutableStateOf<Video?>(null) }
@@ -56,10 +76,14 @@ fun GalleryScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
-                    if (isSelectionMode) {
+                    val progress = exportProgress
+                    if (progress != null) {
+                        Text(stringResource(R.string.gallery_exporting, progress.first, progress.second))
+                    } else if (isSelectionMode) {
                         Text(stringResource(R.string.gallery_selected, selectedVideoIds.size))
                     } else {
                         Text(stringResource(R.string.gallery_title))
@@ -75,6 +99,12 @@ fun GalleryScreen(
                 },
                 actions = {
                     if (isSelectionMode) {
+                        IconButton(
+                            enabled = exportProgress == null,
+                            onClick = { folderLauncher.launch(null) }
+                        ) {
+                            Icon(Icons.Default.SaveAlt, stringResource(R.string.content_description_export_selected))
+                        }
                         IconButton(onClick = { viewModel.deleteSelected() }) {
                             Icon(Icons.Default.Delete, stringResource(R.string.content_description_delete_selected))
                         }

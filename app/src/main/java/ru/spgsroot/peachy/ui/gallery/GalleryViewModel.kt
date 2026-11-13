@@ -18,6 +18,9 @@ import ru.spgsroot.peachy.data.repository.VideoRepository
 import ru.spgsroot.peachy.data.storage.InternalStorageManager
 import ru.spgsroot.peachy.domain.model.Video
 import ru.spgsroot.peachy.playback.queue.PlaylistManager
+import ru.spgsroot.peachy.data.storage.ExportItem
+import ru.spgsroot.peachy.data.storage.ExportResult
+import ru.spgsroot.peachy.data.storage.VideoExporter
 import ru.spgsroot.peachy.playback.player.ExoPlayerWrapper
 import javax.inject.Inject
 
@@ -26,7 +29,8 @@ class GalleryViewModel @Inject constructor(
     private val videoRepository: VideoRepository,
     private val internalStorageManager: InternalStorageManager,
     private val playlistManager: PlaylistManager,
-    private val exoPlayerWrapper: ExoPlayerWrapper
+    private val exoPlayerWrapper: ExoPlayerWrapper,
+    private val videoExporter: VideoExporter
 ) : ViewModel() {
 
     private val _videos = MutableStateFlow<List<Video>>(emptyList())
@@ -66,6 +70,36 @@ class GalleryViewModel @Inject constructor(
 
     fun selectAll() {
         _selectedVideoIds.value = _videos.value.map { it.id }.toSet()
+    }
+
+    private val _exportProgress = MutableStateFlow<Pair<Int, Int>?>(null)
+    /** (done, total) while an export runs, null otherwise. */
+    val exportProgress: StateFlow<Pair<Int, Int>?> = _exportProgress.asStateFlow()
+
+    private val _exportResult = MutableStateFlow<ExportResult?>(null)
+    val exportResult: StateFlow<ExportResult?> = _exportResult.asStateFlow()
+
+    fun consumeExportResult() {
+        _exportResult.value = null
+    }
+
+    /** Copies the selected videos into the folder behind [treeUri]; the selection is kept. */
+    fun exportSelected(treeUri: Uri) {
+        if (_exportProgress.value != null) return
+        val items = _videos.value
+            .filter { it.id in _selectedVideoIds.value }
+            .map { ExportItem(it.title, it.filePath) }
+        if (items.isEmpty()) return
+        _exportProgress.value = 0 to items.size
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                videoExporter.export(treeUri, items) { done, total ->
+                    _exportProgress.value = done to total
+                }
+            }
+            _exportProgress.value = null
+            _exportResult.value = result
+        }
     }
 
     fun deleteSelected() {
