@@ -43,11 +43,16 @@ class TranslationClient(
         .connectTimeout(20, TimeUnit.SECONDS)
         .readTimeout(120, TimeUnit.SECONDS)
         .writeTimeout(60, TimeUnit.SECONDS)
+        // A page must not follow a redirect to a host (or to plain http) the user never named.
+        .followRedirects(false)
+        .followSslRedirects(false)
         .build()
 
     override suspend fun translate(galleryId: Int, jpeg: ByteArray, targetLanguage: String): PageTranslation =
         withContext(Dispatchers.IO) {
-            val provider = configured()
+            // Read at send time, so a host changed or consent withdrawn mid-batch stops the next page.
+            val provider = settings()
+            if (!provider.isConfigured || !provider.consented) throw TranslationException(TranslationError.NotConfigured)
             val body = pageBody(provider, jpeg, targetLanguage)
             // A reply that is not valid JSON is usually a one-off: ask again once.
             repeat(2) {
@@ -57,22 +62,19 @@ class TranslationClient(
             throw TranslationException(TranslationError.BadResponse)
         }
 
-    /** A tiny text-only request to see whether the address, key and model work. */
-    suspend fun check() {
+    /**
+     * A tiny text-only request to see whether the address, key and model of [provider] work. It
+     * carries no page, so it needs no consent, and [provider] may be a draft that is not saved.
+     */
+    suspend fun check(provider: ProviderSettings) {
         withContext(Dispatchers.IO) {
-            val provider = configured()
+            if (!provider.isConfigured) throw TranslationException(TranslationError.NotConfigured)
             val body = JSONObject()
                 .put("model", provider.model)
                 .put("max_tokens", 8)
                 .put("messages", JSONArray().put(message("user", PagePrompt.CHECK)))
             send(provider, body, sessionHeader(provider.baseUrl, CHECK_SESSION_ID))
         }
-    }
-
-    private fun configured(): ProviderSettings {
-        val provider = settings()
-        if (!provider.isConfigured) throw TranslationException(TranslationError.NotConfigured)
-        return provider
     }
 
     private fun message(role: String, content: Any) = JSONObject().put("role", role).put("content", content)
@@ -95,14 +97,14 @@ class TranslationClient(
 
     /** Posts [body] and returns `choices[0].message.content`. */
     private suspend fun send(provider: ProviderSettings, body: JSONObject, session: String?): String {
-        val request = Request.Builder()
-            .url(ProviderUrl.normalized(provider.baseUrl) + "/chat/completions")
-            .header("Authorization", "Bearer ${provider.apiKey}")
-            .header("User-Agent", userAgent)
-            .apply { session?.let { header("x-opencode-session", it) } }
-            .post(body.toString().toRequestBody(JSON))
-            .build()
         val text = try {
+            val request = Request.Builder()
+                .url(ProviderUrl.normalized(provider.baseUrl) + "/chat/completions")
+                .header("Authorization", "Bearer ${provider.apiKey}")
+                .header("User-Agent", userAgent)
+                .apply { session?.let { header("x-opencode-session", it) } }
+                .post(body.toString().toRequestBody(JSON))
+                .build()
             execute(http.newCall(request))
         } catch (e: CancellationException) {
             throw e
@@ -128,7 +130,9 @@ class TranslationClient(
                     try {
                         when {
                             it.code == 401 || it.code == 403 -> cont.resumeWithException(TranslationException(TranslationError.Auth))
-                            it.code == 429 -> cont.resumeWithException(TranslationException(TranslationError.RateLimit))
+                            it.code == 429 -> cont.resumeWithException(
+                                TranslationException(TranslationError.RateLimit(retryAfterSeconds(it)))
+                            )
                             !it.isSuccessful -> cont.resumeWithException(TranslationException(TranslationError.Server(it.code)))
                             else -> cont.resume(it.body?.string().orEmpty())
                         }
@@ -140,13 +144,23 @@ class TranslationClient(
         })
     }
 
-    /** The reply text, or [TranslationError.Refused] when the model gave none or the provider filtered it. */
+    /** Seconds from a numeric `Retry-After`; the HTTP-date form is not worth parsing for a message. */
+    private fun retryAfterSeconds(response: Response): Int? =
+        response.header("Retry-After")?.trim()?.toIntOrNull()?.takeIf { it > 0 }
+
+    /**
+     * The reply text. [TranslationError.BadResponse] when the provider sent an error object instead
+     * of a completion; [TranslationError.Refused] when the model gave none or the provider filtered it.
+     */
     private fun contentOf(envelope: String): String {
-        val choice = try {
-            JSONObject(envelope).optJSONArray("choices")?.optJSONObject(0)
+        val root = try {
+            JSONObject(envelope)
         } catch (e: JSONException) {
             throw TranslationException(TranslationError.BadResponse, e)
         }
+        val choices = root.optJSONArray("choices")
+        if (choices == null && root.has("error")) throw TranslationException(TranslationError.BadResponse)
+        val choice = choices?.optJSONObject(0)
         if (choice == null || choice.optString("finish_reason") == "content_filter") {
             throw TranslationException(TranslationError.Refused)
         }

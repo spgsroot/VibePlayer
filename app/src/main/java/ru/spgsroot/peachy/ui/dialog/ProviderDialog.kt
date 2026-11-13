@@ -29,6 +29,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import ru.spgsroot.peachy.R
+import ru.spgsroot.peachy.translate.ProviderKey
 import ru.spgsroot.peachy.translate.ProviderSettings
 import ru.spgsroot.peachy.translate.ProviderUrl
 import ru.spgsroot.peachy.translate.TranslationError
@@ -41,7 +42,7 @@ import ru.spgsroot.peachy.translate.TranslationError
 fun ProviderDialog(
     current: ProviderSettings,
     onSave: (baseUrl: String, model: String, apiKey: String) -> Unit,
-    onTest: suspend () -> TranslationError?,
+    onTest: suspend (baseUrl: String, model: String, apiKey: String) -> TranslationError?,
     onDismiss: () -> Unit
 ) {
     var baseUrl by rememberSaveable { mutableStateOf(current.baseUrl) }
@@ -52,8 +53,8 @@ fun ProviderDialog(
     var result by remember { mutableStateOf<Result?>(null) }
     val scope = rememberCoroutineScope()
     val urlAllowed = ProviderUrl.isAllowed(baseUrl)
-    val hasKey = apiKey.isNotBlank() || current.apiKey.isNotBlank()
-    val canSave = urlAllowed && model.isNotBlank() && hasKey
+    val keyInvalid = apiKey.isNotBlank() && !ProviderKey.isValid(apiKey.trim())
+    val canSave = current.edited(baseUrl, model, apiKey).isConfigured
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -87,6 +88,10 @@ fun ProviderDialog(
                     placeholder = {
                         if (current.apiKey.isNotBlank()) Text(stringResource(R.string.provider_key_kept))
                     },
+                    isError = keyInvalid,
+                    supportingText = if (!keyInvalid) null else {
+                        { Text(stringResource(R.string.provider_key_invalid)) }
+                    },
                     visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     trailingIcon = {
@@ -103,12 +108,11 @@ fun ProviderDialog(
                 TextButton(
                     enabled = canSave && !testing,
                     onClick = {
-                        onSave(baseUrl, model, apiKey)
-                        apiKey = ""
+                        // A test must not save: Cancel afterwards still leaves the stored provider as it was.
                         testing = true
                         result = null
                         scope.launch {
-                            result = Result(onTest())
+                            result = Result(onTest(baseUrl, model, apiKey))
                             testing = false
                         }
                     }
@@ -145,9 +149,14 @@ private fun errorName(error: TranslationError?): String = when (error) {
     null -> ""
     TranslationError.NotConfigured -> stringResource(R.string.translate_error_not_configured)
     TranslationError.Auth -> stringResource(R.string.translate_error_auth)
-    TranslationError.RateLimit -> stringResource(R.string.translate_error_rate_limit)
+    is TranslationError.RateLimit -> rateLimitText(error)
     TranslationError.Network -> stringResource(R.string.translate_error_network)
     TranslationError.BadResponse -> stringResource(R.string.translate_error_bad_response)
     TranslationError.Refused -> stringResource(R.string.translate_error_refused)
     is TranslationError.Server -> stringResource(R.string.translate_error_server, error.code)
 }
+
+@Composable
+private fun rateLimitText(error: TranslationError.RateLimit): String =
+    if (error.retryAfterSeconds != null) stringResource(R.string.translate_error_rate_limit_after, error.retryAfterSeconds)
+    else stringResource(R.string.translate_error_rate_limit)

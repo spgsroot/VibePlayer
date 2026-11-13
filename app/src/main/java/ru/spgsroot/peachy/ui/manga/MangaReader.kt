@@ -199,7 +199,11 @@ private fun NativeReader(
     LaunchedEffect(viewModel) {
         viewModel.setIntensity(prefs.getFloat("intensity", PageTurnHaptic.DEFAULT_INTENSITY))
     }
-    LaunchedEffect(gallery.id) { translation.open(gallery.id, gallery.pagePaths) }
+    // The gate ignores the page the reader opens on, and a mode change leaves the current page unsettled.
+    LaunchedEffect(gallery.id, settings.translateMode) {
+        translation.open(gallery.id, gallery.pagePaths)
+        translation.onPageSettled(currentPage, settings.translateMode)
+    }
     LaunchedEffect(chrome, currentPage) {
         if (chrome) thumbnails.animateScrollToItem(currentPage)
     }
@@ -391,7 +395,10 @@ private fun NativeReader(
                     TranslationPanel(
                         state = pageStates[visiblePage] ?: PageState.Idle,
                         batch = batch,
-                        onAgain = { translation.translateNow(visiblePage, force = true) },
+                        onAgain = {
+                            // Only a finished translation is paid for again; a missing or failed one is just tried.
+                            translation.translateNow(visiblePage, force = pageStates[visiblePage] is PageState.Done)
+                        },
                         onProvider = { providerDialog = true },
                         onCancelBatch = translation::cancelWhole,
                         onHide = { panelOpen = false },

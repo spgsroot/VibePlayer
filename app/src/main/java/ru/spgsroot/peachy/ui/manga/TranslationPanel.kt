@@ -169,7 +169,9 @@ private fun summary(state: PageState, expanded: Boolean): String = when (state) 
 private fun errorText(error: TranslationError): String = when (error) {
     TranslationError.NotConfigured -> stringResource(R.string.translate_error_not_configured)
     TranslationError.Auth -> stringResource(R.string.translate_error_auth)
-    TranslationError.RateLimit -> stringResource(R.string.translate_error_rate_limit)
+    is TranslationError.RateLimit ->
+        if (error.retryAfterSeconds != null) stringResource(R.string.translate_error_rate_limit_after, error.retryAfterSeconds)
+        else stringResource(R.string.translate_error_rate_limit)
     TranslationError.Network -> stringResource(R.string.translate_error_network)
     TranslationError.BadResponse -> stringResource(R.string.translate_error_bad_response)
     TranslationError.Refused -> stringResource(R.string.translate_error_refused)

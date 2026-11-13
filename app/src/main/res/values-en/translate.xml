@@ -18,6 +18,7 @@
     <string name="translate_error_not_configured">Provider is not set up: a key and an address are needed</string>
     <string name="translate_error_auth">The provider did not accept the key</string>
     <string name="translate_error_rate_limit">Too many requests, wait a little</string>
+    <string name="translate_error_rate_limit_after">Too many requests, wait %1$d s</string>
     <string name="translate_error_network">Cannot reach the provider or the page</string>
     <string name="translate_error_bad_response">The provider did not answer as expected</string>
     <string name="translate_error_refused">The model refused to read this page</string>
@@ -29,6 +30,7 @@
     <string name="provider_model">Model</string>
     <string name="provider_key">Key</string>
     <string name="provider_key_kept">Saved; leave empty to keep it</string>
+    <string name="provider_key_invalid">The key may only contain Latin letters, digits and symbols, without spaces</string>
     <string name="provider_show_key">Show key</string>
     <string name="provider_test">Test</string>
     <string name="provider_testing">Testing…</string>

@@ -12,6 +12,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 const val DEFAULT_BASE_URL = "https://opencode.ai/inference/go/v1"
 const val DEFAULT_MODEL = "glm-5.3-flash"
@@ -25,7 +26,7 @@ data class ProviderSettings(
     val consented: Boolean = false
 ) {
     val isConfigured: Boolean
-        get() = apiKey.isNotBlank() && model.isNotBlank() && ProviderUrl.isAllowed(baseUrl)
+        get() = ProviderKey.isValid(apiKey) && model.isNotBlank() && ProviderUrl.isAllowed(baseUrl)
 
     override fun toString(): String =
         "ProviderSettings(baseUrl=$baseUrl, model=$model, apiKey=${if (apiKey.isEmpty()) "" else "***"}, consented=$consented)"
@@ -45,12 +46,19 @@ data class ProviderSettings(
     }
 }
 
+/** What an API key may look like: printable ASCII, so it is always a legal header value. */
+object ProviderKey {
+    fun isValid(key: String): Boolean = key.isNotEmpty() && key.all { it in '!'..'~' }
+}
+
 object ProviderUrl {
     /** `https`, or plain `http` only to the user's own machine or network. */
     fun isAllowed(url: String): Boolean {
         val uri = parse(url) ?: return false
         val host = uri.host?.lowercase()?.takeIf { it.isNotEmpty() } ?: return false
         if (uri.userInfo != null) return false
+        // Whatever java.net.URI accepts, the request builder must accept too (a port above 65535 is not).
+        if (url.trim().toHttpUrlOrNull() == null) return false
         return when (uri.scheme?.lowercase()) {
             "https" -> true
             "http" -> host == "localhost" || isPrivateIpv4(host)
@@ -80,6 +88,8 @@ object ProviderUrl {
         if (parts.size != 4) return false
         val octets = parts.map { part ->
             if (part.isEmpty() || part.length > 3 || !part.all { it in '0'..'9' }) return false
+            // "010" is octal to some resolvers: not the same address as 10.
+            if (part.length > 1 && part[0] == '0') return false
             part.toInt().also { if (it > 255) return false }
         }
         return when (octets[0]) {

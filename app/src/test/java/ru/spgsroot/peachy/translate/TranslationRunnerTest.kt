@@ -23,8 +23,10 @@ class TranslationRunnerTest {
 
     /** Page number travels in the first byte of the "image". */
     private class FakeSource : PageSource {
+        val requested = mutableListOf<Int>()
         var failure: Exception? = null
         override suspend fun jpeg(galleryId: Int, page: Int): ByteArray {
+            requested += page
             failure?.let { throw it }
             return byteArrayOf(page.toByte())
         }
@@ -191,14 +193,41 @@ class TranslationRunnerTest {
     fun batchStopsOnRateLimit() = runTest {
         val r = rig()
         r.translator.behaviour = { page ->
-            if (page == 0) throw TranslationException(TranslationError.RateLimit)
+            if (page == 0) throw TranslationException(TranslationError.RateLimit(null))
             delay(100)
             line("p$page")
         }
         r.runner.startBatch(1, 6, "ru")
         advanceUntilIdle()
         assertTrue(r.translator.requested.toString(), r.translator.requested.all { it < 2 })
-        assertEquals(TranslationError.RateLimit, r.runner.batch.value?.stopped)
+        assertEquals(TranslationError.RateLimit(null), r.runner.batch.value?.stopped)
+    }
+
+    @Test
+    fun batchStopsWhenTheProviderIsNotConfigured() = runTest {
+        val r = rig()
+        r.translator.behaviour = { throw TranslationException(TranslationError.NotConfigured) }
+        r.runner.startBatch(1, 6, "ru")
+        advanceUntilIdle()
+        assertTrue(r.translator.requested.toString(), r.translator.requested.all { it < 2 })
+        assertEquals(TranslationError.NotConfigured, r.runner.batch.value?.stopped)
+    }
+
+    @Test
+    fun showCachedPublishesACachedPageWithoutTheNetwork() = runTest {
+        val r = rig()
+        r.cache.rows[Triple(1, 2, "ru")] = line("кэш")
+        assertTrue(r.runner.showCached(1, 2, "ru"))
+        assertEquals(PageState.Done(line("кэш")), r.runner.pages.value[2])
+        assertTrue(r.translator.requested.isEmpty())
+        assertTrue(r.source.requested.isEmpty())
+    }
+
+    @Test
+    fun showCachedLeavesAnUncachedPageAlone() = runTest {
+        val r = rig()
+        assertEquals(false, r.runner.showCached(1, 2, "ru"))
+        assertNull(r.runner.pages.value[2])
     }
 
     @Test

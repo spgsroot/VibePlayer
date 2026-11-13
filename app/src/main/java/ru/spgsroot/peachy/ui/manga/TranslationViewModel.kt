@@ -48,6 +48,9 @@ class TranslationViewModel @Inject constructor(
     private var pageCount = 0
     private var pendingAfterConsent: (() -> Unit)? = null
 
+    // The user said no this session: a page turn must not ask again, only a deliberate press does.
+    private var declined = false
+
     val pages: StateFlow<Map<Int, PageState>> = runner
         .flatMapLatest { it?.pages ?: flowOf(emptyMap()) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
@@ -68,6 +71,7 @@ class TranslationViewModel @Inject constructor(
         if (galleryId == this.galleryId && runner.value != null) return
         runner.value?.cancelBatch()
         pendingAfterConsent = null
+        declined = false
         _needsConsent.value = false
         this.galleryId = galleryId
         pageCount = pagePaths.size
@@ -75,27 +79,42 @@ class TranslationViewModel @Inject constructor(
         runner.value = TranslationRunner(pageBytes, client, store, { provider.value.model }, viewModelScope)
     }
 
-    fun translateNow(page: Int, force: Boolean = false) {
+    /**
+     * Translates [page]. A page the cache already holds is shown without the consent question: nothing
+     * is sent. [explicit] is false for a request nobody pressed a button for (a page turn).
+     */
+    fun translateNow(page: Int, force: Boolean = false, explicit: Boolean = true) {
         val current = runner.value ?: return
         val id = galleryId
-        gated {
-            viewModelScope.launch { current.translate(id, page, language(), force) }
+        viewModelScope.launch {
+            if (!force && current.showCached(id, page, language())) return@launch
+            gated(explicit) {
+                viewModelScope.launch { current.translate(id, page, language(), force) }
+            }
         }
     }
 
-    /** Called once per page the reader has settled on; only the on-turn mode acts. */
+    /**
+     * Called once per page the reader has settled on, and once for the page it opens on. A page
+     * that is already translated is shown in every mode; only the on-turn mode pays for a new one.
+     */
     fun onPageSettled(page: Int, mode: TranslateMode) {
-        if (mode != TranslateMode.OnTurn) return
+        val current = runner.value ?: return
         val state = pages.value[page]
         if (state == PageState.Loading || state is PageState.Done) return
-        translateNow(page)
+        if (mode == TranslateMode.OnTurn) {
+            translateNow(page, explicit = false)
+        } else {
+            val id = galleryId
+            viewModelScope.launch { current.showCached(id, page, language()) }
+        }
     }
 
     fun startWhole() {
         val current = runner.value ?: return
         val id = galleryId
         val count = pageCount
-        gated { current.startBatch(id, count, language()) }
+        gated(explicit = true) { current.startBatch(id, count, language()) }
     }
 
     fun cancelWhole() {
@@ -104,6 +123,7 @@ class TranslationViewModel @Inject constructor(
 
     fun acceptConsent() {
         providerStore.update { it.copy(consented = true) }
+        declined = false
         _needsConsent.value = false
         val action = pendingAfterConsent
         pendingAfterConsent = null
@@ -111,6 +131,7 @@ class TranslationViewModel @Inject constructor(
     }
 
     fun declineConsent() {
+        declined = true
         _needsConsent.value = false
         pendingAfterConsent = null
     }
@@ -119,9 +140,12 @@ class TranslationViewModel @Inject constructor(
         providerStore.update(change)
     }
 
-    /** Sends a tiny text-only request; null means the address, key and model work. */
-    suspend fun testProvider(): TranslationError? = try {
-        client.check()
+    /**
+     * Sends a tiny text-only request built from what the dialog holds, saved or not; null means the
+     * address, key and model work.
+     */
+    suspend fun testProvider(baseUrl: String, model: String, apiKey: String): TranslationError? = try {
+        client.check(provider.value.edited(baseUrl, model, apiKey))
         null
     } catch (e: TranslationException) {
         e.error
@@ -131,9 +155,10 @@ class TranslationViewModel @Inject constructor(
      * Runs [action] when pages may be sent. A provider that is not set up still runs it: the client
      * refuses without touching the network and the page shows that the provider is missing.
      */
-    private fun gated(action: () -> Unit) {
+    private fun gated(explicit: Boolean, action: () -> Unit) {
         val settings = provider.value
         if (settings.isConfigured && !settings.consented) {
+            if (!explicit && declined) return
             pendingAfterConsent = action
             _needsConsent.value = true
         } else {

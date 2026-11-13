@@ -27,7 +27,7 @@ class TranslationClientTest {
     @Before
     fun start() {
         server = MockWebServer().also { it.start() }
-        settings = ProviderSettings(baseUrl = "http://127.0.0.1:${server.port}/v1", apiKey = "k")
+        settings = ProviderSettings(baseUrl = "http://127.0.0.1:${server.port}/v1", apiKey = "k", consented = true)
     }
 
     @After
@@ -114,7 +114,36 @@ class TranslationClientTest {
     @Test
     fun http429IsRateLimit() {
         server.enqueue(MockResponse().setResponseCode(429).setHeader("Retry-After", "30"))
-        assertEquals(TranslationError.RateLimit, failureOf { translate() })
+        assertEquals(TranslationError.RateLimit(30), failureOf { translate() })
+        assertEquals(1, server.requestCount)
+    }
+
+    @Test
+    fun rateLimitWithoutAUsableRetryAfterHasNoWait() {
+        server.enqueue(MockResponse().setResponseCode(429))
+        server.enqueue(MockResponse().setResponseCode(429).setHeader("Retry-After", "Wed, 21 Oct 2026 07:28:00 GMT"))
+        assertEquals(TranslationError.RateLimit(null), failureOf { translate() })
+        assertEquals(TranslationError.RateLimit(null), failureOf { translate() })
+    }
+
+    @Test
+    fun aPageIsNeverSentWithoutConsent() {
+        settings = settings.copy(consented = false)
+        assertEquals(TranslationError.NotConfigured, failureOf { translate() })
+        assertEquals(0, server.requestCount)
+    }
+
+    @Test
+    fun aRedirectIsNotFollowedAndIsAServerError() {
+        server.enqueue(MockResponse().setResponseCode(307).setHeader("Location", server.url("/elsewhere").toString()))
+        assertEquals(TranslationError.Server(307), failureOf { translate() })
+        assertEquals(1, server.requestCount)
+    }
+
+    @Test
+    fun anErrorBodyWithStatus200IsNotAModelRefusal() {
+        server.enqueue(MockResponse().setBody("""{"error":{"message":"overloaded"}}"""))
+        assertEquals(TranslationError.BadResponse, failureOf { translate() })
         assertEquals(1, server.requestCount)
     }
 
@@ -169,7 +198,7 @@ class TranslationClientTest {
     @Test
     fun checkSendsTextOnlyRequestAndReturnsOnOk() {
         reply("ok")
-        runBlocking { client().check() }
+        runBlocking { client().check(settings) }
         val body = JSONObject(server.takeRequest().body.readUtf8())
         val content = body.getJSONArray("messages").getJSONObject(0).get("content")
         assertTrue(content is String)
@@ -179,7 +208,25 @@ class TranslationClientTest {
     @Test
     fun checkReportsAuth() {
         server.enqueue(MockResponse().setResponseCode(401))
-        assertEquals(TranslationError.Auth, failureOf { runBlocking { client().check() } })
+        assertEquals(TranslationError.Auth, failureOf { runBlocking { client().check(settings) } })
+    }
+
+    @Test
+    fun checkUsesTheDraftItIsGivenAndNeedsNoConsent() {
+        settings = ProviderSettings()
+        reply("ok")
+        val draft = ProviderSettings(baseUrl = "http://127.0.0.1:${server.port}/v1", apiKey = "draft-key")
+        runBlocking { client().check(draft) }
+        assertEquals("Bearer draft-key", server.takeRequest().getHeader("Authorization"))
+    }
+
+    @Test
+    fun checkRefusesADraftThatIsNotConfigured() {
+        assertEquals(
+            TranslationError.NotConfigured,
+            failureOf { runBlocking { client().check(settings.copy(apiKey = "ключ")) } }
+        )
+        assertEquals(0, server.requestCount)
     }
 
     @Test
@@ -191,8 +238,8 @@ class TranslationClientTest {
                 .request(chain.request()).protocol(okhttp3.Protocol.HTTP_1_1).code(200).message("OK")
                 .body(envelope("ok").toResponseBody("application/json".toMediaType())).build()
         }.build()
-        val provider = ProviderSettings(baseUrl = "https://opencode.ai/inference/go/v1", apiKey = "k")
-        runBlocking { TranslationClient(http, { provider }, agent).check() }
+        val provider = ProviderSettings(baseUrl = "https://opencode.ai/inference/go/v1", apiKey = "k", consented = true)
+        runBlocking { TranslationClient(http, { provider }, agent).check(provider) }
         assertTrue(seen?.startsWith("peachy-") == true)
     }
 }

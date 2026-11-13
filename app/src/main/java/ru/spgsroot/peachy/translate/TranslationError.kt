@@ -8,8 +8,8 @@ sealed interface TranslationError {
     /** The provider rejected the key (HTTP 401 or 403). */
     object Auth : TranslationError
 
-    /** HTTP 429. */
-    object RateLimit : TranslationError
+    /** HTTP 429; [retryAfterSeconds] is the provider's `Retry-After` when it gave a number of seconds. */
+    data class RateLimit(val retryAfterSeconds: Int?) : TranslationError
 
     /** No connection, a timeout, or a broken transfer. */
     object Network : TranslationError

@@ -33,11 +33,22 @@ class ProviderUrlTest {
             "http://172.15.0.1/v1",
             "http://192.169.1.1/v1",
             "http://10.0.0.256/v1",
+            "http://010.0.0.1/v1",
+            "http://10.00.0.1/v1",
+            "https://example.com:99999/v1",
             "https://",
             "",
             "   ",
             "not a url"
         ).forEach { assertFalse(it, ProviderUrl.isAllowed(it)) }
+    }
+
+    @Test
+    fun keyMustBeAPlainHeaderValue() {
+        assertTrue(ProviderSettings(apiKey = "oc_sk_AbC-123").isConfigured)
+        assertFalse(ProviderSettings(apiKey = "ключ").isConfigured)
+        assertFalse(ProviderSettings(apiKey = "a\u00a0b").isConfigured)
+        assertFalse(ProviderSettings(apiKey = "has space").isConfigured)
     }
 
     @Test

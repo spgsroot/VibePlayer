@@ -51,6 +51,13 @@ class TranslationRunner(
     private val locks = ConcurrentHashMap<Pair<Int, String>, Mutex>()
     private var batchJob: Job? = null
 
+    /** Shows a page the cache already holds, without the network. Returns false when there is none. */
+    suspend fun showCached(galleryId: Int, page: Int, lang: String): Boolean {
+        val cached = cache.get(galleryId, page, lang) ?: return false
+        publish(page, PageState.Done(cached))
+        return true
+    }
+
     /**
      * Returns the final state of [page]. Failures become [PageState.Failed]; cancellation propagates
      * and leaves the page as it was.
@@ -112,7 +119,8 @@ class TranslationRunner(
         _batch.value = null
     }
 
-    private fun TranslationError.endsBatch() = this == TranslationError.Auth || this == TranslationError.RateLimit
+    private fun TranslationError.endsBatch() =
+        this == TranslationError.Auth || this == TranslationError.NotConfigured || this is TranslationError.RateLimit
 
     private fun publish(page: Int, state: PageState): PageState {
         _pages.update { it + (page to state) }

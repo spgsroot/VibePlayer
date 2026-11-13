@@ -18,6 +18,7 @@
     <string name="translate_error_not_configured">Провайдер не настроен: нужен ключ и адрес</string>
     <string name="translate_error_auth">Провайдер не принял ключ</string>
     <string name="translate_error_rate_limit">Слишком много запросов, подождите немного</string>
+    <string name="translate_error_rate_limit_after">Слишком много запросов, подождите %1$d с</string>
     <string name="translate_error_network">Нет связи с провайдером или страницей</string>
     <string name="translate_error_bad_response">Провайдер ответил не тем, чего мы ждали</string>
     <string name="translate_error_refused">Модель отказалась читать эту страницу</string>
@@ -29,6 +30,7 @@
     <string name="provider_model">Модель</string>
     <string name="provider_key">Ключ</string>
     <string name="provider_key_kept">Сохранён; оставьте пустым, чтобы не менять</string>
+    <string name="provider_key_invalid">В ключе допустимы только латинские буквы, цифры и знаки без пробелов</string>
     <string name="provider_show_key">Показать ключ</string>
     <string name="provider_test">Проверить</string>
     <string name="provider_testing">Проверяю…</string>
