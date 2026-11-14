@@ -46,3 +46,31 @@ Translated lines can carry an optional `Box` around their original text. Stored 
 
 The database and vault continue to treat the `lang` field as an opaque cache key. `TranslationKey.of(engine, source, target)` returns exactly `target` for Model + `auto`, preserving existing caches and backups. Other choices use `target|engine.wire|source`, for example `de|mlkit|ja`. Changing translation choices switches the reader's displayed state and batch to that key; cached entries under other keys remain available.
 
+
+## On-device page text recognition
+
+`PageOcr` is bound through Hilt to the singleton `MlKitPageOcr`. It uses ML Kit's bundled Latin,
+Japanese, Chinese and Korean text-recognition models (16.0.1); recognition needs no model download
+and does not send page images to a server. `ja` and `auto` select Japanese (also reads Latin),
+`zh` selects Chinese, `ko` selects Korean, and other source codes select Latin. Each recognizer
+is created lazily and retained for the application's lifetime. Decoding and result processing run
+on `Dispatchers.Default`; invalid image bytes throw `IOException`.
+`auto` uses the contract's default left-to-right ordering and space-separated lines; selecting the
+Japanese recognizer does not change the requested source language's ordering.
+
+Each ML Kit text block remains one output block. Lines below 0.3 confidence, blank lines and
+symbol-only noise are removed. Japanese/Chinese lines join without spaces; Latin/Korean lines
+join with spaces. Boxes are clipped to the page and expressed as fractions of its dimensions.
+Reading order uses overlapping vertical extents to form rows, top-to-bottom; Japanese/Chinese
+rows read columns right-to-left and each column top-to-bottom, while Latin/Korean rows read
+left-to-right. The exact overlap rule and its limitations are documented in `OcrGrouping.kt`.
+Cancellation stops waiting immediately; because ML Kit cannot cancel its task, the task retains
+the decoded bitmap until recognition completes and then recycles it.
+
+Dependency references: [Android setup](https://developers.google.com/ml-kit/vision/text-recognition/v2/android)
+and [release notes](https://developers.google.com/ml-kit/release-notes). ML Kit requires API 23;
+the app retains minSdk 26. In the measured universal debug APK, ML Kit adds one
+`libmlkit_google_ocr_pipeline.so` per ABI. Its arm64-v8a and x86_64 ELF load segments are 16 KB
+aligned; its armeabi-v7a and x86 segments are 4 KB aligned. APK ZIP alignment passes
+`zipalign -c -P 16 4`. SQLCipher's existing 4 KB ELF alignment is unchanged; these OCR dependencies
+add no further 64-bit ELF alignment issue. The 16.0.1 release notes announce 16 KB page-size support.
