@@ -200,8 +200,8 @@ fun PlayerScreen(
     if (showUrlDialog) {
         UrlInputDialog(
             onDismiss = { showUrlDialog = false },
-            onDownload = { url ->
-                viewModel.importVideoFromUrl(url)
+            onDownload = { url, folderUri ->
+                viewModel.importVideoFromUrlWithFolder(url, folderUri)
             }
         )
     }

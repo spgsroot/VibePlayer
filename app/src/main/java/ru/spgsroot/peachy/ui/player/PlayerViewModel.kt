@@ -18,12 +18,15 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ru.spgsroot.peachy.data.downloader.ExternalDownloader
+import ru.spgsroot.peachy.data.downloader.completeDownloadedVideo
 import ru.spgsroot.peachy.data.hosts.HostEntry
 import ru.spgsroot.peachy.data.hosts.HostImporter
 import ru.spgsroot.peachy.data.repository.SettingsRepository
 import ru.spgsroot.peachy.data.repository.VideoRepository
 import ru.spgsroot.peachy.data.storage.InternalStorageManager
 import ru.spgsroot.peachy.data.storage.VideoImporter
+import ru.spgsroot.peachy.data.storage.VideoExporter
+import ru.spgsroot.peachy.data.storage.ExportItem
 import ru.spgsroot.peachy.domain.model.Settings
 import ru.spgsroot.peachy.domain.model.Video
 import ru.spgsroot.peachy.playback.player.ExoPlayerWrapper
@@ -32,6 +35,7 @@ import ru.spgsroot.peachy.playback.queue.PlaylistManager
 import ru.spgsroot.peachy.playback.service.WebViewAudioCaptureService
 import ru.spgsroot.peachy.playback.timer.TimerController
 import java.io.File
+import java.io.IOException
 import javax.inject.Inject
 
 @OptIn(UnstableApi::class)
@@ -46,7 +50,8 @@ class PlayerViewModel @Inject constructor(
     private val storageManager: InternalStorageManager,
     private val externalDownloader: ExternalDownloader,
     private val videoImporter: VideoImporter,
-    private val hostImporter: HostImporter
+    private val hostImporter: HostImporter,
+    private val videoExporter: VideoExporter
 ) : ViewModel() {
 
     private var currentSettings: Settings? = null
@@ -209,15 +214,28 @@ class PlayerViewModel @Inject constructor(
      * Imports [url]. A link of a supported file host brings every video it points to (all videos of an album);
      * the result is a success when at least one of them was saved.
      */
-    suspend fun importVideoFromUrl(url: String): Result<Unit> = withContext(Dispatchers.IO) {
-        val normalizedUrl = url.trim()
-        if (normalizedUrl.isBlank()) {
-            return@withContext Result.failure(IllegalArgumentException("Пустой URL"))
-        }
+    suspend fun importVideoFromUrl(url: String): Result<Unit> =
+        importVideoFromUrlWithFolder(url, null).map { Unit }
 
-        val results = importItemsFor(normalizedUrl).map { it.run() }
-        results.firstOrNull { it.isSuccess } ?: results.first()
-    }
+    /** The returned count is a copy warning, never a failed library import. */
+    suspend fun importVideoFromUrlWithFolder(url: String, folderUri: String?): Result<Int> =
+        withContext(Dispatchers.IO) {
+            val normalizedUrl = url.trim()
+            if (normalizedUrl.isBlank()) {
+                return@withContext Result.failure(IllegalArgumentException("Пустой URL"))
+            }
+            val copy: ((File) -> Unit)? = folderUri?.let { tree ->
+                { file ->
+                    val exported = videoExporter.export(
+                        Uri.parse(tree), listOf(ExportItem(file.nameWithoutExtension, file.path))
+                    )
+                    if (exported.failed.isNotEmpty()) throw IOException("Folder copy failed")
+                }
+            }
+            val results = importItemsFor(normalizedUrl, copy).map { it.run() }
+            val result = results.firstOrNull { it.isSuccess } ?: results.first()
+            result.map { results.sumOf { it.getOrDefault(0) } }
+        }
 
     fun downloadVideosFromUrls(urls: List<String>) {
         viewModelScope.launch {
@@ -281,24 +299,23 @@ class PlayerViewModel @Inject constructor(
         )
     }
 
-    private class ImportItem(val label: String, val run: suspend () -> Result<Unit>)
+    private class ImportItem(val label: String, val run: suspend () -> Result<Int>)
 
     /** Never throws: a host link that cannot be read becomes one failing item, so batches carry on. */
-    private fun importItemsFor(url: String): List<ImportItem> {
+    private fun importItemsFor(url: String, copy: ((File) -> Unit)? = null): List<ImportItem> {
         if (!hostImporter.recognizes(url)) {
-            return listOf(ImportItem(url) { importDirectUrl(url) })
+            return listOf(ImportItem(url) { videoImporter.importUrlWithCopy(url, copy = copy) })
         }
         val entries = try {
             hostImporter.expand(url)
         } catch (e: Exception) {
             return listOf(ImportItem(url) { Result.failure(e) })
         }
-        return entries.map { entry -> ImportItem(entry.label) { importHostEntry(entry) } }
+        return entries.map { entry -> ImportItem(entry.label) { importHostEntry(entry, copy) } }
     }
 
-    private suspend fun importDirectUrl(url: String): Result<Unit> = videoImporter.importUrl(url)
 
-    private suspend fun importHostEntry(entry: HostEntry): Result<Unit> {
+    private suspend fun importHostEntry(entry: HostEntry, copy: ((File) -> Unit)?): Result<Int> {
         val link = try {
             hostImporter.resolve(entry)
         } catch (e: Exception) {
@@ -309,7 +326,11 @@ class PlayerViewModel @Inject constructor(
             fileName = "${System.currentTimeMillis()}.${link.name.substringAfterLast('.', "mp4").lowercase()}",
             headers = link.headers
         ).fold(
-            onSuccess = { videoImporter.persist(it, title = link.name.substringBeforeLast('.')) },
+            onSuccess = { file ->
+                completeDownloadedVideo(file,
+                    save = { videoImporter.persist(file, title = link.name.substringBeforeLast('.')) },
+                    copy = copy)
+            },
             onFailure = { Result.failure(it) }
         )
     }

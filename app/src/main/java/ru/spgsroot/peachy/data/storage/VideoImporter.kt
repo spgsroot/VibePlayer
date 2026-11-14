@@ -8,6 +8,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import ru.spgsroot.peachy.data.downloader.ExternalDownloader
+import ru.spgsroot.peachy.data.downloader.completeDownloadedVideo
 import ru.spgsroot.peachy.data.repository.VideoRepository
 import ru.spgsroot.peachy.domain.model.Video
 
@@ -25,11 +26,18 @@ class VideoImporter @Inject constructor(
         url: String,
         headers: Map<String, String> = emptyMap(),
         title: String? = null
-    ): Result<Unit> = withContext(Dispatchers.IO) {
+    ): Result<Unit> = importUrlWithCopy(url, headers, title).map { Unit }
+
+    suspend fun importUrlWithCopy(
+        url: String,
+        headers: Map<String, String> = emptyMap(),
+        title: String? = null,
+        copy: ((File) -> Unit)? = null
+    ): Result<Int> = withContext(Dispatchers.IO) {
         externalDownloader
             .download(url = url, fileName = downloadFileName(url), headers = headers)
             .fold(
-                onSuccess = { persist(it, title) },
+                onSuccess = { file -> completeDownloadedVideo(file, { persist(file, title) }, copy) },
                 onFailure = { Result.failure(it) }
             )
     }

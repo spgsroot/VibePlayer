@@ -1,0 +1,14 @@
+<resources>
+    <string name="download_in_app">In the app</string>
+    <string name="download_another_app">Download with another app</string>
+    <string name="download_external_hint">Download opens the link in a downloader or browser. Use “Send link” for apps that accept shared links. The file stays in that app, not in Peachy. When it is ready, Share the video to Peachy to add it to your library.</string>
+    <string name="download_send_link">Send link</string>
+    <string name="download_external_unavailable">No app can open or receive this link. Install a downloader or browser and try again.</string>
+    <string name="download_folder_hint">Optionally also save a copy in a folder. Copies are outside Peachy’s private library and are not protected by its PIN.</string>
+    <string name="download_pick_folder">Also copy to a folder…</string>
+    <string name="download_change_folder">Change folder</string>
+    <string name="download_clear_folder">Do not copy</string>
+    <string name="download_folder_selected">Selected folder</string>
+    <string name="download_folder_permission_error">Cannot keep access to this folder. Choose another folder using the system picker.</string>
+    <string name="download_copy_failed">Saved in Peachy, but one or more folder copies failed. Your library videos are safe. Check folder access and free space, or choose another folder.</string>
+</resources>
