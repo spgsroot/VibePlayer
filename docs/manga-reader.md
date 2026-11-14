@@ -35,3 +35,14 @@ The intensity slider calls `MangaViewModel.setIntensity`. Page turns retain the 
 Opening loads the saved zero-based history page through `startPage`. Invalid or absent positions start at zero. `PageTurnGate` suppresses the initial placement and repeated idle reports. Paged mode supplies its settled page; strip mode supplies the page whose center is nearest the viewport center together with the scroll-idle flag. A gate-approved change triggers one pulse and upserts reading history.
 
 Leaving the reader reads the current pager position or live strip layout, even during a fling, and upserts history without emitting a pulse. Writes are ordered and survive cancellation of the navigation-scoped ViewModel. History stores gallery ID, title, thumbnail path, zero-based page, page count, and read timestamp; library rows are not used to store reading progress.
+
+## Translation data and requests
+
+`ReaderSettings` persists four translation choices alongside the existing translation mode: `engine` (`model` by default, or `mlkit`), `sourceLanguage` (`auto` by default), `targetLanguage` (`app` by default), and `overlay` (`false` by default). `app` resolves to the app/device language using the existing Russian/English fallback; an explicit target ISO code is passed through, including codes outside the UI list. The overlay flag is stored here; drawing and settings controls are separate from the translation pipeline.
+
+`PageTranslator` receives a `TranslateRequest(engine, source, target)` with the resolved target. The Model engine sends the page image to the configured provider. The MlKit engine consumes `PageOcr` blocks locally and sends only numbered OCR text to that same provider for translation; a page with no OCR blocks returns an empty translation without an HTTP request. Both network paths require the existing provider consent, reject redirects, and use the same HTTP error mapping.
+
+Translated lines can carry an optional `Box` around their original text. Stored JSON uses `[left, top, right, bottom]` fractions in `0..1`. Model replies may instead use the requested `0..1000` coordinates: parsing scales the whole box when any coordinate exceeds one, clamps and orders its edges, and discards malformed or degenerate boxes without dropping the translated line. OCR translations retain each referenced block's original text and box; invalid indices and repeated references are skipped.
+
+The database and vault continue to treat the `lang` field as an opaque cache key. `TranslationKey.of(engine, source, target)` returns exactly `target` for Model + `auto`, preserving existing caches and backups. Other choices use `target|engine.wire|source`, for example `de|mlkit|ja`. Changing translation choices switches the reader's displayed state and batch to that key; cached entries under other keys remain available.
+

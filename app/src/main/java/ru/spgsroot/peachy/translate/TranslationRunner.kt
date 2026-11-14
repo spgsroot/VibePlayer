@@ -59,10 +59,17 @@ class TranslationRunner(
     }
 
     /**
-     * Returns the final state of [page]. Failures become [PageState.Failed]; cancellation propagates
-     * and leaves the page as it was.
+     * Returns the final state of [page]. [lang] is an opaque [TranslationKey], kept separate from
+     * the languages and engine in [request]. Failures become [PageState.Failed]; cancellation
+     * propagates and leaves the page as it was.
      */
-    suspend fun translate(galleryId: Int, page: Int, lang: String, force: Boolean = false): PageState =
+    suspend fun translate(
+        galleryId: Int,
+        page: Int,
+        lang: String,
+        request: TranslateRequest,
+        force: Boolean = false
+    ): PageState =
         locks.getOrPut(page to lang) { Mutex() }.withLock {
             if (!force) {
                 cache.get(galleryId, page, lang)?.let { return@withLock publish(page, PageState.Done(it)) }
@@ -71,7 +78,7 @@ class TranslationRunner(
             publish(page, PageState.Loading)
             try {
                 val jpeg = source.jpeg(galleryId, page)
-                val translation = translator.translate(galleryId, jpeg, lang)
+                val translation = translator.translate(galleryId, jpeg, request)
                 cache.put(galleryId, page, lang, model(), translation)
                 publish(page, PageState.Done(translation))
             } catch (e: CancellationException) {
@@ -87,7 +94,7 @@ class TranslationRunner(
         }
 
     /** Starts translating pages `0 until pageCount` that are not cached yet. Does nothing while a batch runs. */
-    fun startBatch(galleryId: Int, pageCount: Int, lang: String) {
+    fun startBatch(galleryId: Int, pageCount: Int, lang: String, request: TranslateRequest) {
         if (batchJob?.isActive == true) return
         batchJob = scope.launch {
             val self = coroutineContext.job
@@ -100,7 +107,7 @@ class TranslationRunner(
                     gate.acquire()
                     launch {
                         try {
-                            val state = translate(galleryId, page, lang)
+                            val state = translate(galleryId, page, lang, request)
                             val stop = (state as? PageState.Failed)?.error?.takeIf { it.endsBatch() }
                             _batch.update { it?.copy(done = it.done + 1, stopped = stop ?: it.stopped) }
                             if (stop != null) self.cancel()

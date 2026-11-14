@@ -192,6 +192,7 @@ private fun NativeReader(
     val gate = remember { PageTurnGate() }
     val zoom = remember { ReaderZoom() }
     val latestGallery by rememberUpdatedState(gallery)
+    val latestSettings by rememberUpdatedState(settings)
     val scope = rememberCoroutineScope()
     val thumbnails = rememberLazyListState(initialFirstVisibleItemIndex = currentPage)
     val total = gallery.pagePaths.size
@@ -200,9 +201,9 @@ private fun NativeReader(
         viewModel.setIntensity(prefs.getFloat("intensity", PageTurnHaptic.DEFAULT_INTENSITY))
     }
     // The gate ignores the page the reader opens on, and a mode change leaves the current page unsettled.
-    LaunchedEffect(gallery.id, settings.translateMode) {
+    LaunchedEffect(gallery.id, settings.translateMode, settings.engine, settings.sourceLanguage, settings.targetLanguage) {
         translation.open(gallery.id, gallery.pagePaths)
-        translation.onPageSettled(currentPage, settings.translateMode)
+        translation.onPageSettled(currentPage, settings)
     }
     LaunchedEffect(chrome, currentPage) {
         if (chrome) thumbnails.animateScrollToItem(currentPage)
@@ -242,7 +243,7 @@ private fun NativeReader(
                             if (gate.onPage(page, idle)) {
                                 viewModel.onPageTurned()
                                 viewModel.saveReadHistory(latestGallery, page)
-                                translation.onPageSettled(page, settings.translateMode)
+                                translation.onPageSettled(page, latestSettings)
                             }
                         }
                     }
@@ -252,7 +253,7 @@ private fun NativeReader(
                     if (gate.onPage(page, idle = true)) {
                         viewModel.onPageTurned()
                         viewModel.saveReadHistory(latestGallery, page)
-                        translation.onPageSettled(page, settings.translateMode)
+                        translation.onPageSettled(page, latestSettings)
                     }
                 }
             }
@@ -366,8 +367,8 @@ private fun NativeReader(
                     actions = {
                         IconButton(onClick = {
                             panelOpen = true
-                            if (settings.translateMode == TranslateMode.Whole) translation.startWhole()
-                            else translation.translateNow(visiblePage)
+                            if (settings.translateMode == TranslateMode.Whole) translation.startWhole(settings)
+                            else translation.translateNow(visiblePage, settings)
                         }) {
                             Icon(Icons.Default.Translate, stringResource(R.string.translate_button))
                         }
@@ -397,7 +398,7 @@ private fun NativeReader(
                         batch = batch,
                         onAgain = {
                             // Only a finished translation is paid for again; a missing or failed one is just tried.
-                            translation.translateNow(visiblePage, force = pageStates[visiblePage] is PageState.Done)
+                            translation.translateNow(visiblePage, settings, force = pageStates[visiblePage] is PageState.Done)
                         },
                         onProvider = { providerDialog = true },
                         onCancelBatch = translation::cancelWhole,
@@ -514,7 +515,7 @@ private fun NativeReader(
                                 change(settings.copy(translateMode = next))
                                 if (next == TranslateMode.Whole) {
                                     panelOpen = true
-                                    translation.startWhole()
+                                    translation.startWhole(settings)
                                 } else if (before == TranslateMode.Whole) {
                                     translation.cancelWhole()
                                 }

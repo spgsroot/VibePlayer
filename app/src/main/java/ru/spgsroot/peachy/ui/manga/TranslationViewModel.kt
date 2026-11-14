@@ -17,16 +17,20 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ru.spgsroot.peachy.locale.LocaleManager
+import ru.spgsroot.peachy.manga.ReaderSettings
 import ru.spgsroot.peachy.manga.TranslateMode
 import ru.spgsroot.peachy.translate.BatchState
 import ru.spgsroot.peachy.translate.PageBytes
 import ru.spgsroot.peachy.translate.PageState
+import ru.spgsroot.peachy.translate.PageTranslator
 import ru.spgsroot.peachy.translate.ProviderSettings
 import ru.spgsroot.peachy.translate.ProviderSettingsStore
 import ru.spgsroot.peachy.translate.TargetLanguage
+import ru.spgsroot.peachy.translate.TranslateRequest
 import ru.spgsroot.peachy.translate.TranslationClient
 import ru.spgsroot.peachy.translate.TranslationError
 import ru.spgsroot.peachy.translate.TranslationException
+import ru.spgsroot.peachy.translate.TranslationKey
 import ru.spgsroot.peachy.translate.TranslationRunner
 import ru.spgsroot.peachy.translate.TranslationStore
 
@@ -41,11 +45,13 @@ class TranslationViewModel @Inject constructor(
     private val providerStore: ProviderSettingsStore,
     private val pageBytes: PageBytes,
     private val store: TranslationStore,
-    private val client: TranslationClient
+    private val client: TranslationClient,
+    private val translator: PageTranslator
 ) : ViewModel() {
     private val runner = MutableStateFlow<TranslationRunner?>(null)
     private var galleryId = -1
     private var pageCount = 0
+    private var activeKey: String? = null
     private var pendingAfterConsent: (() -> Unit)? = null
 
     // The user said no this session: a page turn must not ask again, only a deliberate press does.
@@ -75,21 +81,24 @@ class TranslationViewModel @Inject constructor(
         _needsConsent.value = false
         this.galleryId = galleryId
         pageCount = pagePaths.size
+        activeKey = null
         pageBytes.bind(pagePaths)
-        runner.value = TranslationRunner(pageBytes, client, store, { provider.value.model }, viewModelScope)
+        runner.value = newRunner()
     }
 
     /**
      * Translates [page]. A page the cache already holds is shown without the consent question: nothing
      * is sent. [explicit] is false for a request nobody pressed a button for (a page turn).
      */
-    fun translateNow(page: Int, force: Boolean = false, explicit: Boolean = true) {
-        val current = runner.value ?: return
+    fun translateNow(page: Int, settings: ReaderSettings, force: Boolean = false, explicit: Boolean = true) {
+        val request = request(settings)
+        val key = TranslationKey.of(request.engine, request.source, request.target)
+        val current = runnerFor(key) ?: return
         val id = galleryId
         viewModelScope.launch {
-            if (!force && current.showCached(id, page, language())) return@launch
+            if (!force && current.showCached(id, page, key)) return@launch
             gated(explicit) {
-                viewModelScope.launch { current.translate(id, page, language(), force) }
+                viewModelScope.launch { current.translate(id, page, key, request, force) }
             }
         }
     }
@@ -98,23 +107,27 @@ class TranslationViewModel @Inject constructor(
      * Called once per page the reader has settled on, and once for the page it opens on. A page
      * that is already translated is shown in every mode; only the on-turn mode pays for a new one.
      */
-    fun onPageSettled(page: Int, mode: TranslateMode) {
-        val current = runner.value ?: return
-        val state = pages.value[page]
+    fun onPageSettled(page: Int, settings: ReaderSettings) {
+        val request = request(settings)
+        val key = TranslationKey.of(request.engine, request.source, request.target)
+        val current = runnerFor(key) ?: return
+        val state = current.pages.value[page]
         if (state == PageState.Loading || state is PageState.Done) return
-        if (mode == TranslateMode.OnTurn) {
-            translateNow(page, explicit = false)
+        if (settings.translateMode == TranslateMode.OnTurn) {
+            translateNow(page, settings, explicit = false)
         } else {
             val id = galleryId
-            viewModelScope.launch { current.showCached(id, page, language()) }
+            viewModelScope.launch { current.showCached(id, page, key) }
         }
     }
 
-    fun startWhole() {
-        val current = runner.value ?: return
+    fun startWhole(settings: ReaderSettings) {
+        val request = request(settings)
+        val key = TranslationKey.of(request.engine, request.source, request.target)
+        val current = runnerFor(key) ?: return
         val id = galleryId
         val count = pageCount
-        gated(explicit = true) { current.startBatch(id, count, language()) }
+        gated(explicit = true) { current.startBatch(id, count, key, request) }
     }
 
     fun cancelWhole() {
@@ -166,6 +179,25 @@ class TranslationViewModel @Inject constructor(
         }
     }
 
-    private fun language(): String =
-        TargetLanguage.resolve(LocaleManager.getSavedLocale(context), Locale.getDefault().language)
+    private fun request(settings: ReaderSettings) = TranslateRequest(
+        settings.engine,
+        settings.sourceLanguage,
+        TargetLanguage.resolve(
+            LocaleManager.getSavedLocale(context), Locale.getDefault().language, settings.targetLanguage
+        )
+    )
+
+    private fun newRunner() =
+        TranslationRunner(pageBytes, translator, store, { provider.value.model }, viewModelScope)
+
+    /** A page-only state map must not show results or a batch from different translation choices. */
+    private fun runnerFor(key: String): TranslationRunner? {
+        val current = runner.value ?: return null
+        if (activeKey == key) return current
+        current.cancelBatch()
+        pendingAfterConsent = null
+        _needsConsent.value = false
+        activeKey = key
+        return newRunner().also { runner.value = it }
+    }
 }

@@ -21,6 +21,19 @@ class TranslationStoreTest {
     }
 
     @Test
+    fun boxedTranslationRoundTripsUnderAnOpaqueKeySeparatelyFromLegacyCache() = runBlocking {
+        val boxed = PageTranslation(
+            "ja", listOf(TranslatedLine(LineKind.Speech, "ハ", "Hallo", Box(0.1f, 0.2f, 0.7f, 0.8f)))
+        )
+        store.put(1, 3, "de|mlkit|ja", "m", boxed)
+        store.put(1, 3, "de", "m", page("legacy"))
+        assertEquals(boxed, store.get(1, 3, "de|mlkit|ja"))
+        assertEquals(page("legacy"), store.get(1, 3, "de"))
+        assertNull(store.get(1, 3, "de|model|ja"))
+        assertEquals(setOf(3), store.cachedPages(1, "de|mlkit|ja"))
+    }
+
+    @Test
     fun otherLanguageIsAMiss() = runBlocking {
         store.put(1, 3, "ru", "m", page("А"))
         assertNull(store.get(1, 3, "en"))

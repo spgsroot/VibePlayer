@@ -20,6 +20,7 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class TranslationRunnerTest {
     private fun line(text: String) = PageTranslation("ja", listOf(TranslatedLine(LineKind.Speech, "ハ", text)))
+    private val russian = TranslateRequest(TranslateEngine.Model, "auto", "ru")
 
     /** Page number travels in the first byte of the "image". */
     private class FakeSource : PageSource {
@@ -34,6 +35,7 @@ class TranslationRunnerTest {
 
     private class FakeTranslator : PageTranslator {
         val requested = mutableListOf<Int>()
+        val options = mutableListOf<TranslateRequest>()
         private val inFlight = AtomicInteger()
         var maxInFlight = 0
         var behaviour: suspend (Int) -> PageTranslation = { page ->
@@ -41,9 +43,10 @@ class TranslationRunnerTest {
             PageTranslation("ja", listOf(TranslatedLine(LineKind.Speech, "ハ", "p$page")))
         }
 
-        override suspend fun translate(galleryId: Int, jpeg: ByteArray, targetLanguage: String): PageTranslation {
+        override suspend fun translate(galleryId: Int, jpeg: ByteArray, request: TranslateRequest): PageTranslation {
             val page = jpeg[0].toInt()
             requested += page
+            options += request
             maxInFlight = maxOf(maxInFlight, inFlight.incrementAndGet())
             try {
                 return behaviour(page)
@@ -81,14 +84,14 @@ class TranslationRunnerTest {
     fun cacheHitSkipsTheTranslator() = runTest {
         val r = rig()
         r.cache.rows[Triple(1, 2, "ru")] = line("кэш")
-        assertEquals(PageState.Done(line("кэш")), r.runner.translate(1, 2, "ru"))
+        assertEquals(PageState.Done(line("кэш")), r.runner.translate(1, 2, "ru", russian))
         assertTrue(r.translator.requested.isEmpty())
     }
 
     @Test
     fun successIsCachedAndPublished() = runTest {
         val r = rig()
-        val state = r.runner.translate(1, 2, "ru")
+        val state = r.runner.translate(1, 2, "ru", russian)
         assertEquals(PageState.Done(line("p2")), state)
         assertEquals(line("p2"), r.cache.rows[Triple(1, 2, "ru")])
         assertEquals(state, r.runner.pages.value[2])
@@ -98,7 +101,7 @@ class TranslationRunnerTest {
     fun forceIgnoresCacheAndReplacesIt() = runTest {
         val r = rig()
         r.cache.rows[Triple(1, 2, "ru")] = line("старый")
-        assertEquals(PageState.Done(line("p2")), r.runner.translate(1, 2, "ru", force = true))
+        assertEquals(PageState.Done(line("p2")), r.runner.translate(1, 2, "ru", russian, force = true))
         assertEquals(listOf(2), r.translator.requested)
         assertEquals(line("p2"), r.cache.rows[Triple(1, 2, "ru")])
     }
@@ -108,8 +111,8 @@ class TranslationRunnerTest {
         val r = rig()
         val gate = CompletableDeferred<Unit>()
         r.translator.behaviour = { page -> gate.await(); line("p$page") }
-        val a = async { r.runner.translate(1, 3, "ru") }
-        val b = async { r.runner.translate(1, 3, "ru") }
+        val a = async { r.runner.translate(1, 3, "ru", russian) }
+        val b = async { r.runner.translate(1, 3, "ru", russian) }
         advanceUntilIdle()
         assertEquals(listOf(3), r.translator.requested)
         gate.complete(Unit)
@@ -122,7 +125,7 @@ class TranslationRunnerTest {
     fun failureBecomesFailedState() = runTest {
         val r = rig()
         r.translator.behaviour = failWith(TranslationError.Network)
-        assertEquals(PageState.Failed(TranslationError.Network), r.runner.translate(1, 2, "ru"))
+        assertEquals(PageState.Failed(TranslationError.Network), r.runner.translate(1, 2, "ru", russian))
         assertEquals(PageState.Failed(TranslationError.Network), r.runner.pages.value[2])
         assertEquals(0, r.cache.puts)
     }
@@ -131,9 +134,9 @@ class TranslationRunnerTest {
     fun pageFetchFailureIsNetworkAndNonImageIsBadResponse() = runTest {
         val r = rig()
         r.source.failure = IOException("down")
-        assertEquals(PageState.Failed(TranslationError.Network), r.runner.translate(1, 2, "ru"))
+        assertEquals(PageState.Failed(TranslationError.Network), r.runner.translate(1, 2, "ru", russian))
         r.source.failure = IllegalArgumentException("not an image")
-        assertEquals(PageState.Failed(TranslationError.BadResponse), r.runner.translate(1, 2, "ru"))
+        assertEquals(PageState.Failed(TranslationError.BadResponse), r.runner.translate(1, 2, "ru", russian))
         assertTrue(r.translator.requested.isEmpty())
     }
 
@@ -141,7 +144,7 @@ class TranslationRunnerTest {
     fun cancelledRequestDoesNotWriteTheCache() = runTest {
         val r = rig()
         r.translator.behaviour = { delay(1_000); line("late") }
-        val call = async { r.runner.translate(1, 4, "ru") }
+        val call = async { r.runner.translate(1, 4, "ru", russian) }
         advanceTimeBy(100)
         assertEquals(PageState.Loading, r.runner.pages.value[4])
         call.cancel()
@@ -157,7 +160,7 @@ class TranslationRunnerTest {
         r.cache.rows[Triple(1, 3, "ru")] = line("b")
         val seen = mutableListOf<BatchState?>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { r.runner.batch.collect { seen += it } }
-        r.runner.startBatch(1, 5, "ru")
+        r.runner.startBatch(1, 5, "ru", russian)
         advanceUntilIdle()
         assertEquals(listOf(0, 2, 4), r.translator.requested.sorted())
         assertEquals(BatchState(done = 2, total = 5), seen.filterNotNull().first())
@@ -168,7 +171,7 @@ class TranslationRunnerTest {
     @Test
     fun batchRunsAtMostTwoAtOnce() = runTest {
         val r = rig()
-        r.runner.startBatch(1, 6, "ru")
+        r.runner.startBatch(1, 6, "ru", russian)
         advanceUntilIdle()
         assertEquals(6, r.translator.requested.size)
         assertEquals(2, r.translator.maxInFlight)
@@ -182,7 +185,7 @@ class TranslationRunnerTest {
             delay(100)
             line("p$page")
         }
-        r.runner.startBatch(1, 6, "ru")
+        r.runner.startBatch(1, 6, "ru", russian)
         advanceUntilIdle()
         assertTrue(r.translator.requested.toString(), r.translator.requested.all { it < 2 })
         assertEquals(TranslationError.Auth, r.runner.batch.value?.stopped)
@@ -197,7 +200,7 @@ class TranslationRunnerTest {
             delay(100)
             line("p$page")
         }
-        r.runner.startBatch(1, 6, "ru")
+        r.runner.startBatch(1, 6, "ru", russian)
         advanceUntilIdle()
         assertTrue(r.translator.requested.toString(), r.translator.requested.all { it < 2 })
         assertEquals(TranslationError.RateLimit(null), r.runner.batch.value?.stopped)
@@ -207,7 +210,7 @@ class TranslationRunnerTest {
     fun batchStopsWhenTheProviderIsNotConfigured() = runTest {
         val r = rig()
         r.translator.behaviour = { throw TranslationException(TranslationError.NotConfigured) }
-        r.runner.startBatch(1, 6, "ru")
+        r.runner.startBatch(1, 6, "ru", russian)
         advanceUntilIdle()
         assertTrue(r.translator.requested.toString(), r.translator.requested.all { it < 2 })
         assertEquals(TranslationError.NotConfigured, r.runner.batch.value?.stopped)
@@ -240,7 +243,7 @@ class TranslationRunnerTest {
         }
         val seen = mutableListOf<BatchState?>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { r.runner.batch.collect { seen += it } }
-        r.runner.startBatch(1, 5, "ru")
+        r.runner.startBatch(1, 5, "ru", russian)
         advanceUntilIdle()
         assertEquals(PageState.Failed(TranslationError.BadResponse), r.runner.pages.value[2])
         assertEquals(listOf(0, 1, 2, 3, 4), r.translator.requested.sorted())
@@ -252,7 +255,7 @@ class TranslationRunnerTest {
     @Test
     fun cancelBatchStopsQueuedPages() = runTest {
         val r = rig()
-        r.runner.startBatch(1, 6, "ru")
+        r.runner.startBatch(1, 6, "ru", russian)
         advanceTimeBy(50)
         r.runner.cancelBatch()
         advanceUntilIdle()
@@ -264,9 +267,9 @@ class TranslationRunnerTest {
     @Test
     fun startingABatchWhileOneRunsDoesNothing() = runTest {
         val r = rig()
-        r.runner.startBatch(1, 4, "ru")
+        r.runner.startBatch(1, 4, "ru", russian)
         advanceTimeBy(50)
-        r.runner.startBatch(1, 4, "ru")
+        r.runner.startBatch(1, 4, "ru", russian)
         advanceUntilIdle()
         assertEquals(listOf(0, 1, 2, 3), r.translator.requested.sorted())
     }
@@ -274,8 +277,8 @@ class TranslationRunnerTest {
     @Test
     fun batchAndTurnShareOneRequestPerPage() = runTest {
         val r = rig()
-        val turn = async { r.runner.translate(1, 3, "ru") }
-        r.runner.startBatch(1, 4, "ru")
+        val turn = async { r.runner.translate(1, 3, "ru", russian) }
+        r.runner.startBatch(1, 4, "ru", russian)
         advanceUntilIdle()
         assertEquals(PageState.Done(line("p3")), turn.await())
         assertEquals(1, r.translator.requested.count { it == 3 })
@@ -284,11 +287,39 @@ class TranslationRunnerTest {
     @Test
     fun aTurnWaitingOnAPageTheBatchHasStartedDoesNotRepeatIt() = runTest {
         val r = rig()
-        r.runner.startBatch(1, 2, "ru")
+        r.runner.startBatch(1, 2, "ru", russian)
         advanceTimeBy(10)
-        val turn = async { r.runner.translate(1, 1, "ru") }
+        val turn = async { r.runner.translate(1, 1, "ru", russian) }
         advanceUntilIdle()
         assertEquals(PageState.Done(line("p1")), turn.await())
         assertEquals(1, r.translator.requested.count { it == 1 })
+    }
+
+    @Test
+    fun nonDefaultRequestUsesItsOpaqueKeyWithoutPassingTheKeyAsTheLanguage() = runTest {
+        val r = rig()
+        val request = TranslateRequest(TranslateEngine.MlKit, "ja", "de")
+        r.cache.rows[Triple(1, 2, "de")] = line("legacy")
+        val state = r.runner.translate(1, 2, "de|mlkit|ja", request)
+        assertEquals(PageState.Done(line("p2")), state)
+        assertEquals(listOf(request), r.translator.options)
+        assertEquals(line("p2"), r.cache.rows[Triple(1, 2, "de|mlkit|ja")])
+        assertEquals(line("legacy"), r.cache.rows[Triple(1, 2, "de")])
+        assertTrue(r.runner.showCached(1, 2, "de|mlkit|ja"))
+        assertEquals(state, r.runner.pages.value[2])
+    }
+
+    @Test
+    fun batchUsesTheSameOpaqueKeyAndRequestAsSinglePages() = runTest {
+        val r = rig()
+        val request = TranslateRequest(TranslateEngine.MlKit, "zh", "fr")
+        r.cache.rows[Triple(1, 0, "fr|mlkit|zh")] = line("cached")
+        r.cache.rows[Triple(1, 1, "fr")] = line("other options")
+        r.runner.startBatch(1, 3, "fr|mlkit|zh", request)
+        advanceUntilIdle()
+        assertEquals(listOf(1, 2), r.translator.requested.sorted())
+        assertEquals(listOf(request, request), r.translator.options)
+        assertEquals(setOf(0, 1, 2), r.cache.cachedPages(1, "fr|mlkit|zh"))
+        assertEquals(line("other options"), r.cache.rows[Triple(1, 1, "fr")])
     }
 }

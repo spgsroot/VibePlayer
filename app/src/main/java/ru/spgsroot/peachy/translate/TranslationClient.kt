@@ -21,9 +21,12 @@ import org.json.JSONException
 import org.json.JSONObject
 
 interface PageTranslator {
-    /** Reads one page image and returns its text translated into [targetLanguage]; throws [TranslationException]. */
-    suspend fun translate(galleryId: Int, jpeg: ByteArray, targetLanguage: String): PageTranslation
+    /** Reads one page using [request] and returns translated text; throws [TranslationException]. */
+    suspend fun translate(galleryId: Int, jpeg: ByteArray, request: TranslateRequest): PageTranslation
 }
+
+/** A translated OCR block, identified by its zero-based position in the input. */
+data class IndexedTranslation(val index: Int, val kind: LineKind, val translation: String)
 
 /** Identifies the conversation to OpenCode; other hosts do not get the header. */
 internal fun sessionHeader(baseUrl: String, galleryId: Int): String? =
@@ -32,7 +35,7 @@ internal fun sessionHeader(baseUrl: String, galleryId: Int): String? =
 /** The test request belongs to no gallery; OpenCode still wants every request to name a session. */
 private const val CHECK_SESSION_ID = 0
 
-/** One OpenAI-compatible `chat/completions` call per page, with the page as a data URI. */
+/** OpenAI-compatible image and OCR-text translation calls sharing the same provider policy. */
 class TranslationClient(
     http: OkHttpClient,
     private val settings: () -> ProviderSettings,
@@ -48,16 +51,34 @@ class TranslationClient(
         .followSslRedirects(false)
         .build()
 
-    override suspend fun translate(galleryId: Int, jpeg: ByteArray, targetLanguage: String): PageTranslation =
+    override suspend fun translate(galleryId: Int, jpeg: ByteArray, request: TranslateRequest): PageTranslation =
+        complete(galleryId, { pageBody(it, jpeg, request) }, PageTranslation::parse)
+
+    suspend fun translateBlocks(
+        galleryId: Int,
+        blocks: List<OcrBlock>,
+        source: String,
+        target: String
+    ): List<IndexedTranslation> = complete(
+        galleryId,
+        { chatBody(it, PagePrompt.blocks(target, source), PagePrompt.blocksUser(blocks)) },
+        ::parseBlocks
+    )
+
+    private suspend fun <T : Any> complete(
+        galleryId: Int,
+        bodyFor: (ProviderSettings) -> JSONObject,
+        parse: (String) -> T?
+    ): T =
         withContext(Dispatchers.IO) {
             // Read at send time, so a host changed or consent withdrawn mid-batch stops the next page.
             val provider = settings()
             if (!provider.isConfigured || !provider.consented) throw TranslationException(TranslationError.NotConfigured)
-            val body = pageBody(provider, jpeg, targetLanguage)
+            val body = bodyFor(provider)
             // A reply that is not valid JSON is usually a one-off: ask again once.
             repeat(2) {
                 val content = send(provider, body, sessionHeader(provider.baseUrl, galleryId))
-                PageTranslation.parse(content)?.let { return@withContext it }
+                parse(content)?.let { return@withContext it }
             }
             throw TranslationException(TranslationError.BadResponse)
         }
@@ -84,21 +105,24 @@ class TranslationClient(
 
     private fun message(role: String, content: Any) = JSONObject().put("role", role).put("content", content)
 
-    private fun pageBody(provider: ProviderSettings, jpeg: ByteArray, targetLanguage: String): JSONObject {
+    private fun pageBody(provider: ProviderSettings, jpeg: ByteArray, request: TranslateRequest): JSONObject {
         val uri = "data:image/jpeg;base64," + Base64.getEncoder().encodeToString(jpeg)
         val user = JSONArray()
             .put(JSONObject().put("type", "text").put("text", PagePrompt.USER))
             .put(JSONObject().put("type", "image_url").put("image_url", JSONObject().put("url", uri)))
-        return JSONObject()
+        return chatBody(provider, PagePrompt.system(request.target, request.source), user)
+    }
+
+    private fun chatBody(provider: ProviderSettings, system: String, user: Any): JSONObject =
+        JSONObject()
             .put("model", provider.model)
             .put("temperature", 0.2)
             .put("max_tokens", 4096)
             .put("response_format", JSONObject().put("type", "json_object"))
             .put(
                 "messages",
-                JSONArray().put(message("system", PagePrompt.system(targetLanguage))).put(message("user", user))
+                JSONArray().put(message("system", system)).put(message("user", user))
             )
-    }
 
     /** Posts [body] and returns `choices[0].message.content`. */
     private suspend fun send(provider: ProviderSettings, body: JSONObject, session: String?): String {
@@ -176,6 +200,30 @@ class TranslationClient(
 
     companion object {
         private val JSON = "application/json".toMediaType()
+
+        private fun parseBlocks(raw: String): List<IndexedTranslation>? {
+            val start = raw.indexOf('{')
+            val end = raw.lastIndexOf('}')
+            if (start < 0 || end <= start) return null
+            return try {
+                val items = JSONObject(raw.substring(start, end + 1)).getJSONArray("lines")
+                buildList {
+                    for (i in 0 until items.length()) {
+                        val item = items.optJSONObject(i) ?: continue
+                        // optInt coerces strings and fractions; neither identifies an OCR block.
+                        val value = (item.opt("i") as? Number)?.toDouble() ?: continue
+                        if (!value.isFinite() || value < Int.MIN_VALUE || value > Int.MAX_VALUE) continue
+                        val index = value.toInt()
+                        if (index.toDouble() != value) continue
+                        val translation = item.optString("translation").trim()
+                        if (translation.isEmpty()) continue
+                        add(IndexedTranslation(index, LineKind.fromWire(item.optString("kind")), translation))
+                    }
+                }
+            } catch (e: JSONException) {
+                null
+            }
+        }
 
         /** Renames the output limit and drops the temperature for providers that reject the older fields. */
         internal fun adaptLimits(body: JSONObject, baseUrl: String): JSONObject {

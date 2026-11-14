@@ -9,6 +9,8 @@ import dagger.hilt.components.SingletonComponent
 import ru.spgsroot.peachy.data.repository.SettingsRepository
 import ru.spgsroot.peachy.domain.model.DspConfig
 import ru.spgsroot.peachy.domain.model.Settings
+import ru.spgsroot.peachy.translate.EnginePageTranslator
+import ru.spgsroot.peachy.translate.PageTranslator
 import ru.spgsroot.peachy.translate.ProviderSettingsStore
 import ru.spgsroot.peachy.translate.TranslationClient
 import okhttp3.OkHttpClient
@@ -43,4 +45,8 @@ object AppModule {
             "Peachy/$version (+https://github.com/spgsroot/VibePlayer)"
         )
     }
+
+    @Provides
+    @Singleton
+    fun providePageTranslator(translator: EnginePageTranslator): PageTranslator = translator
 }

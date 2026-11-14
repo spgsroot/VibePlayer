@@ -1,6 +1,7 @@
 package ru.spgsroot.peachy.manga
 
 import android.content.SharedPreferences
+import ru.spgsroot.peachy.translate.TranslateEngine
 
 enum class ReaderOrientation { Vertical, Horizontal }
 
@@ -27,7 +28,11 @@ data class ReaderSettings(
     /** One endless strip instead of one page at a time. */
     val continuous: Boolean = false,
     val hideHints: Boolean = false,
-    val translateMode: TranslateMode = TranslateMode.Manual
+    val translateMode: TranslateMode = TranslateMode.Manual,
+    val engine: TranslateEngine = TranslateEngine.Model,
+    val sourceLanguage: String = "auto",
+    val targetLanguage: String = "app",
+    val overlay: Boolean = false
 )
 
 object ReaderSettingsStore {
@@ -39,6 +44,10 @@ object ReaderSettingsStore {
     private const val CONTINUOUS = "continuous"
     private const val HIDE_HINTS = "hide_hints"
     private const val TRANSLATE_MODE = "translate_mode"
+    private const val TRANSLATE_ENGINE = "translate_engine"
+    private const val SOURCE_LANGUAGE = "source_language"
+    private const val TARGET_LANGUAGE = "target_language"
+    private const val OVERLAY = "overlay"
     private const val LEGACY_MODE = "mode"
 
     /** Reads the settings, carrying over the older "paged"/"strip" choice when nothing newer was stored. */
@@ -57,7 +66,11 @@ object ReaderSettingsStore {
             inspect = prefs.getBoolean(INSPECT, false),
             continuous = prefs.getBoolean(CONTINUOUS, legacyStrip),
             hideHints = prefs.getBoolean(HIDE_HINTS, false),
-            translateMode = TranslateMode.fromWire(prefs.getString(TRANSLATE_MODE, null))
+            translateMode = TranslateMode.fromWire(prefs.getString(TRANSLATE_MODE, null)),
+            engine = TranslateEngine.fromWire(prefs.getString(TRANSLATE_ENGINE, null)),
+            sourceLanguage = prefs.getString(SOURCE_LANGUAGE, "auto") ?: "auto",
+            targetLanguage = prefs.getString(TARGET_LANGUAGE, "app") ?: "app",
+            overlay = prefs.getBoolean(OVERLAY, false)
         )
     }
 
@@ -71,6 +84,10 @@ object ReaderSettingsStore {
             .putBoolean(CONTINUOUS, settings.continuous)
             .putBoolean(HIDE_HINTS, settings.hideHints)
             .putString(TRANSLATE_MODE, settings.translateMode.wire)
+            .putString(TRANSLATE_ENGINE, settings.engine.wire)
+            .putString(SOURCE_LANGUAGE, settings.sourceLanguage)
+            .putString(TARGET_LANGUAGE, settings.targetLanguage)
+            .putBoolean(OVERLAY, settings.overlay)
             .apply()
     }
 }

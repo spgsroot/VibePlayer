@@ -6,6 +6,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import ru.spgsroot.peachy.translate.TranslateEngine
 
 class ReaderSettingsTest {
     /** A map-backed [SharedPreferences]; only the calls the store makes are supported. */
@@ -91,5 +92,85 @@ class ReaderSettingsTest {
     @Test
     fun unknownTranslateModeFallsBackToManual() {
         assertEquals(TranslateMode.Manual, ReaderSettingsStore.load(prefs(mapOf("translate_mode" to "always"))).translateMode)
+    }
+
+    @Test
+    fun translationSettingsDefaultToModelAutoAppAndNoOverlay() {
+        for (settings in listOf(
+            ReaderSettings(ReaderOrientation.Horizontal),
+            ReaderSettingsStore.load(prefs())
+        )) {
+            assertEquals(TranslateEngine.Model, settings.engine)
+            assertEquals("auto", settings.sourceLanguage)
+            assertEquals("app", settings.targetLanguage)
+            assertFalse(settings.overlay)
+        }
+    }
+
+    @Test
+    fun allTranslationFieldsRoundTripWithDefaultsAndExplicitChoices() {
+        val choices = listOf(
+            ReaderSettings(ReaderOrientation.Horizontal),
+            ReaderSettings(
+                orientation = ReaderOrientation.Vertical, translateMode = TranslateMode.Whole,
+                engine = TranslateEngine.MlKit, sourceLanguage = "ja", targetLanguage = "de", overlay = true
+            ),
+            ReaderSettings(
+                orientation = ReaderOrientation.Horizontal,
+                engine = TranslateEngine.Model, sourceLanguage = "ko", targetLanguage = "xx", overlay = false
+            )
+        )
+        for (chosen in choices) {
+            val store = prefs()
+            ReaderSettingsStore.save(store, chosen)
+            assertEquals(chosen, ReaderSettingsStore.load(store))
+        }
+    }
+
+    @Test
+    fun storedTranslationFieldsUseStablePreferenceKeysAndWires() {
+        val settings = ReaderSettingsStore.load(
+            prefs(mapOf(
+                "translate_engine" to "mlkit",
+                "source_language" to "zh",
+                "target_language" to "uk",
+                "overlay" to true
+            ))
+        )
+        assertEquals(TranslateEngine.MlKit, settings.engine)
+        assertEquals("zh", settings.sourceLanguage)
+        assertEquals("uk", settings.targetLanguage)
+        assertTrue(settings.overlay)
+        val store = prefs()
+        ReaderSettingsStore.save(store, settings)
+        assertEquals("mlkit", store.getString("translate_engine", null))
+        assertEquals("zh", store.getString("source_language", null))
+        assertEquals("uk", store.getString("target_language", null))
+        assertTrue(store.getBoolean("overlay", false))
+    }
+
+    @Test
+    fun unsupportedStoredEngineFallsBackToModelWithoutResettingOtherChoices() {
+        val settings = ReaderSettingsStore.load(
+            prefs(mapOf(
+                "translate_engine" to "future",
+                "source_language" to "ja",
+                "target_language" to "fr",
+                "overlay" to true
+            ))
+        )
+        assertEquals(TranslateEngine.Model, settings.engine)
+        assertEquals("ja", settings.sourceLanguage)
+        assertEquals("fr", settings.targetLanguage)
+        assertTrue(settings.overlay)
+    }
+
+    @Test
+    fun engineFromWireAcceptsKnownValuesAndFallsBackForUnknownOrNull() {
+        assertEquals(TranslateEngine.Model, TranslateEngine.fromWire("model"))
+        assertEquals(TranslateEngine.MlKit, TranslateEngine.fromWire("mlkit"))
+        assertEquals(TranslateEngine.Model, TranslateEngine.fromWire("future"))
+        assertEquals(TranslateEngine.Model, TranslateEngine.fromWire(""))
+        assertEquals(TranslateEngine.Model, TranslateEngine.fromWire(null))
     }
 }

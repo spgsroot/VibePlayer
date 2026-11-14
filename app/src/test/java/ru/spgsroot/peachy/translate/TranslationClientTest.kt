@@ -23,6 +23,11 @@ class TranslationClientTest {
 
     private val validReply = """{"sourceLanguage":"ja","lines":[{"kind":"speech","text":"ハ？","translation":"А?"}]}"""
     private val agent = "Peachy/test (+https://example.test)"
+    private val blocks = listOf(
+        OcrBlock("ハ？", Box(0.1f, 0.2f, 0.4f, 0.5f)),
+        OcrBlock("次の行", Box(0.5f, 0.6f, 0.8f, 0.9f))
+    )
+    private val blocksReply = """{"lines":[{"i":0,"kind":"speech","translation":"А?"}]}"""
 
     @Before
     fun start() {
@@ -49,7 +54,11 @@ class TranslationClientTest {
 
     private fun reply(content: String) = server.enqueue(MockResponse().setBody(envelope(content)))
 
-    private fun translate() = runBlocking { client().translate(7, byteArrayOf(1, 2, 3), "ru") }
+    private fun translate() = runBlocking {
+        client().translate(7, byteArrayOf(1, 2, 3), TranslateRequest(TranslateEngine.Model, "auto", "ru"))
+    }
+
+    private fun translateBlocks() = runBlocking { client().translateBlocks(7, blocks, "ja", "ru") }
 
     private fun failureOf(block: () -> Any?): TranslationError {
         try {
@@ -267,5 +276,197 @@ class TranslationClientTest {
         val provider = ProviderSettings(baseUrl = "https://opencode.ai/inference/go/v1", apiKey = "k", consented = true)
         runBlocking { TranslationClient(http, { provider }, agent).check(provider) }
         assertTrue(seen?.startsWith("peachy-") == true)
+    }
+
+    @Test
+    fun blocksRequestContainsNumberedTextWithoutAnImageAndUsesThePageBudget() {
+        reply(blocksReply)
+        assertEquals(listOf(IndexedTranslation(0, LineKind.Speech, "А?")), translateBlocks())
+
+        val request = server.takeRequest()
+        assertEquals("/v1/chat/completions", request.path)
+        assertEquals("Bearer k", request.getHeader("Authorization"))
+        assertEquals(agent, request.getHeader("User-Agent"))
+        assertNull(request.getHeader("x-opencode-session"))
+        val body = JSONObject(request.body.readUtf8())
+        assertEquals(DEFAULT_MODEL, body.getString("model"))
+        assertEquals(0.2, body.getDouble("temperature"), 0.0001)
+        assertEquals(4096, body.getInt("max_tokens"))
+        assertEquals("json_object", body.getJSONObject("response_format").getString("type"))
+        val messages = body.getJSONArray("messages")
+        val system = messages.getJSONObject(0).getString("content")
+        assertTrue(system.contains("Russian"))
+        assertTrue(system.contains("Japanese"))
+        assertTrue(system.contains("fiction for adults"))
+        assertTrue(system.contains("faithfully and completely"))
+        val user = messages.getJSONObject(1).get("content")
+        assertTrue(user is String)
+        assertTrue((user as String).contains("0: ハ？"))
+        assertTrue(user.contains("1: 次の行"))
+        assertFalse(body.toString().contains("image_url"))
+        assertFalse(body.toString().contains("data:image"))
+    }
+
+    @Test
+    fun blocksParserSkipsMalformedIndicesAndBlankTranslationsWithoutRetrying() {
+        reply(
+            """{"lines":[
+                {"i":"0","translation":"string index"},
+                {"i":0.5,"translation":"fraction"},
+                {"i":null,"translation":"null"},
+                {"translation":"missing"},
+                {"i":true,"translation":"boolean"},
+                {"i":1e400,"translation":"nonfinite"},
+                {"i":2147483648,"translation":"overflow"},
+                {"i":0,"translation":"  "},
+                {"i":1.0,"kind":"thought","translation":"  один  "},
+                {"i":0,"kind":"unknown","translation":"ноль"},
+                null
+            ]}"""
+        )
+        assertEquals(
+            listOf(
+                IndexedTranslation(1, LineKind.Thought, "один"),
+                IndexedTranslation(0, LineKind.Speech, "ноль")
+            ),
+            translateBlocks()
+        )
+        assertEquals(1, server.requestCount)
+    }
+
+    @Test
+    fun blocksFencedReplyAndEmptyLinesAreAccepted() {
+        reply("```json\n$blocksReply\n```")
+        reply("""{"lines":[]}""")
+        assertEquals("А?", translateBlocks().single().translation)
+        assertTrue(translateBlocks().isEmpty())
+        assertEquals(2, server.requestCount)
+    }
+
+    @Test
+    fun blocksAreNeverSentWithoutConsentOrConfiguration() {
+        settings = settings.copy(consented = false)
+        assertEquals(TranslationError.NotConfigured, failureOf { translateBlocks() })
+        settings = settings.copy(consented = true, apiKey = "")
+        assertEquals(TranslationError.NotConfigured, failureOf { translateBlocks() })
+        assertEquals(0, server.requestCount)
+    }
+
+    @Test
+    fun blocksReadConsentAgainForEveryCall() {
+        val client = client()
+        reply(blocksReply)
+        runBlocking { client.translateBlocks(7, blocks, "ja", "ru") }
+        settings = settings.copy(consented = false)
+        assertEquals(
+            TranslationError.NotConfigured,
+            failureOf { runBlocking { client.translateBlocks(7, blocks, "ja", "ru") } }
+        )
+        assertEquals(1, server.requestCount)
+    }
+
+    @Test
+    fun blocksReportHttpErrorsWithoutRetrying() {
+        for ((code, expected) in listOf(
+            401 to TranslationError.Auth,
+            403 to TranslationError.Auth,
+            429 to TranslationError.RateLimit(30),
+            500 to TranslationError.Server(500)
+        )) {
+            server.enqueue(MockResponse().setResponseCode(code).setHeader("Retry-After", "30"))
+            assertEquals(expected, failureOf { translateBlocks() })
+        }
+        assertEquals(4, server.requestCount)
+    }
+
+    @Test
+    fun blocksRateLimitWithoutUsableRetryAfterHasNoWait() {
+        server.enqueue(MockResponse().setResponseCode(429))
+        server.enqueue(MockResponse().setResponseCode(429).setHeader("Retry-After", "Wed, 21 Oct 2026 07:28:00 GMT"))
+        assertEquals(TranslationError.RateLimit(null), failureOf { translateBlocks() })
+        assertEquals(TranslationError.RateLimit(null), failureOf { translateBlocks() })
+        assertEquals(2, server.requestCount)
+    }
+
+    @Test
+    fun blocksNeverFollowRedirects() {
+        server.enqueue(MockResponse().setResponseCode(307).setHeader("Location", server.url("/elsewhere").toString()))
+        assertEquals(TranslationError.Server(307), failureOf { translateBlocks() })
+        assertEquals(1, server.requestCount)
+    }
+
+    @Test
+    fun blocksConnectionRefusedIsNetwork() {
+        server.shutdown()
+        assertEquals(TranslationError.Network, failureOf { translateBlocks() })
+    }
+
+    @Test
+    fun blocksMalformedReplyIsRetriedOnceThenBadResponse() {
+        reply("not json")
+        reply("""{"unexpected":[]}""")
+        assertEquals(TranslationError.BadResponse, failureOf { translateBlocks() })
+        assertEquals(2, server.requestCount)
+    }
+
+    @Test
+    fun blocksReturnAValidSecondAttempt() {
+        reply("""{"lines":[""")
+        reply(blocksReply)
+        assertEquals(listOf(IndexedTranslation(0, LineKind.Speech, "А?")), translateBlocks())
+        assertEquals(2, server.requestCount)
+    }
+
+    @Test
+    fun blocksErrorEnvelopeIsBadResponseWithoutRetry() {
+        server.enqueue(MockResponse().setBody("""{"error":{"message":"overloaded"}}"""))
+        assertEquals(TranslationError.BadResponse, failureOf { translateBlocks() })
+        assertEquals(1, server.requestCount)
+    }
+
+    @Test
+    fun blocksRefusalsAreNotRetried() {
+        server.enqueue(MockResponse().setBody("""{"choices":[]}"""))
+        server.enqueue(MockResponse().setBody(envelope("", finish = "content_filter")))
+        reply("")
+        repeat(3) {
+            assertEquals(TranslationError.Refused, failureOf { translateBlocks() })
+        }
+        assertEquals(3, server.requestCount)
+    }
+
+    @Test
+    fun blocksOnOpencodeSendTheirGallerySession() {
+        var seen: String? = null
+        val http = OkHttpClient.Builder().addInterceptor { chain ->
+            seen = chain.request().header("x-opencode-session")
+            okhttp3.Response.Builder()
+                .request(chain.request()).protocol(okhttp3.Protocol.HTTP_1_1).code(200).message("OK")
+                .body(envelope(blocksReply).toResponseBody("application/json".toMediaType())).build()
+        }.build()
+        val provider = ProviderSettings(baseUrl = "https://opencode.ai/inference/go/v1", apiKey = "k", consented = true)
+        val result = runBlocking { TranslationClient(http, { provider }, agent).translateBlocks(7, blocks, "ja", "ru") }
+        assertEquals("А?", result.single().translation)
+        assertEquals("peachy-7", seen)
+    }
+
+    @Test
+    fun blocksOnOpenAiAdaptTheActualRequestBudget() {
+        var seen: JSONObject? = null
+        val http = OkHttpClient.Builder().addInterceptor { chain ->
+            val buffer = okio.Buffer()
+            chain.request().body!!.writeTo(buffer)
+            seen = JSONObject(buffer.readUtf8())
+            okhttp3.Response.Builder()
+                .request(chain.request()).protocol(okhttp3.Protocol.HTTP_1_1).code(200).message("OK")
+                .body(envelope(blocksReply).toResponseBody("application/json".toMediaType())).build()
+        }.build()
+        val provider = ProviderSettings(baseUrl = "https://api.openai.com/v1", apiKey = "k", consented = true)
+        runBlocking { TranslationClient(http, { provider }, agent).translateBlocks(7, blocks, "ja", "ru") }
+        val body = requireNotNull(seen)
+        assertEquals(4096, body.getInt("max_completion_tokens"))
+        assertFalse(body.has("max_tokens"))
+        assertFalse(body.has("temperature"))
+        assertEquals("json_object", body.getJSONObject("response_format").getString("type"))
     }
 }
