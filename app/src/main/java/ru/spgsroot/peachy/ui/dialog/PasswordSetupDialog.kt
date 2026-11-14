@@ -1,5 +1,7 @@
 package ru.spgsroot.peachy.ui.dialog
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -37,7 +39,7 @@ fun PasswordSetupDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.dialog_set_password)) },
         text = {
-            Column {
+            Column(Modifier.heightIn(max = 320.dp).verticalScroll(rememberScrollState())) {
                 Text(
                     stringResource(R.string.password_hint),
                     style = MaterialTheme.typography.bodyMedium
@@ -47,7 +49,7 @@ fun PasswordSetupDialog(
                 OutlinedTextField(
                     value = password,
                     onValueChange = {
-                        password = it.filter(Char::isDigit).take(4) // если нужен PIN из 4 цифр
+                        password = it
                         error = null
                     },
                     label = { Text(stringResource(R.string.label_password)) },
@@ -57,7 +59,7 @@ fun PasswordSetupDialog(
                         PasswordVisualTransformation()
                     },
                     keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.NumberPassword
+                        keyboardType = KeyboardType.Password
                     ),
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -76,7 +78,7 @@ fun PasswordSetupDialog(
                 OutlinedTextField(
                     value = confirmPassword,
                     onValueChange = {
-                        confirmPassword = it.filter(Char::isDigit).take(4)
+                        confirmPassword = it
                         error = null
                     },
                     label = { Text(stringResource(R.string.label_confirm_password)) },
@@ -86,7 +88,7 @@ fun PasswordSetupDialog(
                         PasswordVisualTransformation()
                     },
                     keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.NumberPassword
+                        keyboardType = KeyboardType.Password
                     ),
                     trailingIcon = {
                         IconButton(onClick = { confirmVisible = !confirmVisible }) {
@@ -107,7 +109,7 @@ fun PasswordSetupDialog(
             Button(
                 onClick = {
                     when {
-                        password.length < 4 -> error = errorPasswordMinLength
+                        password.isEmpty() -> error = errorPasswordMinLength
                         password != confirmPassword -> error = errorPasswordsMismatch
                         else -> {
                             onSetPassword(password)
@@ -159,11 +161,11 @@ fun PasswordChangeDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.dialog_change_password)) },
         text = {
-            Column {
+            Column(Modifier.heightIn(max = 320.dp).verticalScroll(rememberScrollState())) {
                 OutlinedTextField(
                     value = currentPassword,
                     onValueChange = {
-                        currentPassword = it.filter(Char::isDigit).take(4)
+                        currentPassword = it
                         error = null
                     },
                     label = { Text(stringResource(R.string.label_current_password)) },
@@ -173,7 +175,7 @@ fun PasswordChangeDialog(
                         PasswordVisualTransformation()
                     },
                     keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.NumberPassword
+                        keyboardType = KeyboardType.Password
                     ),
                     trailingIcon = {
                         IconButton(onClick = { currentPasswordVisible = !currentPasswordVisible }) {
@@ -193,7 +195,7 @@ fun PasswordChangeDialog(
                 OutlinedTextField(
                     value = newPassword,
                     onValueChange = {
-                        newPassword = it.filter(Char::isDigit).take(4)
+                        newPassword = it
                         error = null
                     },
                     label = { Text(stringResource(R.string.label_password)) },
@@ -203,7 +205,7 @@ fun PasswordChangeDialog(
                         PasswordVisualTransformation()
                     },
                     keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.NumberPassword
+                        keyboardType = KeyboardType.Password
                     ),
                     trailingIcon = {
                         IconButton(onClick = { newPasswordVisible = !newPasswordVisible }) {
@@ -222,7 +224,7 @@ fun PasswordChangeDialog(
                 OutlinedTextField(
                     value = confirmNewPassword,
                     onValueChange = {
-                        confirmNewPassword = it.filter(Char::isDigit).take(4)
+                        confirmNewPassword = it
                         error = null
                     },
                     label = { Text(stringResource(R.string.label_confirm_password)) },
@@ -232,7 +234,7 @@ fun PasswordChangeDialog(
                         PasswordVisualTransformation()
                     },
                     keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.NumberPassword
+                        keyboardType = KeyboardType.Password
                     ),
                     trailingIcon = {
                         IconButton(onClick = { confirmNewPasswordVisible = !confirmNewPasswordVisible }) {
@@ -253,7 +255,7 @@ fun PasswordChangeDialog(
             Button(
                 onClick = {
                     when {
-                        newPassword.length < 4 -> error = errorPasswordMinLength
+                        newPassword.isEmpty() -> error = errorPasswordMinLength
                         newPassword != confirmNewPassword -> error = errorPasswordsMismatch
                         else -> {
                             onChangePassword(currentPassword, newPassword)

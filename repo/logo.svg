@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 560" fill="none">
+  <defs>
+    <radialGradient id="body" cx=".72" cy=".29" r=".88">
+      <stop stop-color="#ffce8d"/><stop offset=".42" stop-color="#ff955f"/>
+      <stop offset=".76" stop-color="#f76d7f"/><stop offset="1" stop-color="#d54b72"/>
+    </radialGradient>
+    <radialGradient id="left" cx=".24" cy=".17" r=".85">
+      <stop stop-color="#ffe1b8"/><stop offset=".34" stop-color="#ffa385"/>
+      <stop offset="1" stop-color="#ed647e" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="crease" x1="240" y1="170" x2="150" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#b95a36" stop-opacity=".7"/><stop offset=".35" stop-color="#f5bb87" stop-opacity=".18"/>
+      <stop offset="1" stop-color="#f5bb87" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="265" y1="169" x2="458" y2="24" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e57977"/><stop offset=".45" stop-color="#ffb8b1"/><stop offset="1" stop-color="#ff93ae"/>
+    </linearGradient>
+    <linearGradient id="vein" x1="260" y1="175" x2="460" y2="28" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#bd5558"/><stop offset="1" stop-color="#ffc4bd"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="70" y1="160" x2="140" y2="305" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff4df" stop-opacity=".9"/><stop offset="1" stop-color="#fff4df" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <path d="M254 112C204 82 155 95 115 122C48 164 16 229 19 315C21 432 110 536 235 542C367 551 479 473 492 344C503 246 463 165 396 129C351 105 301 96 254 112Z" fill="url(#body)"/>
+  <path d="M254 112C204 82 155 95 115 122C48 164 16 229 19 315C21 432 110 536 235 542C367 551 479 473 492 344C503 246 463 165 396 129C351 105 301 96 254 112Z" fill="url(#left)"/>
+  <path d="M254 112C269 136 266 164 252 181C183 213 150 271 153 344C155 426 181 495 235 542C189 472 177 401 184 329C190 259 217 212 260 189C278 171 278 138 267 114Z" fill="url(#crease)"/>
+  <path d="M58 252C68 196 108 152 158 137C124 165 95 213 80 270C74 291 54 284 58 252Z" fill="url(#glow)"/>
+  <path d="M249 182C263 153 277 115 307 91C339 68 351 39 380 26C410 13 451 20 483 32C496 37 495 46 487 57C467 81 459 110 433 128C394 158 341 160 303 172C280 178 262 184 249 182Z" fill="url(#leaf)"/>
+  <path d="M253 179C293 136 338 102 388 76C416 61 445 46 475 36" stroke="url(#vein)" stroke-width="6" stroke-linecap="round"/>
+  <path d="M300 138C302 121 310 106 323 94M331 116C331 101 340 85 351 74M362 97C362 82 368 66 381 52M300 139C323 142 348 140 368 132M335 113C359 118 384 115 405 105M371 94C391 97 415 92 430 83" stroke="#ffdcc7" stroke-opacity=".4" stroke-width="3" stroke-linecap="round"/>
+</svg>

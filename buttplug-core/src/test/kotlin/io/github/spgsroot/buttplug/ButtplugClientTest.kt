@@ -156,7 +156,12 @@ class ButtplugClientTest {
                 sendJson(webSocket, """{"ServerInfo":{"Id":$id,"ServerName":"Mock Buttplug Server","ProtocolVersionMajor":4,"ProtocolVersionMinor":0,"MaxPingTime":100}}""")
             }
             "RequestDeviceList" -> {
-                sendJson(webSocket, """{"DeviceList":{"Id":$id,"Devices":${state.devicesToReturn}}}""")
+                val devices = buildJsonObject {
+                    state.devicesToReturn.forEach { device ->
+                        put(device.jsonObject.getValue("DeviceIndex").jsonPrimitive.content, device)
+                    }
+                }
+                sendJson(webSocket, """{"DeviceList":{"Id":$id,"Devices":$devices}}""")
             }
             "StartScanning", "StopScanning", "Ping" -> {
                 sendJson(webSocket, """{"Ok":{"Id":$id}}""")
@@ -252,11 +257,18 @@ class ButtplugClientTest {
                     put("DeviceMessageTimingGap", JsonPrimitive(0))
                     put("DeviceFeatures", buildJsonObject {
                         put("0", buildJsonObject {
-                            put("FeatureDescription", JsonPrimitive("Vibrator"))
+                            put("FeatureDescription", JsonPrimitive("Actuators"))
                             put("FeatureIndex", JsonPrimitive(0))
                             put("Output", buildJsonObject {
                                 put("Vibrate", buildJsonObject {
                                     put("Value", JsonArray(listOf(JsonPrimitive(0), JsonPrimitive(20))))
+                                })
+                                put("Rotate", buildJsonObject {
+                                    put("Value", JsonArray(listOf(JsonPrimitive(0), JsonPrimitive(20))))
+                                })
+                                put("HwPositionWithDuration", buildJsonObject {
+                                    put("Value", JsonArray(listOf(JsonPrimitive(0), JsonPrimitive(100))))
+                                    put("Duration", JsonArray(listOf(JsonPrimitive(0), JsonPrimitive(60000))))
                                 })
                             })
                         })
@@ -511,7 +523,7 @@ class ButtplugClientTest {
 
         val command = payload["Command"]?.jsonObject
         val vibrate = command?.get("Vibrate")?.jsonObject
-        assertEquals(0.5, vibrate?.get("Value")?.jsonPrimitive?.doubleOrNull)
+        assertEquals(10, vibrate?.get("Value")?.jsonPrimitive?.intOrNull)
     }
 
     @Test
@@ -527,7 +539,7 @@ class ButtplugClientTest {
         assertEquals("OutputCmd", mockState.lastMessageKey)
         val command = mockState.lastMessagePayload!!["Command"]?.jsonObject
         val rotate = command?.get("Rotate")?.jsonObject
-        assertEquals(0.75, rotate?.get("Value")?.jsonPrimitive?.doubleOrNull)
+        assertEquals(15, rotate?.get("Value")?.jsonPrimitive?.intOrNull)
     }
 
     @Test

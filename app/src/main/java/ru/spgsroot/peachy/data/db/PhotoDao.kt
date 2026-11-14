@@ -23,6 +23,9 @@ interface PhotoDao {
     @Update
     suspend fun update(photo: PhotoEntity)
 
+    @Query("UPDATE photos SET title = :title, filePath = :filePath, thumbnailPath = :thumbnailPath, addedAt = :addedAt, fileSize = :fileSize, width = :width, height = :height WHERE id = :id")
+    suspend fun updateContent(id: Long, title: String, filePath: String, thumbnailPath: String?, addedAt: Long, fileSize: Long, width: Int, height: Int)
+
     @Query("DELETE FROM photos WHERE id = :id")
     suspend fun deleteById(id: Long)
 }

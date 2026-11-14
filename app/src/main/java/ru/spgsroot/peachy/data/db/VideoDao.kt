@@ -20,6 +20,9 @@ interface VideoDao {
     @Update
     suspend fun update(video: VideoEntity)
 
+    @Query("UPDATE videos SET title = :title, filePath = :filePath, duration = :duration, thumbnailPath = :thumbnailPath, addedAt = :addedAt, fileSize = :fileSize, isCorrupted = :isCorrupted WHERE id = :id")
+    suspend fun updateContent(id: Long, title: String, filePath: String, duration: Long, thumbnailPath: String?, addedAt: Long, fileSize: Long, isCorrupted: Boolean)
+
     @Delete
     suspend fun delete(video: VideoEntity)
 

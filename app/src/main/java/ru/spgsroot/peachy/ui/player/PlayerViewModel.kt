@@ -15,6 +15,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import ru.spgsroot.peachy.ui.gallery.MediaFilter
+import ru.spgsroot.peachy.ui.gallery.GalleryItem
+import ru.spgsroot.peachy.ui.gallery.galleryItems
+import ru.spgsroot.peachy.ui.gallery.filterGalleryItems
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ru.spgsroot.peachy.data.downloader.ExternalDownloader
@@ -63,6 +69,9 @@ class PlayerViewModel @Inject constructor(
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
 
     val playerState: StateFlow<PlayerState> = exoPlayerWrapper.state
+    val queue: StateFlow<List<Video>> = playlistManager.playlist
+    val query = MutableStateFlow("")
+    val filter = MutableStateFlow(MediaFilter())
 
     init {
         observePlaylist()
@@ -88,7 +97,10 @@ class PlayerViewModel @Inject constructor(
 
     private fun loadVideosToPlaylist() {
         viewModelScope.launch {
-            videos.collectLatest { playlist ->
+            combine(videos, query, filter) { videos, query, filter ->
+                galleryItems(videos, emptyList(), query, filter)
+                    .filterIsInstance<GalleryItem.VideoItem>().map { it.video }
+            }.flowOn(Dispatchers.Default).collectLatest { playlist ->
                 playlistManager.setPlaylist(playlist)
             }
         }
@@ -96,8 +108,8 @@ class PlayerViewModel @Inject constructor(
 
     private fun observePlaylist() {
         viewModelScope.launch {
-            playlistManager.playlist.collectLatest { playlist ->
-                _uiState.value = if (playlist.isEmpty()) {
+            videos.collectLatest { videos ->
+                _uiState.value = if (videos.isEmpty()) {
                     PlayerUiState.Empty
                 } else {
                     PlayerUiState.Ready

@@ -59,6 +59,7 @@ fun PlayerContent(
             update = { playerView ->
                 playerView.player = exoPlayerWrapper.getPlayer()
             },
+            onRelease = { it.player = null },
             modifier = Modifier
                 .fillMaxSize()
                 .align(Alignment.Center)
@@ -86,6 +87,7 @@ fun PlayerContent(
             onNext = onNext,
             onPrevious = onPrevious,
             onSeek = onSeek,
+            zoomScale = zoomScale,
             onZoomChange = onZoomChange,
             onPanChange = onPanChange,
             onResetZoom = onResetZoom,

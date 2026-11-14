@@ -60,6 +60,9 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import ru.spgsroot.peachy.R
+import ru.spgsroot.peachy.ui.HeaderSearch
+import ru.spgsroot.peachy.manga.SearchDestination
+import ru.spgsroot.peachy.manga.searchDestination
 import ru.spgsroot.peachy.manga.CatalogQuery
 import ru.spgsroot.peachy.manga.GalleryTag
 import ru.spgsroot.peachy.manga.TagFilter
@@ -96,6 +99,7 @@ fun MangaHubScreen(
     LaunchedEffect(randomFailed) { if (randomFailed) snackbar.showSnackbar(randomError) }
 
     val catalog by viewModel.catalog.collectAsStateWithLifecycle()
+    var queryText by rememberSaveable(catalog.query.text) { mutableStateOf(catalog.query.text) }
     val tagLibrary by viewModel.tagLibrary.collectAsStateWithLifecycle()
     val favoriteTags = remember(tagLibrary) { tagLibrary.favorites.toSet() }
 
@@ -174,7 +178,16 @@ fun MangaHubScreen(
             snackbarHost = { SnackbarHost(snackbar) },
             topBar = {
                 TopAppBar(
-                    title = { Text(stringResource(destination.label)) },
+                    title = {
+                        if (destination == HubDestination.Catalog) {
+                            HeaderSearch(queryText, { queryText = it }, stringResource(R.string.manga_search_hint)) {
+                                when (val target = searchDestination(queryText)) {
+                                    is SearchDestination.OpenGallery -> navController.navigate("manga/${target.id}")
+                                    SearchDestination.RunSearch -> viewModel.search(catalog.query.copy(text = queryText))
+                                }
+                            }
+                        } else Text(stringResource(destination.label))
+                    },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
                             Icon(Icons.Filled.Menu, stringResource(R.string.manga_menu_open))
@@ -206,7 +219,9 @@ fun MangaHubScreen(
                                 viewModel,
                                 onOpen = { navController.navigate("manga/$it") },
                                 showFilters = showFilters,
-                                onFiltersDismiss = { showFilters = false }
+                                onFiltersDismiss = { showFilters = false },
+                                text = queryText,
+                                onTextChange = { queryText = it }
                             )
                         }
                         HubDestination.Downloads -> MangaLibraryScreen(navController, viewModel, favoritesOnly = false)

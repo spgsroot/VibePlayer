@@ -51,7 +51,6 @@ class VaultDataTest {
         assertEquals(data, VaultData.fromJson(data.toJson()))
         assertEquals("photo/7.jpg", data.photos.first().entryName)
         assertEquals("photo_thumb/7", data.photos.first().thumbnailEntryName)
-        assertEquals(2, JSONObject(data.toJson()).getInt("format"))
     }
 
     @Test
@@ -68,7 +67,7 @@ class VaultDataTest {
 
     @Test
     fun versionTwoWithoutPhotosIsAccepted() {
-        val raw = JSONObject(empty().toJson()).apply { remove("photos") }
+        val raw = JSONObject(empty().toJson()).apply { put("format", 2); remove("photos"); remove("albums") }
         assertTrue(VaultData.fromJson(raw.toString()).photos.isEmpty())
     }
 
@@ -112,5 +111,18 @@ class VaultDataTest {
         val restored = VaultData.fromJson(raw.toString())
         assertEquals(-1, restored.entryCount)
         assertTrue(restored.photos.isEmpty())
+    }
+
+    @Test fun albumsAndMembershipSurviveRoundTrip() {
+        val data = empty().copy(
+            albums = listOf(ru.spgsroot.peachy.data.db.AlbumEntity(7, "Photo and video", 123)),
+            photos = listOf(VaultPhoto(9, "photo", 1, 4, 20, 10, "png", false, 7)),
+            videos = listOf(VaultVideo(9, "video", 4, 1, 8, false, "mp4", false, 7))
+        )
+        assertEquals(data, VaultData.fromJson(data.toJson()))
+        val orphan = data.copy(albums = emptyList())
+        assertEquals(VaultError.CORRUPT, org.junit.Assert.assertThrows(VaultException::class.java) {
+            VaultData.fromJson(orphan.toJson())
+        }.error)
     }
 }

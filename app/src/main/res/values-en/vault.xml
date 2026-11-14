@@ -5,7 +5,7 @@
     <string name="vault_import_button">Import library from a file</string>
     <string name="vault_export_title">Export library</string>
     <string name="vault_import_title">Import library</string>
-    <string name="vault_export_hint">Everything goes into one encrypted .peachy file: videos with covers, photos with thumbnails, saved galleries and pages, history, tags, notes, bookmarks. The PIN and device settings stay on this phone. The file can be large.</string>
+    <string name="vault_export_hint">One encrypted .peachy file contains videos with covers, photos with thumbnails, albums, saved manga and pages, history, tags, notes and bookmarks. The app password and device settings stay on this phone. The file can be large.</string>
     <string name="vault_import_hint">Enter the password the file was exported with. Imported data is added to the library; nothing on this phone is overwritten or deleted.</string>
     <string name="vault_password">Password</string>
     <string name="vault_password_repeat">Repeat password</string>

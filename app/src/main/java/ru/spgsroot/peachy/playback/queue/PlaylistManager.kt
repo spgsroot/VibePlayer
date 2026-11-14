@@ -12,7 +12,8 @@ class PlaylistManager @Inject constructor() {
     val playlist: StateFlow<List<Video>> = _playlist
 
     private val lock = Any()
-    private var currentIndex = 0
+    // Playback may remain outside the filtered queue until the user advances.
+    private var currentVideo: Video? = null
     private var onCurrentVideoRemovedCallback: ((Video?) -> Unit)? = null
 
     fun setOnCurrentVideoRemovedListener(callback: (Video?) -> Unit) {
@@ -20,84 +21,56 @@ class PlaylistManager @Inject constructor() {
     }
 
     fun current(): Video? = synchronized(lock) {
-        _playlist.value.getOrNull(currentIndex)
+        currentVideo
     }
 
     fun next(): Video? = synchronized(lock) {
-        if (_playlist.value.isEmpty()) return null
-        currentIndex = (currentIndex + 1) % _playlist.value.size
-        _playlist.value.getOrNull(currentIndex)
+        val videos = _playlist.value
+        if (videos.isEmpty()) return null
+        val index = videos.indexOfFirst { it.id == currentVideo?.id }
+        videos[(index + 1) % videos.size].also { currentVideo = it }
     }
 
     fun previous(): Video? = synchronized(lock) {
-        if (_playlist.value.isEmpty()) return null
-        currentIndex = if (currentIndex - 1 < 0) _playlist.value.size - 1 else currentIndex - 1
-        _playlist.value.getOrNull(currentIndex)
+        val videos = _playlist.value
+        if (videos.isEmpty()) return null
+        val index = videos.indexOfFirst { it.id == currentVideo?.id }
+        videos[if (index <= 0) videos.lastIndex else index - 1].also { currentVideo = it }
     }
 
     fun addVideo(video: Video) = synchronized(lock) {
         _playlist.value = _playlist.value + video
+        if (currentVideo == null) currentVideo = video
     }
 
     fun removeVideo(video: Video): Boolean {
-        var wasCurrent = false
-        val nextCurrent = synchronized(lock) {
+        val replacement = synchronized(lock) {
             val oldList = _playlist.value
-            val oldIndex = currentIndex
-            val currentId = oldList.getOrNull(oldIndex)?.id
-            wasCurrent = video.id == currentId
-
+            val oldIndex = oldList.indexOfFirst { it.id == currentVideo?.id }
+            val wasCurrent = video.id == currentVideo?.id
             val newList = oldList.filter { it.id != video.id }
             _playlist.value = newList
-
-            currentIndex = when {
-                newList.isEmpty() -> 0
-                wasCurrent && oldIndex >= newList.size -> 0
-                wasCurrent -> oldIndex
-                currentId != null -> newList.indexOfFirst { it.id == currentId }
-                    .takeIf { it >= 0 }
-                    ?: oldIndex.coerceIn(0, newList.lastIndex)
-                else -> 0
-            }
-
-            if (wasCurrent) newList.getOrNull(currentIndex) else null
+            if (!wasCurrent) return false
+            val next = newList.getOrNull(oldIndex.coerceAtLeast(0)) ?: newList.firstOrNull()
+            currentVideo = next
+            next
         }
-
-        if (wasCurrent) {
-            // If the removed video was current, notify listener with the already selected replacement.
-            onCurrentVideoRemovedCallback?.invoke(nextCurrent)
-        }
-
-        return wasCurrent
+        onCurrentVideoRemovedCallback?.invoke(replacement)
+        return true
     }
 
     fun shuffle() = synchronized(lock) {
-        val currentId = _playlist.value.getOrNull(currentIndex)?.id
-        val shuffled = _playlist.value.shuffled()
-        _playlist.value = shuffled
-        currentIndex = currentId
-            ?.let { id -> shuffled.indexOfFirst { it.id == id } }
-            ?.takeIf { it >= 0 }
-            ?: 0
+        _playlist.value = _playlist.value.shuffled()
     }
 
     fun setPlaylist(videos: List<Video>) = synchronized(lock) {
-        val currentId = _playlist.value.getOrNull(currentIndex)?.id
         _playlist.value = videos
-        currentIndex = currentId
-            ?.let { id -> videos.indexOfFirst { it.id == id } }
-            ?.takeIf { it >= 0 }
-            ?: 0
+        currentVideo = if (currentVideo == null) videos.firstOrNull()
+            else videos.firstOrNull { it.id == currentVideo?.id } ?: currentVideo
     }
 
-    fun selectVideo(video: Video): Boolean = synchronized(lock) {
-        val index = _playlist.value.indexOfFirst { it.id == video.id }
-        if (index >= 0) {
-            currentIndex = index
-            true
-        } else {
-            false
-        }
+    fun selectVideo(video: Video) = synchronized(lock) {
+        currentVideo = video
     }
 
     fun isEmpty() = synchronized(lock) { _playlist.value.isEmpty() }

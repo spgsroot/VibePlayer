@@ -2,12 +2,12 @@
 <resources>
     <string name="app_name">Peachy</string>
     <!-- Auth -->
-    <string name="enter_pin">Enter PIN-code</string>
+    <string name="enter_pin">Enter password</string>
     <string name="verifying">Verifying...</string>
-    <string name="invalid_pin">Invalid PIN</string>
-    <string name="enter_4_digits">Enter 4 digits</string>
+    <string name="invalid_pin">Invalid password</string>
+    <string name="enter_4_digits">Enter a password of any length</string>
     <string name="delete">Delete</string>
-    <string name="btn_set_password">Set PIN</string>
+    <string name="btn_set_password">Set password</string>
     <!-- Settings -->
     <string name="settings_title">Settings</string>
     <string name="settings_device">Device</string>
@@ -29,7 +29,8 @@
 
     <!-- Support -->
     <string name="support_title">Support</string>
-    <string name="support_ton">TON:</string>
+    <string name="support_sol">Sol:</string>
+    <string name="support_github">GitHub · Peachy</string>
 
     <!-- Language -->
     <string name="language_label">Language</string>
@@ -62,7 +63,7 @@
     <string name="error_invalid_url">Enter a valid http/https URL</string>
     <string name="error_webview_https">Open an HTTPS page</string>
     <string name="auth_locked_seconds">Try again in %1$d s</string>
-    <string name="auth_reset_required">This PIN format is no longer accepted. Set a new PIN.</string>
+    <string name="auth_reset_required">This password format is no longer accepted. Set a new password.</string>
     <string name="label_url">URL</string>
     <string name="downloading">Downloading…</string>
     <string name="download_in_progress">Downloading video and adding to library…</string>
@@ -150,14 +151,14 @@
     <string name="manga_apply_filters">Apply</string>
 
     <!-- Password Dialog -->
-    <string name="dialog_set_password">Set PIN</string>
-    <string name="dialog_change_password">Change PIN</string>
-    <string name="password_hint">A 4-digit PIN locks the app</string>
-    <string name="label_current_password">Current PIN</string>
-    <string name="label_password">PIN</string>
-    <string name="label_confirm_password">Confirm PIN</string>
-    <string name="error_password_min_length">Enter 4 digits</string>
-    <string name="error_passwords_mismatch">PINs do not match</string>
+    <string name="dialog_set_password">Set password</string>
+    <string name="dialog_change_password">Change password</string>
+    <string name="password_hint">Any length: letters, numbers and symbols. Keep your password safe.</string>
+    <string name="label_current_password">Current password</string>
+    <string name="label_password">Password</string>
+    <string name="label_confirm_password">Confirm password</string>
+    <string name="error_password_min_length">Enter a non-empty password</string>
+    <string name="error_passwords_mismatch">Passwords do not match</string>
     <string name="error_current_password_wrong">Wrong current password</string>
     <string name="btn_set">Set</string>
     <string name="btn_change">Change</string>
@@ -211,8 +212,8 @@
     <string name="btn_open_webview">Open</string>
 
     <!-- Auth Screen -->
-    <string name="auth_enter_password">Enter PIN</string>
-    <string name="auth_wrong_password">Wrong PIN</string>
+    <string name="auth_enter_password">Enter password</string>
+    <string name="auth_wrong_password">Wrong password</string>
     <string name="btn_login">Login</string>
 
     <!-- Content Descriptions -->

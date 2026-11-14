@@ -92,12 +92,15 @@ class VaultManager @Inject constructor(
         val resolver = context.contentResolver
         val operationContext = currentCoroutineContext()
         try {
-            val videos = videoDao.getAllNow()
+            val (videoEntities, photoEntities, albums) = database.withTransaction {
+                Triple(videoDao.getAllNow(), database.photoDao().getAllNow(), database.albumDao().getAllNow())
+            }
+            val videos = videoEntities
                 .mapNotNull { entity -> File(entity.filePath).takeIf { it.isFile }?.let { entity to it } }
             val thumbnails = videos.associate { (entity, _) ->
                 entity.id to entity.thumbnailPath?.let(::File)?.takeIf { it.isFile }
             }
-            val photos = database.photoDao().getAllNow()
+            val photos = photoEntities
                 .mapNotNull { entity -> File(entity.filePath).takeIf { it.isFile }?.let { entity to it } }
             val photoThumbnails = photos.associate { (entity, _) ->
                 entity.id to entity.thumbnailPath?.let(::File)?.takeIf { it.isFile }
@@ -113,7 +116,7 @@ class VaultManager @Inject constructor(
                 videos = videos.map { (entity, file) ->
                     VaultVideo(
                         entity.id, entity.title, entity.duration, entity.addedAt, file.length(), entity.isCorrupted,
-                        extensionOf(file), thumbnails[entity.id] != null
+                        extensionOf(file), thumbnails[entity.id] != null, entity.albumId
                     )
                 },
                 galleries = galleries,
@@ -132,9 +135,10 @@ class VaultManager @Inject constructor(
                 photos = photos.map { (entity, file) ->
                     VaultPhoto(
                         entity.id, entity.title, entity.addedAt, file.length(), entity.width, entity.height,
-                        photoExtensionOf(file), photoThumbnails[entity.id] != null
+                        photoExtensionOf(file), photoThumbnails[entity.id] != null, entity.albumId
                     )
-                }
+                },
+                albums = albums
             )
 
             val raw = resolver.openOutputStream(target, "wt") ?: throw IOException("Could not open the file")
@@ -334,7 +338,7 @@ class VaultManager @Inject constructor(
                 ) throw VaultException(VaultError.CORRUPT, "Vault entries do not match its metadata")
 
                 // The stream has been authenticated to its end; only now touch the rest of the database.
-                applyData(data, idMap)
+                applyData(data, idMap, added.mapValues { it.value.id }, addedPhotos.mapValues { it.value.id })
                 VaultImportResult(
                     videosAdded = added.size,
                     videosSkipped = skipped,
@@ -366,7 +370,7 @@ class VaultManager @Inject constructor(
         }
     }
 
-    private suspend fun applyData(data: VaultData, idMap: Map<Long, Long>) {
+    private suspend fun applyData(data: VaultData, idMap: Map<Long, Long>, newVideos: Map<Long, Long>, newPhotos: Map<Long, Long>) {
         val notes = data.notes
             .filter { it.kind in NoteKind.ALL }
             .map { it.copy(text = it.text.take(NoteRepository.MAX_LENGTH)) }
@@ -377,6 +381,22 @@ class VaultManager @Inject constructor(
             }
 
         database.withTransaction {
+            val albumDao = database.albumDao()
+            val localAlbums = albumDao.getAllNow().groupBy { it.name to it.createdAt }
+                .mapValues { (_, albums) -> ArrayDeque(albums) }
+            val albumIds = data.albums.associate { incoming ->
+                val local = localAlbums[incoming.name to incoming.createdAt]?.removeFirstOrNull()
+                    ?: incoming.copy(id = albumDao.insert(incoming.copy(id = 0)))
+                incoming.id to local.id
+            }
+            for (video in data.videos) {
+                val newId = newVideos[video.id] ?: continue
+                video.albumId?.let { albumDao.moveVideos(listOf(newId), albumIds.getValue(it)) }
+            }
+            for (photo in data.photos) {
+                val newId = newPhotos[photo.id] ?: continue
+                photo.albumId?.let { albumDao.movePhotos(listOf(newId), albumIds.getValue(it)) }
+            }
             val haveGalleries = libraryDao.getAll().associateBy { it.id }
             for (gallery in data.galleries) {
                 val have = haveGalleries[gallery.id]

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -34,11 +35,14 @@ import ru.spgsroot.peachy.compress.SourceInfo
 import ru.spgsroot.peachy.compress.VideoProbe
 import java.io.File
 import javax.inject.Inject
+import ru.spgsroot.peachy.data.repository.AlbumRepository
+import kotlinx.coroutines.CancellationException
 
 
 /** What the compression dialog needs: how many videos, their facts once read. */
 data class CompressDialogState(val count: Int, val sources: List<SourceInfo>?)
 
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @HiltViewModel
 class GalleryViewModel @Inject constructor(
     private val videoRepository: VideoRepository,
@@ -48,17 +52,39 @@ class GalleryViewModel @Inject constructor(
     private val videoExporter: VideoExporter,
     private val notes: NoteRepository,
     private val compressionManager: CompressionManager,
-    private val photoRepository: PhotoRepository
+    private val photoRepository: PhotoRepository,
+    private val albumRepository: AlbumRepository
 ) : ViewModel() {
 
     private val _videos = MutableStateFlow<List<Video>>(emptyList())
     val videos: StateFlow<List<Video>> = _videos.asStateFlow()
+    val albums = albumRepository.observe().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val albumError = MutableStateFlow(false)
+
+    private fun albumAction(action: suspend () -> Unit) {
+        viewModelScope.launch {
+            try { action() } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { albumError.value = true }
+        }
+    }
+
+    fun createAlbum(name: String, onCreated: (Long) -> Unit = {}) = albumAction { onCreated(albumRepository.create(name)) }
+    fun renameAlbum(id: Long, name: String) = albumAction { albumRepository.rename(id, name) }
+    fun deleteAlbum(id: Long) = albumAction { albumRepository.delete(id) }
+    fun moveToAlbum(chosen: List<GalleryIdentity>, albumId: Long?) = albumAction {
+        albumRepository.move(chosen.filter { it.type == GalleryMediaType.Video }.map { it.id },
+            chosen.filter { it.type == GalleryMediaType.Photo }.map { it.id }, albumId)
+        clearSelection()
+    }
 
     private val _photos = MutableStateFlow<List<PhotoEntity>>(emptyList())
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
-    val items: StateFlow<List<GalleryItem>> = combine(_videos, _photos, _query, ::galleryItems)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    private val _filter = MutableStateFlow(MediaFilter())
+    val filter: StateFlow<MediaFilter> = _filter.asStateFlow()
+    val items: StateFlow<List<GalleryItem>> = combine(_videos, _photos, _query, _filter) { videos, photos, query, filter ->
+        galleryItems(videos, photos, query, filter)
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _selectedItems = MutableStateFlow<Set<GalleryIdentity>>(emptySet())
     val selectedItems: StateFlow<Set<GalleryIdentity>> = _selectedItems.asStateFlow()
@@ -98,6 +124,8 @@ class GalleryViewModel @Inject constructor(
         _query.value = query
     }
 
+    fun setFilter(filter: MediaFilter) { _filter.value = filter }
+
     fun toggleSelection(identity: GalleryIdentity) {
         val current = _selectedItems.value
         _selectedItems.value = if (identity in current) current - identity else current + identity
@@ -116,13 +144,14 @@ class GalleryViewModel @Inject constructor(
     private val _compressDialog = MutableStateFlow<CompressDialogState?>(null)
     /** Non-null while the compression dialog is open. */
     val compressDialog: StateFlow<CompressDialogState?> = _compressDialog.asStateFlow()
+    private var compressionTargets: List<Video> = emptyList()
 
     val compression: StateFlow<CompressionState> = compressionManager.state
 
     /** Opens the dialog at once and fills in the facts about the selected files as they are read. */
-    fun openCompress() {
-        val chosen = selectedVideos()
+    fun openCompress(chosen: List<Video>) {
         if (chosen.isEmpty() || compression.value is CompressionState.Running) return
+        compressionTargets = chosen.toList()
         _compressDialog.value = CompressDialogState(chosen.size, null)
         viewModelScope.launch {
             val sources = withContext(Dispatchers.IO) { chosen.mapNotNull { VideoProbe.read(File(it.filePath)) } }
@@ -132,11 +161,13 @@ class GalleryViewModel @Inject constructor(
 
     fun closeCompress() {
         _compressDialog.value = null
+        compressionTargets = emptyList()
     }
 
     fun compressSelected(settings: CompressionSettings) {
-        val chosen = selectedVideos()
+        val chosen = compressionTargets
         _compressDialog.value = null
+        compressionTargets = emptyList()
         if (chosen.isEmpty()) return
         compressionManager.start(chosen, settings)
         clearSelection()
@@ -265,15 +296,7 @@ class GalleryViewModel @Inject constructor(
     }
 
     fun playVideo(video: Video) {
-        if (!playlistManager.selectVideo(video)) {
-            val playlist = if (_videos.value.any { it.id == video.id }) {
-                _videos.value
-            } else {
-                _videos.value + video
-            }
-            playlistManager.setPlaylist(playlist)
-            playlistManager.selectVideo(video)
-        }
+        playlistManager.selectVideo(video)
         exoPlayerWrapper.play(video)
     }
 }

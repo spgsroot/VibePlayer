@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="media_clear_search">Clear search</string>
+    <string name="media_filters">Sort and filter</string>
+    <string name="media_sort_newest">Newest first</string>
+    <string name="media_sort_name_asc">Name · A–Z</string>
+    <string name="media_sort_name_desc">Name · Z–A</string>
+    <string name="media_sort_size_asc">Size · smallest first</string>
+    <string name="media_sort_size_desc">Size · largest first</string>
+    <string name="media_min_size">Minimum size (MiB)</string>
+    <string name="media_max_size">Maximum size (MiB)</string>
+    <string name="media_size_range_error">Enter non-negative sizes; maximum must not be below minimum</string>
+    <string name="media_all">All</string>
+    <string name="media_videos">Videos</string>
+    <string name="media_photos">Photos</string>
+    <string name="media_queue">Playback queue</string>
+    <string name="media_compress_one">Compress this video</string>
+    <string name="media_compress_visible">Compress filtered videos</string>
+    <string name="media_size_unknown">Size unknown</string>
+    <string name="media_brightness">Brightness</string>
+    <string name="media_volume">Volume</string>
+</resources>

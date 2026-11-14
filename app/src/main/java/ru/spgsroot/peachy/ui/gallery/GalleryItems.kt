@@ -15,26 +15,33 @@ sealed interface GalleryItem {
     val identity: GalleryIdentity
     val title: String
     val addedAt: Long
+    val fileSize: Long
+    val albumId: Long?
 
     data class VideoItem(val video: Video) : GalleryItem {
         override val identity = GalleryIdentity(GalleryMediaType.Video, video.id)
         override val title get() = video.title
         override val addedAt get() = video.addedAt
+        override val fileSize get() = video.fileSize
+        override val albumId get() = video.albumId
     }
 
     data class PhotoItem(val photo: PhotoEntity) : GalleryItem {
         override val identity = GalleryIdentity(GalleryMediaType.Photo, photo.id)
         override val title get() = photo.title
         override val addedAt get() = photo.addedAt
+        override val fileSize get() = photo.fileSize
+        override val albumId get() = photo.albumId
     }
 }
 
 /** Titles only; repository emission order cannot affect equal-timestamp ordering. */
-fun galleryItems(videos: List<Video>, photos: List<PhotoEntity>, query: String): List<GalleryItem> =
-    (videos.map { GalleryItem.VideoItem(it) } + photos.map { GalleryItem.PhotoItem(it) })
-        .filter { it.title.contains(query, ignoreCase = true) }
-        .sortedWith(compareByDescending<GalleryItem> { it.addedAt }
-            .thenBy { it.identity.type.ordinal }.thenBy { it.identity.id })
+fun galleryItems(videos: List<Video>, photos: List<PhotoEntity>, query: String, filter: MediaFilter = MediaFilter()): List<GalleryItem> =
+    filterGalleryItems(
+        (videos.map { GalleryItem.VideoItem(it) } + photos.map { GalleryItem.PhotoItem(it) })
+            .filter { it.title.contains(query, ignoreCase = true) },
+        filter
+    )
 
 fun Set<GalleryIdentity>.allowsVideoActions(): Boolean =
     isNotEmpty() && all { it.type == GalleryMediaType.Video }

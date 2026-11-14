@@ -2,12 +2,12 @@
 <resources>
     <string name="app_name">Peachy</string>
     <!-- Auth -->
-    <string name="enter_pin">Введите PIN-код</string>
+    <string name="enter_pin">Введите пароль</string>
     <string name="verifying">Проверка...</string>
-    <string name="invalid_pin">Неверный PIN</string>
-    <string name="enter_4_digits">Введите 4 цифры</string>
+    <string name="invalid_pin">Неверный пароль</string>
+    <string name="enter_4_digits">Введите пароль любой длины</string>
     <string name="delete">Удалить</string>
-    <string name="btn_set_password">Задать PIN</string>
+    <string name="btn_set_password">Задать пароль</string>
     <!-- Settings -->
     <string name="settings_title">Настройки</string>
     <string name="settings_device">Устройство</string>
@@ -29,7 +29,8 @@
 
     <!-- Support -->
     <string name="support_title">Поддержка</string>
-    <string name="support_ton">TON:</string>
+    <string name="support_sol">Sol:</string>
+    <string name="support_github">GitHub · Peachy</string>
 
     <!-- Language -->
     <string name="language_label">Язык</string>
@@ -62,7 +63,7 @@
     <string name="error_invalid_url">Введите корректный http/https URL</string>
     <string name="error_webview_https">Откройте сайт по HTTPS</string>
     <string name="auth_locked_seconds">Повтор через %1$d с</string>
-    <string name="auth_reset_required">Старый PIN больше не действует. Задайте новый.</string>
+    <string name="auth_reset_required">Старый формат пароля больше не действует. Задайте новый.</string>
     <string name="label_url">URL</string>
     <string name="downloading">Скачивание…</string>
     <string name="download_in_progress">Скачиваю видео и добавляю его в библиотеку…</string>
@@ -150,14 +151,14 @@
     <string name="manga_apply_filters">Применить</string>
 
     <!-- Password Dialog -->
-    <string name="dialog_set_password">Задать PIN</string>
-    <string name="dialog_change_password">Сменить PIN</string>
-    <string name="password_hint">PIN из 4 цифр закрывает приложение</string>
-    <string name="label_current_password">Текущий PIN</string>
-    <string name="label_password">PIN</string>
-    <string name="label_confirm_password">Повторите PIN</string>
-    <string name="error_password_min_length">Введите 4 цифры</string>
-    <string name="error_passwords_mismatch">PIN не совпадают</string>
+    <string name="dialog_set_password">Задать пароль</string>
+    <string name="dialog_change_password">Сменить пароль</string>
+    <string name="password_hint">Пароль любой длины: буквы, цифры и символы. Не забудьте его.</string>
+    <string name="label_current_password">Текущий пароль</string>
+    <string name="label_password">Пароль</string>
+    <string name="label_confirm_password">Повторите пароль</string>
+    <string name="error_password_min_length">Введите непустой пароль</string>
+    <string name="error_passwords_mismatch">Пароли не совпадают</string>
     <string name="error_current_password_wrong">Неверный текущий пароль</string>
     <string name="btn_set">Установить</string>
     <string name="btn_change">Сменить</string>
@@ -211,8 +212,8 @@
     <string name="btn_open_webview">Открыть</string>
 
     <!-- Auth Screen -->
-    <string name="auth_enter_password">Введите PIN</string>
-    <string name="auth_wrong_password">Неверный PIN</string>
+    <string name="auth_enter_password">Введите пароль</string>
+    <string name="auth_wrong_password">Неверный пароль</string>
     <string name="btn_login">Войти</string>
 
     <!-- Content Descriptions -->

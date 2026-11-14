@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -34,6 +35,7 @@ fun PhotoItemCard(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onRename: () -> Unit,
+    onMove: () -> Unit,
     onDelete: () -> Unit
 ) {
     val imageData by produceState(photo.filePath, photo.thumbnailPath, photo.filePath) {
@@ -55,9 +57,11 @@ fun PhotoItemCard(
                 Column(Modifier.weight(1f)) {
                     PhotoTitle(photo.title)
                     Icon(Icons.Default.Image, stringResource(R.string.gallery_photo), modifier = Modifier.size(16.dp))
+                    Text(android.text.format.Formatter.formatShortFileSize(LocalContext.current, photo.fileSize),
+                        style = MaterialTheme.typography.labelSmall)
                 }
                 if (isSelected) Checkbox(true, null)
-                else PhotoMenu(onRename, onDelete, MaterialTheme.colorScheme.onSurfaceVariant)
+                else PhotoMenu(onRename, onDelete, onMove, MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     } else {
@@ -73,22 +77,18 @@ fun PhotoItemCard(
                     Icon(Icons.Default.Image, stringResource(R.string.gallery_photo), tint = Color.White,
                         modifier = Modifier.align(Alignment.TopStart).padding(8.dp).size(20.dp)
                             .background(Color.Black.copy(alpha = 0.6f)))
-                    if (layout != GalleryLayout.Large) {
-                        Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth()
-                            .background(Color.Black.copy(alpha = 0.6f)).padding(8.dp)) {
-                            PhotoTitle(photo.title, Color.White)
-                        }
-                    }
                     if (isSelected) {
                         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f))) {
                             Checkbox(true, null, Modifier.align(Alignment.TopEnd).padding(4.dp))
                         }
                     } else {
-                        Box(Modifier.align(Alignment.TopEnd)) { PhotoMenu(onRename, onDelete, Color.White) }
+                        Box(Modifier.align(Alignment.TopEnd)) { PhotoMenu(onRename, onDelete, onMove, Color.White) }
                     }
                 }
             }
-            if (layout == GalleryLayout.Large) PhotoTitle(photo.title)
+            PhotoTitle(photo.title)
+            Text(android.text.format.Formatter.formatShortFileSize(LocalContext.current, photo.fileSize),
+                style = MaterialTheme.typography.labelSmall)
         }
     }
 }
@@ -99,9 +99,8 @@ private fun PhotoTitle(title: String, color: Color = Color.Unspecified) {
         maxLines = 2, overflow = TextOverflow.Ellipsis)
 }
 
-/** Only operations applicable to a still image; video menus remain unchanged. */
 @Composable
-private fun PhotoMenu(onRename: () -> Unit, onDelete: () -> Unit, tint: Color) {
+private fun PhotoMenu(onRename: () -> Unit, onDelete: () -> Unit, onMove: () -> Unit, tint: Color) {
     var open by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { open = true }) {
@@ -113,6 +112,7 @@ private fun PhotoMenu(onRename: () -> Unit, onDelete: () -> Unit, tint: Color) {
                 onClick = { open = false; onRename() },
                 leadingIcon = { Icon(Icons.Default.Edit, null) }
             )
+            DropdownMenuItem(text = { Text(stringResource(R.string.album_move)) }, onClick = { open = false; onMove() })
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.menu_delete)) },
                 onClick = { open = false; onDelete() },

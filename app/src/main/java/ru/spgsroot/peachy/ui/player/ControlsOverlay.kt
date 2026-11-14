@@ -41,6 +41,7 @@ fun ControlsOverlay(
     onPrevious: () -> Unit,
     onSeek: (Long) -> Unit,
     onZoomChange: (Float) -> Unit,
+    zoomScale: Float,
     onPanChange: (Offset) -> Unit,
     onResetZoom: () -> Unit,
     deviceState: DeviceState,
@@ -48,50 +49,52 @@ fun ControlsOverlay(
     activeDeviceIndex: Int?
 ) {
     var controlsVisible by remember { mutableStateOf(true) }
-    var lastInteraction by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    var lastInteraction by remember { mutableLongStateOf(0L) }
+    var feedback by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(feedback) { if (feedback != null) { delay(1000); feedback = null } }
 
     fun showControls() {
         controlsVisible = true
-        lastInteraction = System.currentTimeMillis()
+        lastInteraction++
     }
 
-    // Автоматическое скрытие контролов через 3 секунды бездействия
-    LaunchedEffect(Unit) {
-        while (isActive) {
-            delay(250)
-            if (controlsVisible && System.currentTimeMillis() - lastInteraction >= 3000) {
-                controlsVisible = false
-            }
+    LaunchedEffect(lastInteraction, controlsVisible) {
+        if (controlsVisible) {
+            delay(3000)
+            controlsVisible = false
         }
     }
 
     // Обработчик жестов (тапы для отображения меню и масштабирование)
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .pointerInput(Unit) {
-                detectTransformGestures { _, pan, zoom, _ ->
-                    showControls()
-                    onZoomChange(zoom)
-                    onPanChange(pan)
-                }
-            }
+    BoxWithConstraints(
+        modifier = modifier.fillMaxSize()
+            .playerGestures(exoPlayerWrapper, zoomScale, onZoomChange, onPanChange, onSeek, ::showControls) { feedback = it }
             .pointerInput(Unit) {
                 detectTapGestures(
                     onTap = { showControls() },
-                    onDoubleTap = {
+                    onDoubleTap = { point ->
                         showControls()
-                        onResetZoom()
-                    }
+                        val duration = exoPlayerWrapper.getPlayer().duration.coerceAtLeast(0)
+                        val target = (exoPlayerWrapper.getCurrentPosition() + if (point.x < size.width / 2) -10_000 else 10_000).coerceIn(0, duration)
+                        onSeek(target)
+                        feedback = if (point.x < size.width / 2) "−10 s" else "+10 s"
+                    },
+                    onLongPress = { onResetZoom() }
                 )
             }
     ) {
+        val compact = maxHeight < 240.dp
+        feedback?.let {
+            Surface(Modifier.align(Alignment.TopEnd).padding(8.dp), color = Color.Black.copy(alpha = .8f), shape = MaterialTheme.shapes.small) {
+                Text(it, Modifier.padding(8.dp), color = Color.White)
+            }
+        }
         // Playback controls in center
         AnimatedVisibility(
             visible = controlsVisible,
             enter = fadeIn(),
             exit = fadeOut(),
-            modifier = Modifier.align(Alignment.Center)
+            modifier = Modifier.align(if (compact) Alignment.TopCenter else Alignment.Center)
         ) {
             PlaybackControls(
                 playerState = playerState,
@@ -125,7 +128,7 @@ fun ControlsOverlay(
                         showControls()
                     }
                 )
-                DeviceStatusBar(
+                if (!compact) DeviceStatusBar(
                     deviceState = deviceState,
                     devices = devices,
                     activeDeviceIndex = activeDeviceIndex

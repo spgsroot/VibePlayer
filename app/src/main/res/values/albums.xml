@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="album_title">Альбомы</string>
+    <string name="album_create">Создать альбом</string>
+    <string name="album_name">Название альбома</string>
+    <string name="album_move">Переместить в альбом</string>
+    <string name="album_unassigned">Без альбома</string>
+    <string name="album_delete_explanation">Удаляется только альбом. Его фото и видео останутся в библиотеке.</string>
+    <string name="album_failed">Не удалось изменить альбом. Повторите попытку.</string>
+</resources>

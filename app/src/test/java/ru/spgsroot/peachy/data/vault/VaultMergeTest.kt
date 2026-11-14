@@ -125,7 +125,7 @@ class VaultMergeTest {
         val newer = org.json.JSONObject(
             VaultData(0, emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList(),
                 emptyList(), emptyList(), emptyList(), null).toJson()
-        ).put("format", 3).toString()
+        ).put("format", VaultData.FORMAT + 1).toString()
         assertEquals(VaultError.UNSUPPORTED_VERSION, assertThrows(VaultException::class.java) { VaultData.fromJson(newer) }.error)
         assertEquals(VaultError.CORRUPT, assertThrows(VaultException::class.java) { VaultData.fromJson("{\"format\":1}") }.error)
         assertEquals(VaultError.CORRUPT, assertThrows(VaultException::class.java) { VaultData.fromJson("not json") }.error)

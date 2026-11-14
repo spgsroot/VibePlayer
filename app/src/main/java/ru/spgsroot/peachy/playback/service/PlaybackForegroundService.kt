@@ -29,6 +29,7 @@ import ru.spgsroot.peachy.playback.player.PlayerState
 import ru.spgsroot.peachy.playback.queue.PlaylistManager
 import javax.inject.Inject
 
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @AndroidEntryPoint
 class PlaybackForegroundService : Service() {
 

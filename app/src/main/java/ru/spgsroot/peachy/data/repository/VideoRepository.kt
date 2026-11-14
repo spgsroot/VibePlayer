@@ -18,7 +18,10 @@ class VideoRepository @Inject constructor(
 
     suspend fun insert(video: Video): Long = videoDao.insert(video.toEntity())
 
-    suspend fun update(video: Video) = videoDao.update(video.toEntity())
+    suspend fun update(video: Video) = videoDao.updateContent(
+        video.id, video.title, video.filePath, video.duration, video.thumbnailPath,
+        video.addedAt, video.fileSize, video.isCorrupted
+    )
 
     suspend fun delete(video: Video) = videoDao.delete(video.toEntity())
 
@@ -34,7 +37,8 @@ class VideoRepository @Inject constructor(
         thumbnailPath = thumbnailPath,
         addedAt = addedAt,
         fileSize = fileSize,
-        isCorrupted = isCorrupted
+        isCorrupted = isCorrupted,
+        albumId = albumId
     )
 
     private fun Video.toEntity() = VideoEntity(
@@ -45,6 +49,7 @@ class VideoRepository @Inject constructor(
         thumbnailPath = thumbnailPath,
         addedAt = addedAt,
         fileSize = fileSize,
-        isCorrupted = isCorrupted
+        isCorrupted = isCorrupted,
+        albumId = albumId
     )
 }

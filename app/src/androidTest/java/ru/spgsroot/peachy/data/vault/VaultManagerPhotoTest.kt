@@ -292,4 +292,40 @@ class VaultManagerPhotoTest {
             assertNull(reader.next())
         }
     }
+
+    @Test fun albumIdsRemapWithoutMovingLocalDuplicateMedia() = runBlocking {
+        val localAlbum = database.albumDao().insert(ru.spgsroot.peachy.data.db.AlbumEntity(7, "Local", 1))
+        val local = seedPhoto("existing")
+        database.albumDao().movePhotos(listOf(local.id), localAlbum)
+        val photo = meta(title = "incoming")
+        val duplicate = meta(8, "existing")
+        val metadata = data(listOf(photo, duplicate)).copy(
+            albums = listOf(ru.spgsroot.peachy.data.db.AlbumEntity(7, "Imported", 99)),
+            photos = listOf(photo.copy(albumId = 7), duplicate.copy(albumId = 7))
+        )
+        val file = archive(metadata) { writer -> writer.addPhoto(photo); writer.addPhoto(duplicate) }
+        manager.import(Uri.fromFile(file), password)
+        val albums = database.albumDao().getAllNow()
+        val importedAlbum = albums.single { it.name == "Imported" }
+        assertNotEquals(localAlbum, importedAlbum.id)
+        assertEquals(importedAlbum.id, database.photoDao().getAllNow().single { it.title == "incoming" }.albumId)
+        assertEquals(localAlbum, database.photoDao().getById(local.id)!!.albumId)
+    }
+
+    @Test fun sameNameAlbumsRemainDistinctAndRepeatedImportDoesNotAddEmptyAlbums() = runBlocking {
+        val first = meta(7, "first").copy(albumId = 4)
+        val second = meta(8, "second").copy(albumId = 5)
+        val metadata = data(listOf(first, second)).copy(albums = listOf(
+            ru.spgsroot.peachy.data.db.AlbumEntity(4, "Same name", 99),
+            ru.spgsroot.peachy.data.db.AlbumEntity(5, "Same name", 99)
+        ))
+        val file = archive(metadata) { writer -> writer.addPhoto(first); writer.addPhoto(second) }
+        manager.import(Uri.fromFile(file), password)
+        val photos = database.photoDao().getAllNow().associateBy { it.title }
+        assertNotEquals(photos.getValue("first").albumId, photos.getValue("second").albumId)
+        assertEquals(2, database.albumDao().getAllNow().size)
+        manager.import(Uri.fromFile(file), password)
+        assertEquals(2, database.albumDao().getAllNow().size)
+        assertEquals(photos.getValue("first").albumId, database.photoDao().getById(photos.getValue("first").id)!!.albumId)
+    }
 }

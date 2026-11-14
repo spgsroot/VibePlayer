@@ -7,12 +7,12 @@ import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
 
+@OptIn(UnstableApi::class)
 class DspRenderersFactory(
     context: Context,
     private val dspAudioProcessor: DspAudioProcessor
 ) : DefaultRenderersFactory(context) {
 
-    @OptIn(UnstableApi::class)
     override fun buildAudioSink(
         context: Context,
         enableFloatOutput: Boolean,

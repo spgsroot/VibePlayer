@@ -15,7 +15,10 @@ class PhotoRepository @Inject constructor(
 ) {
     fun getAll(): Flow<List<PhotoEntity>> = database.photoDao().getAll()
 
-    suspend fun update(photo: PhotoEntity) = database.photoDao().update(photo)
+    suspend fun update(photo: PhotoEntity) = database.photoDao().updateContent(
+        photo.id, photo.title, photo.filePath, photo.thumbnailPath, photo.addedAt,
+        photo.fileSize, photo.width, photo.height
+    )
 
     /** Keep the row if either deletion fails, so a user can retry rather than orphan private bytes. */
     suspend fun delete(photo: PhotoEntity): Unit = withContext(Dispatchers.IO) {

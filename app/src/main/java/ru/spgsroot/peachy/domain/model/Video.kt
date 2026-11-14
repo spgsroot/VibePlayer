@@ -8,5 +8,6 @@ data class Video(
     val thumbnailPath: String?,
     val addedAt: Long,
     val fileSize: Long,
-    val isCorrupted: Boolean
+    val isCorrupted: Boolean = false,
+    val albumId: Long? = null
 )

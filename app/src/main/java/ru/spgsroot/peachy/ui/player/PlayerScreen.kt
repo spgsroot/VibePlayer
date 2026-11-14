@@ -33,6 +33,8 @@ import ru.spgsroot.peachy.ui.dialog.WebViewUrlDialog
 import ru.spgsroot.peachy.ui.settings.SettingsDrawer
 import ru.spgsroot.peachy.ui.settings.SettingsViewModel
 import ru.spgsroot.peachy.ui.webview.WebViewActivity
+import ru.spgsroot.peachy.ui.HeaderSearch
+import ru.spgsroot.peachy.ui.gallery.MediaFilterButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,6 +45,15 @@ fun PlayerScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val playerState by viewModel.playerState.collectAsStateWithLifecycle()
+    val queue by viewModel.queue.collectAsStateWithLifecycle()
+    val query by viewModel.query.collectAsStateWithLifecycle()
+    val filter by viewModel.filter.collectAsStateWithLifecycle()
+    val currentId = when (val state = playerState) {
+        is PlayerState.Playing -> state.video.id
+        is PlayerState.Paused -> state.video.id
+        is PlayerState.Switching -> state.to.id
+        else -> null
+    }
     val deviceState by settingsViewModel.deviceState.collectAsStateWithLifecycle()
     val devices by settingsViewModel.devices.collectAsStateWithLifecycle()
     val activeDeviceIndex by settingsViewModel.activeDeviceIndex.collectAsStateWithLifecycle()
@@ -99,7 +110,7 @@ fun PlayerScreen(
                 // Скрываем TopAppBar в полноэкранном режиме
                 if (!isFullscreen) {
                     TopAppBar(
-                        title = { Text("Peachy") },
+                        title = { HeaderSearch(query, { viewModel.query.value = it }, stringResource(R.string.gallery_search_title)) },
                         navigationIcon = {
                             IconButton(onClick = {
                                 scope.launch { drawerState.open() }
@@ -108,6 +119,7 @@ fun PlayerScreen(
                             }
                         },
                         actions = {
+                            MediaFilterButton(filter, { viewModel.filter.value = it })
                             IconButton(onClick = { navController.navigate("gallery") }) {
                                 Icon(Icons.Default.VideoLibrary, stringResource(R.string.content_description_gallery))
                             }
@@ -129,13 +141,9 @@ fun PlayerScreen(
                         .padding(padding),
                     onAddVideoClick = { showAddDialog = true }
                 )
-                PlayerUiState.Ready -> Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(androidx.compose.ui.graphics.Color.Black)
-                ) {
+                PlayerUiState.Ready -> Column(Modifier.fillMaxSize().padding(if (isFullscreen) PaddingValues(0.dp) else padding)) {
                     PlayerContent(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.weight(1f),
                         playerState = playerState,
                         exoPlayerWrapper = viewModel.exoPlayerWrapper,
                         isFullscreen = isFullscreen,
@@ -169,15 +177,7 @@ fun PlayerScreen(
                         activeDeviceIndex = activeDeviceIndex
                     )
 
-                    if (!isFullscreen) {
-                        // TopAppBar padding overlay, чтобы видео не уходило под AppBar когда он виден
-                        Spacer(
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .fillMaxWidth()
-                                .height(padding.calculateTopPadding())
-                        )
-                    }
+                    if (!isFullscreen) QueueCarousel(queue, currentId, viewModel::playVideo)
                 }
             }
         }

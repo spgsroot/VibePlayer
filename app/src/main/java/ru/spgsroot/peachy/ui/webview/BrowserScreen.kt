@@ -3,6 +3,7 @@ package ru.spgsroot.peachy.ui.webview
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -66,7 +67,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -96,7 +96,7 @@ fun BrowserScreen(
     onCaptureChange: (Boolean) -> Unit,
     onClose: () -> Unit
 ) {
-    val activity = LocalContext.current as android.app.Activity
+    val activity = LocalActivity.current
     val tab = controller.active
     val bookmarks by viewModel.bookmarks.collectAsStateWithLifecycle()
     val history by viewModel.history.collectAsStateWithLifecycle()
@@ -139,8 +139,9 @@ fun BrowserScreen(
     }
 
     val fullscreen = controller.fullscreenView
-    LaunchedEffect(fullscreen != null) {
-        val bars = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
+    LaunchedEffect(activity, fullscreen != null) {
+        val window = activity?.window ?: return@LaunchedEffect
+        val bars = WindowCompat.getInsetsController(window, window.decorView)
         if (fullscreen != null) bars.hide(WindowInsetsCompat.Type.systemBars()) else bars.show(WindowInsetsCompat.Type.systemBars())
     }
 

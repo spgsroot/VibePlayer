@@ -87,14 +87,15 @@ fun CatalogScreen(
     viewModel: MangaViewModel,
     onOpen: (Int) -> Unit,
     showFilters: Boolean,
-    onFiltersDismiss: () -> Unit
+    onFiltersDismiss: () -> Unit,
+    text: String,
+    onTextChange: (String) -> Unit
 ) {
     val catalog by viewModel.catalog.collectAsStateWithLifecycle()
     val queries by viewModel.queries.collectAsStateWithLifecycle()
     val blockedIds by viewModel.blockedIds.collectAsStateWithLifecycle()
     val uploadDates by viewModel.uploadDates.collectAsStateWithLifecycle()
     val blockedNames by viewModel.blockedNames.collectAsStateWithLifecycle()
-    var text by rememberSaveable(catalog.query.text) { mutableStateOf(catalog.query.text) }
     val tagLibrary by viewModel.tagLibrary.collectAsStateWithLifecycle()
     val favoriteTags = remember(tagLibrary) { tagLibrary.favorites.toSet() }
     val gridState = rememberLazyGridState()
@@ -149,22 +150,6 @@ fun CatalogScreen(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        fullWidth {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                label = { Text(stringResource(R.string.manga_search_hint)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { submit(catalog.query.copy(text = text)) }),
-                trailingIcon = {
-                    IconButton(onClick = { submit(catalog.query.copy(text = text)) }) {
-                        Icon(Icons.Default.Search, stringResource(R.string.manga_search))
-                    }
-                }
-            )
-        }
         if (catalog.query.tags.isNotEmpty()) fullWidth {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 LazyRow(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -198,7 +183,7 @@ fun CatalogScreen(
                         items(queries.take(10), key = { it }) { previous ->
                             AssistChip(
                                 onClick = {
-                                    text = previous
+                                    onTextChange(previous)
                                     submit(CatalogQuery(text = previous, sort = catalog.query.sort))
                                 },
                                 label = { Text(previous, maxLines = 1, overflow = TextOverflow.Ellipsis) }

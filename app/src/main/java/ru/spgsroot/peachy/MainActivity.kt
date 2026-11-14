@@ -80,10 +80,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            WindowManager.LayoutParams.FLAG_SECURE
-        )
+        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         if (savedInstanceState == null) shareImportViewModel.enqueue(intent)
         // The app is dark in every system theme: light status and navigation bar icons.
         enableEdgeToEdge(
@@ -105,7 +102,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
-        if (::authSession.isInitialized) {
+        if (::authSession.isInitialized && !isChangingConfigurations) {
             authSession.lock()
         }
         super.onStop()
@@ -154,7 +151,7 @@ fun AppNavigation(authManager: AuthManager, authSession: AuthSession, shareImpor
     LaunchedEffect(Unit) {
         startDestination = when {
             !authManager.isOnboardingCompleted() -> "onboarding"
-            authManager.isPasswordSet() -> "auth"
+            authManager.isPasswordSet() && !authSession.unlocked.value -> "auth"
             else -> "player"
         }
     }

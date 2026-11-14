@@ -63,6 +63,7 @@ fun TranslationPanel(
         modifier,
         shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 3.dp
     ) {
         Column(Modifier.animateContentSize()) {

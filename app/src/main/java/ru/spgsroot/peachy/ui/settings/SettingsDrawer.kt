@@ -79,7 +79,7 @@ fun SettingsDrawer(
 
     val context = LocalContext.current
     val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
-    val tonWallet = "UQCGFymEHFNq1IcIhXBWJJe7Ha7Cx7RU6apvotRs5DcEEAaG"
+    val solWallet = "FB4B37LCd52dgVED5fR7Vj7CDttsa74CQyBc647agQP7"
 
     ModalDrawerSheet {
         LazyColumn(
@@ -275,21 +275,28 @@ fun SettingsDrawer(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // ═══════════════════════════════════════════
-            // SUPPORT SECTION (TON wallet)
-            // ═══════════════════════════════════════════
+            // Support links
             item {
                 Text(stringResource(R.string.support_title), style = MaterialTheme.typography.titleMedium)
 
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "${stringResource(R.string.support_ton)} $tonWallet",
+                    text = "${stringResource(R.string.support_sol)} $solWallet",
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.clickable {
-                        clipboardManager.setText(AnnotatedString(tonWallet))
+                        clipboardManager.setText(AnnotatedString(solWallet))
                     }
                 )
+                OutlinedButton(
+                    onClick = {
+                        context.startActivity(android.content.Intent(
+                            android.content.Intent.ACTION_VIEW,
+                            Uri.parse("https://github.com/spgsroot/Peachy")
+                        ))
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text(stringResource(R.string.support_github)) }
             }
         }
     }

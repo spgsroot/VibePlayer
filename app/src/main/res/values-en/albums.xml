@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="album_title">Albums</string>
+    <string name="album_create">Create album</string>
+    <string name="album_name">Album name</string>
+    <string name="album_move">Move to album</string>
+    <string name="album_unassigned">Not in an album</string>
+    <string name="album_delete_explanation">Only the album is deleted. Its photos and videos stay in your library.</string>
+    <string name="album_failed">Could not update the album. Please try again.</string>
+</resources>

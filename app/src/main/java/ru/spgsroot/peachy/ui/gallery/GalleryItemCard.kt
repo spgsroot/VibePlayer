@@ -40,6 +40,8 @@ private class CardActions(
     val onChangeThumbnail: () -> Unit,
     val hasNote: Boolean,
     val onNote: () -> Unit,
+    val onCompress: () -> Unit,
+    val onMove: () -> Unit,
     val onDelete: () -> Unit
 )
 
@@ -55,6 +57,8 @@ fun GalleryItemCard(
     onChangeThumbnailClick: () -> Unit,
     hasNote: Boolean,
     onNoteClick: () -> Unit,
+    onCompressClick: () -> Unit,
+    onMoveClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
     val imageData by produceState(
@@ -73,6 +77,8 @@ fun GalleryItemCard(
         onChangeThumbnail = onChangeThumbnailClick,
         hasNote = hasNote,
         onNote = onNoteClick,
+        onCompress = onCompressClick,
+        onMove = onMoveClick,
         onDelete = onDeleteClick
     )
     when (layout) {
@@ -82,47 +88,24 @@ fun GalleryItemCard(
     }
 }
 
-/** The 16:9 card with the title laid over the preview. */
+/** Compact tiles keep metadata outside the thumbnail so neither hides the other. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun WideCard(video: Video, imageData: Any, isSelected: Boolean, actions: CardActions) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(16f / 9f)
-            .combinedClickable(onClick = actions.onClick, onLongClick = actions.onLongClick),
-        colors = CardDefaults.cardColors(containerColor = Color.DarkGray),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Box {
-            Preview(video, imageData, Modifier.fillMaxSize())
-            if (isSelected) SelectedMark()
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .background(Color.Black.copy(alpha = 0.6f))
-                    .padding(8.dp)
-            ) {
-                Column {
-                    Text(
-                        text = video.title,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = formatDuration(video.duration),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.LightGray
-                    )
-                }
-            }
-            if (!isSelected) {
-                VideoMenu(actions, Color.White, Modifier.align(Alignment.TopEnd).padding(4.dp))
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Card(
+            modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)
+                .combinedClickable(onClick = actions.onClick, onLongClick = actions.onLongClick),
+            colors = CardDefaults.cardColors(containerColor = Color.DarkGray)
+        ) {
+            Box {
+                Preview(video, imageData, Modifier.fillMaxSize())
+                if (isSelected) SelectedMark()
+                else VideoMenu(actions, Color.White, Modifier.align(Alignment.TopEnd))
             }
         }
+        Text(video.title, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(videoDetails(video), style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -154,7 +137,7 @@ private fun PortraitCard(video: Video, imageData: Any, isSelected: Boolean, acti
             overflow = TextOverflow.Ellipsis
         )
         Text(
-            text = formatDuration(video.duration),
+            text = videoDetails(video),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -191,7 +174,7 @@ private fun RowCard(video: Video, imageData: Any, isSelected: Boolean, actions: 
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = formatDuration(video.duration),
+                    text = videoDetails(video),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -280,6 +263,16 @@ private fun VideoMenu(actions: CardActions, tint: Color, modifier: Modifier) {
                 }
             )
             DropdownMenuItem(
+                text = { Text(stringResource(R.string.media_compress_one)) },
+                onClick = { open = false; actions.onCompress() },
+                leadingIcon = { Icon(Icons.Default.Compress, null) }
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.album_move)) },
+                onClick = { open = false; actions.onMove() },
+                leadingIcon = { Icon(Icons.Default.Folder, null) }
+            )
+            DropdownMenuItem(
                 text = { Text(stringResource(R.string.menu_delete)) },
                 onClick = {
                     open = false
@@ -297,3 +290,7 @@ private fun formatDuration(durationMs: Long): String {
     val seconds = totalSeconds % 60
     return "%d:%02d".format(minutes, seconds)
 }
+
+@Composable
+private fun videoDetails(video: Video): String =
+    "${formatDuration(video.duration)} · ${android.text.format.Formatter.formatShortFileSize(LocalContext.current, video.fileSize)}"
