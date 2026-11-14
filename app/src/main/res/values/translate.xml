@@ -40,4 +40,12 @@
     <string name="consent_accept">Разрешить</string>
     <string name="consent_decline">Не разрешать</string>
     <string name="settings_translation_row">Перевод страниц</string>
+    <string name="translate_engine">Поиск текста</string>
+    <string name="translate_engine_model">Модель (рамки от модели)</string>
+    <string name="translate_engine_mlkit">ML Kit (на устройстве)</string>
+    <string name="translate_source">Язык оригинала</string>
+    <string name="translate_target">Переводить на</string>
+    <string name="translate_overlay">Показывать на странице</string>
+    <string name="language_auto">Авто</string>
+    <string name="language_app">Язык приложения</string>
 </resources>

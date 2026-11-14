@@ -47,6 +47,10 @@ Translated lines can carry an optional `Box` around their original text. Stored 
 The database and vault continue to treat the `lang` field as an opaque cache key. `TranslationKey.of(engine, source, target)` returns exactly `target` for Model + `auto`, preserving existing caches and backups. Other choices use `target|engine.wire|source`, for example `de|mlkit|ja`. Changing translation choices switches the reader's displayed state and batch to that key; cached entries under other keys remain available.
 
 
+## Overlay on the page
+
+With `overlay` on, a page with a finished translation draws each line that has a `Box` as a white plate over its original text, inside the same transformed box as the image, so zoom and pan carry the plates with the page. `fittedPage` maps the box fractions onto the part of the view the image really fills (bars at the sides or top are excluded). Font size is found by binary search so the text fits its plate. Lines without a box stay in the panel only. Settings (`TranslationSettingRows`) holds the engine, source language, target language and overlay rows.
+
 ## On-device page text recognition
 
 `PageOcr` is bound through Hilt to the singleton `MlKitPageOcr`. It uses ML Kit's bundled Latin,

@@ -40,4 +40,12 @@
     <string name="consent_accept">Allow</string>
     <string name="consent_decline">Do not allow</string>
     <string name="settings_translation_row">Page translation</string>
+    <string name="translate_engine">Text detection</string>
+    <string name="translate_engine_model">Model (boxes from the model)</string>
+    <string name="translate_engine_mlkit">ML Kit (on device)</string>
+    <string name="translate_source">Original language</string>
+    <string name="translate_target">Translate into</string>
+    <string name="translate_overlay">Show on the page</string>
+    <string name="language_auto">Auto</string>
+    <string name="language_app">App language</string>
 </resources>

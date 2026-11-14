@@ -118,6 +118,7 @@ import ru.spgsroot.peachy.manga.startPage
 import ru.spgsroot.peachy.manga.tapZone
 import ru.spgsroot.peachy.manga.TranslateMode
 import ru.spgsroot.peachy.translate.PageState
+import ru.spgsroot.peachy.translate.TranslatedLine
 import ru.spgsroot.peachy.translate.ProviderUrl
 import ru.spgsroot.peachy.ui.dialog.ProviderDialog
 import ru.spgsroot.peachy.ui.dialog.TranslateConsentDialog
@@ -300,6 +301,8 @@ private fun NativeReader(
                     tapOnY = tapOnY,
                     modifier = modifier,
                     viewportHeight = viewportHeight,
+                    lines = (pageStates[index] as? PageState.Done)
+                        ?.takeIf { settings.overlay }?.translation?.lines.orEmpty(),
                     onTap = onTap
                 )
             }
@@ -532,6 +535,7 @@ private fun NativeReader(
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
+                        TranslationSettingRows(settings, ::change)
                         SettingRow(
                             Icons.Default.Settings, R.string.settings_translation_row,
                             onClick = { providerDialog = true }
@@ -648,6 +652,7 @@ private fun ReaderPage(
     tapOnY: Boolean,
     modifier: Modifier,
     viewportHeight: androidx.compose.ui.unit.Dp,
+    lines: List<TranslatedLine>,
     onTap: (Float, Float) -> Unit
 ) {
     var aspect by remember(model) { mutableFloatStateOf(0.7f) }
@@ -682,25 +687,31 @@ private fun ReaderPage(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState())
         } else Modifier.fillMaxWidth()
         Box(container, contentAlignment = Alignment.Center) {
-            AsyncImage(
-                model = model,
-                contentDescription = stringResource(R.string.manga_jump_page, page + 1),
-                modifier = imageModifier.graphicsLayer {
+            // The image and the overlay share one box, so zoom and pan move the plates with the page.
+            Box(
+                imageModifier.graphicsLayer {
                     if (active) {
                         scaleX = zoom.zoom
                         scaleY = zoom.zoom
                         translationX = zoom.pan.x
                         translationY = zoom.pan.y
                     }
-                },
-                contentScale = if (fillWidth) ContentScale.FillWidth else ContentScale.Fit,
-                onSuccess = {
-                    val drawable = it.result.drawable
-                    if (drawable.intrinsicWidth > 0 && drawable.intrinsicHeight > 0) {
-                        aspect = drawable.intrinsicWidth.toFloat() / drawable.intrinsicHeight
-                    }
                 }
-            )
+            ) {
+                AsyncImage(
+                    model = model,
+                    contentDescription = stringResource(R.string.manga_jump_page, page + 1),
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = if (fillWidth) ContentScale.FillWidth else ContentScale.Fit,
+                    onSuccess = {
+                        val drawable = it.result.drawable
+                        if (drawable.intrinsicWidth > 0 && drawable.intrinsicHeight > 0) {
+                            aspect = drawable.intrinsicWidth.toFloat() / drawable.intrinsicHeight
+                        }
+                    }
+                )
+                TranslationOverlay(lines, aspect)
+            }
         }
     }
 }
