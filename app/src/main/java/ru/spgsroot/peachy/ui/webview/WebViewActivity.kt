@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.Bundle
@@ -12,9 +13,14 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -76,7 +82,11 @@ class WebViewActivity : ComponentActivity() {
             WindowManager.LayoutParams.FLAG_SECURE,
             WindowManager.LayoutParams.FLAG_SECURE
         )
-        enableEdgeToEdge()
+        // The app is dark in every system theme: light status and navigation bar icons.
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT)
+        )
 
         controller = BrowserController(
             activity = this,
@@ -90,13 +100,15 @@ class WebViewActivity : ComponentActivity() {
 
         setContent {
             PeachyTheme {
-                BrowserScreen(
-                    controller = controller,
-                    viewModel = viewModel,
-                    captureOn = captureOn,
-                    onCaptureChange = { wanted -> if (wanted) beginAudioCaptureFlow() else stopCapture() },
-                    onClose = ::finish
-                )
+                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                    BrowserScreen(
+                        controller = controller,
+                        viewModel = viewModel,
+                        captureOn = captureOn,
+                        onCaptureChange = { wanted -> if (wanted) beginAudioCaptureFlow() else stopCapture() },
+                        onClose = ::finish
+                    )
+                }
             }
         }
         if (intent.getBooleanExtra(EXTRA_CAPTURE, false)) beginAudioCaptureFlow()

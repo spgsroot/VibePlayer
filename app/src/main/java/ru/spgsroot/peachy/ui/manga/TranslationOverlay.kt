@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import ru.spgsroot.peachy.translate.Box as PageBox
 import ru.spgsroot.peachy.translate.LineKind
@@ -46,10 +47,11 @@ fun TranslationOverlay(lines: List<TranslatedLine>, pageAspect: Float, modifier:
     if (placed.isEmpty()) return
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
+    val base = LocalTextStyle.current
     BoxWithConstraints(modifier.fillMaxSize()) {
         val page = fittedPage(constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat(), pageAspect)
         placed.forEach { line ->
-            val plate = remember(line, page, density) { plateFor(line, page, measurer, density) }
+            val plate = remember(line, page, density, base) { plateFor(line, page, measurer, density, base) }
             Box(
                 Modifier
                     .offset { IntOffset(plate.rect.left.toInt(), plate.rect.top.toInt()) }
@@ -58,15 +60,7 @@ fun TranslationOverlay(lines: List<TranslatedLine>, pageAspect: Float, modifier:
                     .padding(horizontal = 2.dp, vertical = 1.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = line.translation,
-                    color = Color.Black,
-                    textAlign = TextAlign.Center,
-                    fontSize = plate.fontSize.sp,
-                    lineHeight = (plate.fontSize * 1.1f).sp,
-                    fontWeight = if (line.kind == LineKind.Sign) FontWeight.Bold else FontWeight.Medium,
-                    fontStyle = if (line.kind == LineKind.Thought) FontStyle.Italic else FontStyle.Normal
-                )
+                Text(text = line.translation, style = plateStyle(base, line.kind, plate.fontSize))
             }
         }
     }
@@ -89,14 +83,18 @@ private class Plate(val rect: Rect, val fontSize: Float)
 private const val MIN_READABLE_SP = 13f
 private const val MAX_SP = 22f
 private const val MIN_SP = 6f
-private val WIDENING = floatArrayOf(1f, 1.4f, 1.9f, 2.6f)
+/** Width and height growth steps; each keeps the centre of the original text and stays on the page. */
+private val GROWTH = arrayOf(1f to 1f, 1.4f to 1.15f, 1.9f to 1.3f, 2.6f to 1.5f, 3.2f to 1.8f)
 
 /**
  * Original Japanese text is often a narrow vertical strip; a translation set in a strip that narrow
- * would be unreadably small. The plate keeps its centre and widens (inside the page) until the text
- * reaches a readable size, or until the widest allowed plate, whichever comes first.
+ * would be unreadably small or break words in the middle. The plate keeps its centre and grows
+ * (inside the page, in both directions) until the text reaches a readable size, or until the
+ * largest allowed plate, whichever comes first. The text always fits the plate it is given.
  */
-private fun plateFor(line: TranslatedLine, page: Rect, measurer: TextMeasurer, density: Density): Plate {
+private fun plateFor(
+    line: TranslatedLine, page: Rect, measurer: TextMeasurer, density: Density, base: TextStyle
+): Plate {
     val box: PageBox = line.box!!
     val original = Rect(
         page.left + box.left * page.width,
@@ -105,32 +103,55 @@ private fun plateFor(line: TranslatedLine, page: Rect, measurer: TextMeasurer, d
         page.top + box.bottom * page.height
     )
     var best: Plate? = null
-    for (factor in WIDENING) {
-        val width = min(original.width * factor, page.width)
+    for ((widthFactor, heightFactor) in GROWTH) {
+        val width = min(original.width * widthFactor, page.width)
+        val height = min(original.height * heightFactor, page.height)
         val left = (original.center.x - width / 2f).coerceIn(page.left, page.right - width)
-        val rect = Rect(left, original.top, left + width, original.bottom)
-        val size = fit(line.translation, rect, measurer, density)
-        val candidate = Plate(rect, size)
-        if (best == null || size > best.fontSize) best = candidate
-        if (size >= MIN_READABLE_SP) break
+        val top = (original.center.y - height / 2f).coerceIn(page.top, page.bottom - height)
+        val rect = Rect(left, top, left + width, top + height)
+        val candidate = Plate(rect, fit(line, rect, measurer, density, base))
+        if (best == null || candidate.fontSize > best.fontSize) best = candidate
+        if (candidate.fontSize >= MIN_READABLE_SP) break
     }
-    return best!!
+    // Nothing fit (a very long text on a tiny plate): draw the largest plate at the smallest size.
+    return best!!.let { if (it.fontSize > 0f) it else Plate(it.rect, MIN_SP) }
 }
 
-/** Largest font size in sp, up to [MAX_SP], at which [text] fits [rect] without overflowing. */
-private fun fit(text: String, rect: Rect, measurer: TextMeasurer, density: Density): Float {
+/**
+ * The one style used both to measure a plate's text and to draw it. Measuring with a different style
+ * than the drawn one (the theme's default adds letter spacing, Sign lines are bold) lets drawn text
+ * overflow the plate it was fitted to.
+ */
+private fun plateStyle(base: TextStyle, kind: LineKind, sp: Float) = base.merge(
+    TextStyle(
+        color = Color.Black,
+        fontSize = sp.sp,
+        lineHeight = (sp * 1.1f).sp,
+        letterSpacing = 0.sp,
+        fontWeight = if (kind == LineKind.Sign) FontWeight.Bold else FontWeight.Medium,
+        fontStyle = if (kind == LineKind.Thought) FontStyle.Italic else FontStyle.Normal,
+        textAlign = TextAlign.Center
+    )
+)
+
+/**
+ * Largest font size in sp, up to [MAX_SP], at which [line] fits [rect] without overflowing and
+ * without a word being cut; 0 when even [MIN_SP] does not fit.
+ */
+private fun fit(line: TranslatedLine, rect: Rect, measurer: TextMeasurer, density: Density, base: TextStyle): Float {
     val inner = Constraints(
         maxWidth = max((rect.width - with(density) { 4.dp.toPx() }).toInt(), 1),
         maxHeight = max((rect.height - with(density) { 2.dp.toPx() }).toInt(), 1)
     )
+    val longestWord = line.translation.split(' ', '\n').maxByOrNull { it.length }.orEmpty()
     fun fits(sp: Float): Boolean {
-        val result: TextLayoutResult = measurer.measure(
-            text = text,
-            style = TextStyle(fontSize = sp.sp, lineHeight = (sp * 1.1f).sp, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center),
-            constraints = inner
-        )
+        val style = plateStyle(base, line.kind, sp)
+        val word = measurer.measure(longestWord, style, softWrap = false, maxLines = 1)
+        if (word.size.width > inner.maxWidth) return false
+        val result: TextLayoutResult = measurer.measure(text = line.translation, style = style, constraints = inner)
         return !result.didOverflowHeight && !result.didOverflowWidth
     }
+    if (!fits(MIN_SP)) return 0f
     var low = MIN_SP
     var high = MAX_SP
     if (fits(high)) return high
