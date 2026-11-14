@@ -14,13 +14,14 @@ import ru.spgsroot.peachy.R
 fun EditVideoDialog(
     currentTitle: String,
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
+    onConfirm: (String) -> Unit,
+    titleRes: Int = R.string.dialog_rename_video
 ) {
     var title by remember { mutableStateOf(currentTitle) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.dialog_rename_video)) },
+        title = { Text(stringResource(titleRes)) },
         text = {
             Column {
                 OutlinedTextField(

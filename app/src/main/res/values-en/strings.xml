@@ -227,7 +227,7 @@
     <!-- Empty State -->
     <string name="empty_playlist">Playlist is empty</string>
     <string name="empty_add_first">Add the first video</string>
-    <string name="empty_gallery">No videos in the gallery yet</string>
+    <string name="empty_gallery">No videos or photos in the gallery yet</string>
     <string name="manga_haptic">Page-turn intensity</string>
     <string name="manga_saved">Saved</string>
     <string name="manga_results">Search results</string>

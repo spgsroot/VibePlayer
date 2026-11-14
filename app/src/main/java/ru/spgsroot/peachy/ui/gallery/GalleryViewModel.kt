@@ -9,12 +9,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ru.spgsroot.peachy.data.repository.VideoRepository
+import ru.spgsroot.peachy.data.db.PhotoEntity
+import ru.spgsroot.peachy.data.repository.PhotoRepository
 import ru.spgsroot.peachy.data.storage.InternalStorageManager
 import ru.spgsroot.peachy.domain.model.Video
 import ru.spgsroot.peachy.playback.queue.PlaylistManager
@@ -44,16 +47,23 @@ class GalleryViewModel @Inject constructor(
     private val exoPlayerWrapper: ExoPlayerWrapper,
     private val videoExporter: VideoExporter,
     private val notes: NoteRepository,
-    private val compressionManager: CompressionManager
+    private val compressionManager: CompressionManager,
+    private val photoRepository: PhotoRepository
 ) : ViewModel() {
 
     private val _videos = MutableStateFlow<List<Video>>(emptyList())
     val videos: StateFlow<List<Video>> = _videos.asStateFlow()
 
-    private val _selectedVideoIds = MutableStateFlow<Set<Long>>(emptySet())
-    val selectedVideoIds: StateFlow<Set<Long>> = _selectedVideoIds.asStateFlow()
+    private val _photos = MutableStateFlow<List<PhotoEntity>>(emptyList())
+    private val _query = MutableStateFlow("")
+    val query: StateFlow<String> = _query.asStateFlow()
+    val items: StateFlow<List<GalleryItem>> = combine(_videos, _photos, _query, ::galleryItems)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val isSelectionMode: StateFlow<Boolean> = _selectedVideoIds.map { it.isNotEmpty() }
+    private val _selectedItems = MutableStateFlow<Set<GalleryIdentity>>(emptySet())
+    val selectedItems: StateFlow<Set<GalleryIdentity>> = _selectedItems.asStateFlow()
+
+    val isSelectionMode: StateFlow<Boolean> = _selectedItems.map { it.isNotEmpty() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     /** Text of each video's note, by video id; videos without a note are absent. */
@@ -71,6 +81,9 @@ class GalleryViewModel @Inject constructor(
 
     init {
         observeVideos()
+        viewModelScope.launch {
+            photoRepository.getAll().collect { _photos.value = it }
+        }
     }
 
     private fun observeVideos() {
@@ -81,22 +94,23 @@ class GalleryViewModel @Inject constructor(
         }
     }
 
-    fun toggleSelection(videoId: Long) {
-        val current = _selectedVideoIds.value.toMutableSet()
-        if (current.contains(videoId)) {
-            current.remove(videoId)
-        } else {
-            current.add(videoId)
-        }
-        _selectedVideoIds.value = current
+    fun setQuery(query: String) {
+        _query.value = query
+    }
+
+    fun toggleSelection(identity: GalleryIdentity) {
+        val current = _selectedItems.value
+        _selectedItems.value = if (identity in current) current - identity else current + identity
     }
 
     fun clearSelection() {
-        _selectedVideoIds.value = emptySet()
+        _selectedItems.value = emptySet()
     }
 
-    fun selectAll() {
-        _selectedVideoIds.value = _videos.value.map { it.id }.toSet()
+    private fun selectedVideos(): List<Video> {
+        val selected = _selectedItems.value
+        if (!selected.allowsVideoActions()) return emptyList()
+        return _videos.value.filter { GalleryIdentity(GalleryMediaType.Video, it.id) in selected }
     }
 
     private val _compressDialog = MutableStateFlow<CompressDialogState?>(null)
@@ -107,7 +121,7 @@ class GalleryViewModel @Inject constructor(
 
     /** Opens the dialog at once and fills in the facts about the selected files as they are read. */
     fun openCompress() {
-        val chosen = _videos.value.filter { it.id in _selectedVideoIds.value }
+        val chosen = selectedVideos()
         if (chosen.isEmpty() || compression.value is CompressionState.Running) return
         _compressDialog.value = CompressDialogState(chosen.size, null)
         viewModelScope.launch {
@@ -121,8 +135,9 @@ class GalleryViewModel @Inject constructor(
     }
 
     fun compressSelected(settings: CompressionSettings) {
-        val chosen = _videos.value.filter { it.id in _selectedVideoIds.value }
+        val chosen = selectedVideos()
         _compressDialog.value = null
+        if (chosen.isEmpty()) return
         compressionManager.start(chosen, settings)
         clearSelection()
     }
@@ -145,9 +160,7 @@ class GalleryViewModel @Inject constructor(
     /** Copies the selected videos into the folder behind [treeUri]; the selection is kept. */
     fun exportSelected(treeUri: Uri) {
         if (_exportProgress.value != null) return
-        val items = _videos.value
-            .filter { it.id in _selectedVideoIds.value }
-            .map { ExportItem(it.title, it.filePath) }
+        val items = selectedVideos().map { ExportItem(it.title, it.filePath) }
         if (items.isEmpty()) return
         _exportProgress.value = 0 to items.size
         viewModelScope.launch {
@@ -161,16 +174,44 @@ class GalleryViewModel @Inject constructor(
         }
     }
 
+    private val _deleteFailures = MutableStateFlow(0)
+    val deleteFailures: StateFlow<Int> = _deleteFailures.asStateFlow()
+
+    fun consumeDeleteFailures() {
+        _deleteFailures.value = 0
+    }
+
     fun deleteSelected() {
+        val selected = _selectedItems.value
+        val chosen = galleryItems(_videos.value, _photos.value, "").filter { it.identity in selected }
+        deleteItems(chosen)
+    }
+
+    fun deleteItem(item: GalleryItem) {
+        deleteItems(listOf(item))
+    }
+
+    private fun deleteItems(chosen: List<GalleryItem>) {
         viewModelScope.launch {
-            val idsToDelete = _selectedVideoIds.value.toList()
-            for (id in idsToDelete) {
-                val video = _videos.value.find { it.id == id }
-                video?.let {
-                    deleteVideo(it)
-                }
-            }
-            clearSelection()
+            val failed = deleteGalleryItems(chosen, delete = ::deleteItemNow, onDeleted = {
+                _selectedItems.value -= it
+            })
+            // Include failed single-card deletions in selection too, so Delete can retry them.
+            _selectedItems.value += failed
+            _deleteFailures.value = failed.size
+        }
+    }
+
+    private suspend fun deleteItemNow(item: GalleryItem) {
+        when (item) {
+            is GalleryItem.VideoItem -> deleteVideo(item.video)
+            is GalleryItem.PhotoItem -> photoRepository.delete(item.photo)
+        }
+    }
+
+    fun renamePhoto(photo: PhotoEntity, newTitle: String) {
+        viewModelScope.launch {
+            photoRepository.update(photo.copy(title = newTitle))
         }
     }
 

@@ -16,19 +16,21 @@ import ru.spgsroot.peachy.data.browser.BrowserMigrations.MIGRATION_7_8
 import ru.spgsroot.peachy.data.notes.NoteDao
 import ru.spgsroot.peachy.data.notes.NoteEntity
 import ru.spgsroot.peachy.data.notes.NoteMigrations.MIGRATION_8_9
+import ru.spgsroot.peachy.data.db.PhotoMigrations.MIGRATION_11_12
 
 @Database(
     entities = [
         VideoEntity::class, SettingsEntity::class, PlaybackStateEntity::class, LibraryGalleryEntity::class,
         ReadHistoryEntity::class, SearchHistoryEntity::class, TagBlacklistEntity::class, GalleryMemoryEntity::class,
         BookmarkEntity::class, BrowserHistoryEntity::class, AllowlistEntity::class, NoteEntity::class,
-        SavedPageEntity::class, PageTranslationEntity::class
+        SavedPageEntity::class, PageTranslationEntity::class, PhotoEntity::class
     ],
-    version = 11,
+    version = 12,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun videoDao(): VideoDao
+    abstract fun photoDao(): PhotoDao
     abstract fun settingsDao(): SettingsDao
     abstract fun playbackStateDao(): PlaybackStateDao
     abstract fun libraryGalleryDao(): LibraryGalleryDao
@@ -84,7 +86,7 @@ abstract class AppDatabase : RoomDatabase() {
                 .openHelperFactory(factory)
                 .addMigrations(
                     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
-                    MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11
+                    MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12
                 )
                 .fallbackToDestructiveMigration()
                 .build()

@@ -5,9 +5,11 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.background
@@ -24,6 +26,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.navArgument
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -42,8 +45,7 @@ import ru.spgsroot.peachy.ui.onboarding.OnboardingScreen
 import ru.spgsroot.peachy.ui.player.PlayerScreen
 import ru.spgsroot.peachy.ui.player.PlayerViewModel
 import ru.spgsroot.peachy.ui.theme.PeachyTheme
-import ru.spgsroot.peachy.ui.share.PendingImport
-import ru.spgsroot.peachy.ui.share.ShareUriPolicy
+import ru.spgsroot.peachy.ui.share.ShareImportViewModel
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -54,6 +56,8 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var authSession: AuthSession
+
+    private val shareImportViewModel: ShareImportViewModel by viewModels()
 
     override fun attachBaseContext(newBase: Context) {
         val languageCode = LocaleManager.getCurrentLocale()
@@ -78,12 +82,12 @@ class MainActivity : ComponentActivity() {
             WindowManager.LayoutParams.FLAG_SECURE,
             WindowManager.LayoutParams.FLAG_SECURE
         )
-        acceptSharedUri(intent)
+        if (savedInstanceState == null) shareImportViewModel.enqueue(intent)
         enableEdgeToEdge()
 
         setContent {
             PeachyTheme {
-                AppNavigation(authManager, authSession)
+                AppNavigation(authManager, authSession, shareImportViewModel)
             }
         }
     }
@@ -91,7 +95,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        acceptSharedUri(intent)
+        shareImportViewModel.enqueue(intent)
     }
 
     override fun onStop() {
@@ -101,20 +105,45 @@ class MainActivity : ComponentActivity() {
         super.onStop()
     }
 
-    private fun acceptSharedUri(intent: Intent?) {
-        val uri = intent?.data
-        if (uri != null && ShareUriPolicy.isImportable(uri.scheme)) {
-            PendingImport.uri = uri
-        }
-    }
 }
 
 @Composable
-fun AppNavigation(authManager: AuthManager, authSession: AuthSession) {
+fun AppNavigation(authManager: AuthManager, authSession: AuthSession, shareImports: ShareImportViewModel) {
     val navController = rememberNavController()
     var startDestination by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val unlocked by authSession.unlocked.collectAsState()
+    val hasPendingShare by shareImports.hasPending.collectAsState()
+    val entry by navController.currentBackStackEntryAsState()
+    val route = entry?.destination?.route
+    val canImport = route != null && route != "onboarding" && route != "auth"
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    // Import only inside the unlocked app, not in the player destination. An onNewIntent share
+    // therefore works while gallery/manga is already open, and photos never enter PlayerViewModel.
+    LaunchedEffect(hasPendingShare, canImport, unlocked) {
+        if (hasPendingShare && canImport && (!authManager.isPasswordSet() || unlocked)) {
+            shareImports.importPending()
+        }
+    }
+    LaunchedEffect(canImport, unlocked) {
+        if (!canImport || (authManager.isPasswordSet() && !unlocked)) return@LaunchedEffect
+        shareImports.results.collect { result ->
+            Toast.makeText(
+                context,
+                context.getString(R.string.share_import_result, result.imported, result.failed),
+                Toast.LENGTH_LONG
+            ).show()
+            val destination = when {
+                result.includesPhotos -> "gallery"
+                result.includesVideos -> "player"
+                else -> null
+            }
+            if (destination != null && navController.currentDestination?.route != destination) {
+                navController.navigate(destination) { launchSingleTop = true }
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         startDestination = when {
@@ -125,12 +154,11 @@ fun AppNavigation(authManager: AuthManager, authSession: AuthSession) {
     }
 
 
-    LaunchedEffect(unlocked, startDestination) {
-        val destination = startDestination ?: return@LaunchedEffect
-        if (destination == "onboarding") return@LaunchedEffect
+    val authGateActive = startDestination != null && route != null && route != "onboarding"
+    LaunchedEffect(unlocked, authGateActive) {
+        if (!authGateActive) return@LaunchedEffect
         val needsAuth = authManager.isPasswordSet() && !unlocked
-        val current = navController.currentDestination?.route
-        if (needsAuth && current != null && current != "auth") {
+        if (needsAuth && navController.currentDestination?.route != "auth") {
             navController.navigate("auth") {
                 popUpTo(navController.graph.id) { inclusive = true }
             }
@@ -215,9 +243,6 @@ fun AppNavigation(authManager: AuthManager, authSession: AuthSession) {
             }
             composable("player") {
                 val playerViewModel: PlayerViewModel = hiltViewModel()
-                LaunchedEffect(Unit) {
-                    PendingImport.consume()?.let { playerViewModel.importVideoFromUri(it) }
-                }
                 PlayerScreen(navController = navController, viewModel = playerViewModel)
             }
             composable("gallery") {

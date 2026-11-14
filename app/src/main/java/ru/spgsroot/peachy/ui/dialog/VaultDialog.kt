@@ -146,11 +146,12 @@ fun VaultDialog(
 @Composable
 private fun finishedText(state: VaultUiState): String = when (state) {
     is VaultUiState.Exported -> stringResource(
-        R.string.vault_export_done, state.result.videos, state.result.galleries, state.result.notes
+        R.string.vault_export_done, state.result.videos, state.result.galleries, state.result.notes, state.result.photos
     )
     is VaultUiState.Imported -> stringResource(
         R.string.vault_import_done,
-        state.result.videosAdded, state.result.videosSkipped, state.result.galleries, state.result.notes
+        state.result.videosAdded, state.result.videosSkipped, state.result.galleries, state.result.notes,
+        state.result.photosAdded, state.result.photosSkipped
     )
     else -> ""
 }

@@ -83,6 +83,22 @@ class VaultMergeTest {
     }
 
     @Test
+    fun photoDuplicatesRequireTheSameTitleBothDimensionsAndFileSize() {
+        val key = VaultMerge.photoKey("holiday", 1200, 800, 50)
+        assertEquals(key, VaultMerge.photoKey("holiday", 1200, 800, 50))
+        assertNotEquals(key, VaultMerge.photoKey("Holiday", 1200, 800, 50))
+        assertNotEquals(key, VaultMerge.photoKey("other", 1200, 800, 50))
+        assertNotEquals(key, VaultMerge.photoKey("holiday", 1201, 800, 50))
+        assertNotEquals(key, VaultMerge.photoKey("holiday", 1200, 801, 50))
+        assertNotEquals(key, VaultMerge.photoKey("holiday", 800, 1200, 50))
+        assertNotEquals(key, VaultMerge.photoKey("holiday", 1200, 800, 51))
+        assertNotEquals(
+            VaultMerge.photoKey("a1", 2, 3, 4),
+            VaultMerge.photoKey("a", 12, 3, 4)
+        )
+    }
+
+    @Test
     fun theDataDocumentRoundTripsIncludingNulls() {
         val data = VaultData(
             entryCount = 4,
@@ -109,7 +125,7 @@ class VaultMergeTest {
         val newer = org.json.JSONObject(
             VaultData(0, emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList(),
                 emptyList(), emptyList(), emptyList(), null).toJson()
-        ).put("format", 2).toString()
+        ).put("format", 3).toString()
         assertEquals(VaultError.UNSUPPORTED_VERSION, assertThrows(VaultException::class.java) { VaultData.fromJson(newer) }.error)
         assertEquals(VaultError.CORRUPT, assertThrows(VaultException::class.java) { VaultData.fromJson("{\"format\":1}") }.error)
         assertEquals(VaultError.CORRUPT, assertThrows(VaultException::class.java) { VaultData.fromJson("not json") }.error)

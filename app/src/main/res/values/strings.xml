@@ -227,7 +227,7 @@
     <!-- Empty State -->
     <string name="empty_playlist">Плейлист пуст</string>
     <string name="empty_add_first">Добавить первое видео</string>
-    <string name="empty_gallery">В галерее пока нет видео</string>
+    <string name="empty_gallery">В галерее пока нет видео и фото</string>
     <string name="manga_haptic">Сила импульса при листании</string>
     <string name="manga_saved">Сохранённые</string>
     <string name="manga_results">Результаты поиска</string>
