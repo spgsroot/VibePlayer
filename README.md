@@ -1,6 +1,6 @@
 # Peachy
 
-Private player and gallery for adult content: videos, image galleries and hentai manga in one app. It syncs playback with devices through the Buttplug protocol (Intiface Central). Native Android, Jetpack Compose. Version in this tree: `3.1.0` (`versionCode` 6). [Русская версия](README_RU.md).
+Private player and gallery for adult content: videos, image galleries and hentai manga in one app. It syncs playback with devices through the Buttplug protocol (Intiface Central). Native Android, Jetpack Compose. Version in this tree: `3.2.0` (`versionCode` 7). [Русская версия](README_RU.md).
 
 Screenshots use sample clips. Catalog covers and titles are pixelated, and the reader shot shows its settings dialog over a pixelated page.
 
@@ -31,17 +31,29 @@ Screenshots use sample clips. Catalog covers and titles are pixelated, and the r
 |:---:|:---:|:---:|
 | <img src="repo/screens/gallery.png" width="180" alt="Gallery with two sample clips"/> | <img src="repo/screens/compress.png" width="180" alt="Compression presets and custom settings"/> | <img src="repo/screens/note.png" width="180" alt="Private note on a clip"/> |
 
+| Gallery layout | Download | More settings |
+|:---:|:---:|:---:|
+| <img src="repo/screens/gallery-layout.png" width="180" alt="Cover style, tile size and sort"/> | <img src="repo/screens/download.png" width="180" alt="Download in the app or with another app"/> | <img src="repo/screens/settings-more.png" width="180" alt="Language, page translation, backup"/> |
+
 ### Browser and backup
 
 | Start page | Page videos | Backup |
 |:---:|:---:|:---:|
 | <img src="repo/screens/browser-start.png" width="180" alt="Browser start page with bookmarks and history"/> | <img src="repo/screens/browser-videos.png" width="180" alt="Video files found on a page, with a save button"/> | <img src="repo/screens/backup.png" width="180" alt="Export library dialog with a password"/> |
 
+| Browser menu |
+|:---:|
+| <img src="repo/screens/browser-menu.png" width="180" alt="Browser menu: tabs, bookmarks, ad blocker"/> |
+
 ### Manga
 
 | Catalog | Menu | Tags | Reader |
 |:---:|:---:|:---:|:---:|
-| <img src="repo/screens/catalog.png" width="180" alt="Catalog filtered by one tag, covers pixelated"/> | <img src="repo/screens/drawer.png" width="180" alt="Manga navigation drawer"/> | <img src="repo/screens/tags.png" width="180" alt="Tag browser"/> | <img src="repo/screens/reader.png" width="180" alt="Reader settings dialog over a pixelated page"/> |
+| <img src="repo/screens/catalog.png" width="180" alt="Catalog, covers pixelated"/> | <img src="repo/screens/drawer.png" width="180" alt="Manga navigation drawer"/> | <img src="repo/screens/tags.png" width="180" alt="Tag browser"/> | <img src="repo/screens/reader.png" width="180" alt="Reader settings dialog over a pixelated page"/> |
+
+| Page translation provider |
+|:---:|
+| <img src="repo/screens/provider.png" width="180" alt="Provider dialog with presets, key hidden"/> |
 
 ## Details
 

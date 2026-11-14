@@ -1,6 +1,6 @@
 # Peachy
 
-Приватный плеер и галерея для взрослого контента: видео, галереи изображений и хентай-манга в одном приложении. Синхронизация воспроизведения с устройствами через протокол Buttplug (Intiface Central). Нативное приложение для Android, Jetpack Compose. Версия в этом дереве: `3.1.0` (`versionCode` 6). [English](README.md).
+Приватный плеер и галерея для взрослого контента: видео, галереи изображений и хентай-манга в одном приложении. Синхронизация воспроизведения с устройствами через протокол Buttplug (Intiface Central). Нативное приложение для Android, Jetpack Compose. Версия в этом дереве: `3.2.0` (`versionCode` 7). [English](README.md).
 
 На снимках — тестовые ролики. Обложки и названия в каталоге закрыты мозаикой, а снимок ридера показывает диалог настроек поверх страницы, закрытой мозаикой.
 
@@ -31,17 +31,29 @@
 |:---:|:---:|:---:|
 | <img src="repo/screens/gallery.png" width="180" alt="Галерея с двумя тестовыми роликами"/> | <img src="repo/screens/compress.png" width="180" alt="Пресеты сжатия и свои настройки"/> | <img src="repo/screens/note.png" width="180" alt="Личная заметка к ролику"/> |
 
+| Раскладка галереи | Загрузка | Ещё настройки |
+|:---:|:---:|:---:|
+| <img src="repo/screens/gallery-layout.png" width="180" alt="Обложки, размер плиток и сортировка"/> | <img src="repo/screens/download.png" width="180" alt="Загрузка в приложении или другим приложением"/> | <img src="repo/screens/settings-more.png" width="180" alt="Язык, перевод страниц, резервная копия"/> |
+
 ### Браузер и резервная копия
 
 | Стартовая страница | Видео на странице | Резервная копия |
 |:---:|:---:|:---:|
 | <img src="repo/screens/browser-start.png" width="180" alt="Стартовая страница браузера с закладками и историей"/> | <img src="repo/screens/browser-videos.png" width="180" alt="Видеофайлы, найденные на странице, с кнопкой сохранения"/> | <img src="repo/screens/backup.png" width="180" alt="Диалог выгрузки библиотеки с паролем"/> |
 
+| Меню браузера |
+|:---:|
+| <img src="repo/screens/browser-menu.png" width="180" alt="Меню браузера: вкладки, закладки, блокировщик рекламы"/> |
+
 ### Манга
 
 | Каталог | Меню | Теги | Ридер |
 |:---:|:---:|:---:|:---:|
-| <img src="repo/screens/catalog.png" width="180" alt="Каталог с фильтром по одному тегу, обложки закрыты"/> | <img src="repo/screens/drawer.png" width="180" alt="Боковое меню манги"/> | <img src="repo/screens/tags.png" width="180" alt="Браузер тегов"/> | <img src="repo/screens/reader.png" width="180" alt="Диалог настроек ридера поверх страницы под мозаикой"/> |
+| <img src="repo/screens/catalog.png" width="180" alt="Каталог, обложки закрыты"/> | <img src="repo/screens/drawer.png" width="180" alt="Боковое меню манги"/> | <img src="repo/screens/tags.png" width="180" alt="Браузер тегов"/> | <img src="repo/screens/reader.png" width="180" alt="Диалог настроек ридера поверх страницы под мозаикой"/> |
+
+| Провайдер перевода страниц |
+|:---:|
+| <img src="repo/screens/provider.png" width="180" alt="Диалог провайдера с пресетами, ключ скрыт"/> |
 
 ## Подробности
 
