@@ -1,3 +1,5 @@
+<p align="center"><img src="repo/banner.png" alt="Peachy: private player and gallery with device sync, manga reader, page translation, browser"/></p>
+
 # Peachy
 
 Private player and gallery for adult content: videos, image galleries and hentai manga in one app. It syncs playback with devices through the Buttplug protocol (Intiface Central). Native Android, Jetpack Compose. Version in this tree: `3.2.0` (`versionCode` 7). [Русская версия](README_RU.md).
