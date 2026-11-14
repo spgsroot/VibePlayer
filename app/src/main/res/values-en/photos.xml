@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_import_result">%1$d imported, %2$d failed</string>
+    <string name="gallery_search_title">Search by title</string>
+    <string name="gallery_search_empty">No matching items</string>
+    <string name="gallery_grid_columns">Grid columns: %1$d</string>
+    <string name="dialog_rename_photo">Rename photo</string>
+    <string name="gallery_photo">Photo</string>
+    <string name="gallery_photo_close">Close photo</string>
+    <string name="gallery_delete_failed">Could not delete %1$d item(s). Selected items can be retried.</string>
+</resources>

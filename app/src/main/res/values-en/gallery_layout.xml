@@ -2,7 +2,7 @@
 <resources>
     <string name="content_description_gallery_layout">Gallery layout</string>
     <string name="gallery_layout_large">Large covers</string>
-    <string name="gallery_layout_two">Two per row</string>
+    <string name="gallery_layout_two">Grid</string>
     <string name="gallery_layout_one">One per row</string>
     <string name="gallery_layout_list">List</string>
 </resources>

@@ -45,6 +45,35 @@ class VaultArchiveTest {
     }
 
     @Test
+    fun encryptedPhotoOriginalAndThumbnailRoundTripAlongsideVideoBytes() {
+        val original = ByteArray(VaultCrypto.BLOCK_SIZE * 2 + 17).also(Random(17)::nextBytes)
+        val thumbnail = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 4, 5, 6, 0xFF.toByte(), 0xD9.toByte())
+        val data = VaultData(
+            3, emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList(),
+            emptyList(), emptyList(), emptyList(), emptyList(), null,
+            photos = listOf(VaultPhoto(42, "Photo", 123, original.size.toLong(), 640, 480, "jpg", true))
+        )
+        val vault = sealed { writer ->
+            writer.add("data.json", data.toJson().toByteArray(Charsets.UTF_8))
+            writer.add(data.photos.single().entryName, original.size.toLong(), ByteArrayInputStream(original))
+            writer.add(data.photos.single().thumbnailEntryName, thumbnail)
+            writer.add("video/42.mp4", byteArrayOf(8, 9))
+        }
+        val reader = open(vault)
+        val restored = VaultData.fromJson(String(reader.next()!!.readBytes(100_000), Charsets.UTF_8))
+        assertEquals(data, restored)
+        val photo = reader.next()!!
+        assertEquals("photo/42.jpg", photo.name)
+        assertEquals(original.size.toLong(), photo.size)
+        assertArrayEquals(original, photo.stream.readBytes())
+        val thumb = reader.next()!!
+        assertEquals("photo_thumb/42", thumb.name)
+        assertArrayEquals(thumbnail, thumb.stream.readBytes())
+        assertEquals("video/42.mp4", reader.next()!!.name)
+        assertNull(reader.next()) // Authenticate through the encrypted end marker.
+    }
+
+    @Test
     fun anUnreadEntryIsSkippedNotMisreadAsTheNext() {
         val vault = sealed {
             it.add("a", ByteArray(200_000) { 9 })

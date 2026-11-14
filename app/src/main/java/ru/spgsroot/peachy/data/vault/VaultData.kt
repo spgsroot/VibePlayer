@@ -27,6 +27,21 @@ data class VaultVideo(
     val thumbnailEntryName: String get() = "thumb/$id"
 }
 
+/** Format 2 still image; originals and thumbnails never share the video entry namespace. */
+data class VaultPhoto(
+    val id: Long,
+    val title: String,
+    val addedAt: Long,
+    val fileSize: Long,
+    val width: Int,
+    val height: Int,
+    val extension: String,
+    val hasThumbnail: Boolean
+) {
+    val entryName: String get() = "photo/$id.$extension"
+    val thumbnailEntryName: String get() = "photo_thumb/$id"
+}
+
 /** One cached page translation; [json] is what `PageTranslation.toJson` wrote. */
 data class VaultTranslation(
     val galleryId: Int,
@@ -55,7 +70,9 @@ data class VaultData(
     val allowlist: List<String>,
     val tagLibrary: String?,
     /** Absent in vaults made before page translation existed; read as empty. */
-    val translations: List<VaultTranslation> = emptyList()
+    val translations: List<VaultTranslation> = emptyList(),
+    /** Optional in format 2, absent in format 1; old libraries contain no photos. */
+    val photos: List<VaultPhoto> = emptyList()
 ) {
     fun toJson(): String = JSONObject()
         .put("format", FORMAT)
@@ -96,18 +113,36 @@ data class VaultData(
             JSONObject().put("galleryId", it.galleryId).put("page", it.page).put("lang", it.lang)
                 .put("model", it.model).put("json", it.json).put("createdAt", it.createdAt)
         })
+        .put("photos", array(photos) {
+            JSONObject().put("id", it.id).put("title", it.title).put("addedAt", it.addedAt)
+                .put("fileSize", it.fileSize).put("width", it.width).put("height", it.height)
+                .put("extension", it.extension).put("hasThumbnail", it.hasThumbnail)
+        })
         .toString()
 
     companion object {
-        const val FORMAT = 1
+        const val FORMAT = 2
 
         /** A document that cannot be understood is a damaged vault; a newer format is reported as such. */
         fun fromJson(raw: String): VaultData {
             try {
                 val root = JSONObject(raw)
-                if (root.getInt("format") != FORMAT) {
+                if (root.getInt("format") !in 1..FORMAT) {
                     throw VaultException(VaultError.UNSUPPORTED_VERSION, "Vault data format ${root.getInt("format")}")
                 }
+                val photos = if (root.isNull("photos")) emptyList() else list(root, "photos") {
+                    VaultPhoto(
+                        it.getLong("id"), it.getString("title"), it.getLong("addedAt"), it.getLong("fileSize"),
+                        it.getInt("width"), it.getInt("height"), it.getString("extension"), it.getBoolean("hasThumbnail")
+                    )
+                }
+                // Metadata participates in entry matching and storage naming: validate it before writing files.
+                if (photos.map { it.id }.toSet().size != photos.size ||
+                    photos.any {
+                        it.id <= 0 || it.fileSize <= 0 || it.width <= 0 || it.height <= 0 ||
+                            !it.extension.matches(Regex("[a-z0-9]{1,10}"))
+                    }
+                ) throw VaultException(VaultError.CORRUPT, "Invalid photo metadata")
                 return VaultData(
                     entryCount = root.getInt("entryCount"),
                     videos = list(root, "videos") {
@@ -159,7 +194,8 @@ data class VaultData(
                             it.getInt("galleryId"), it.getInt("page"), it.getString("lang"), it.getString("model"),
                             it.getString("json"), it.getLong("createdAt")
                         )
-                    }
+                    },
+                    photos = photos
                 )
             } catch (e: JSONException) {
                 throw VaultException(VaultError.CORRUPT, "Vault data is unreadable: ${e.message}")

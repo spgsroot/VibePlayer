@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_import_result">Импортировано: %1$d, ошибок: %2$d</string>
+    <string name="gallery_search_title">Поиск по названию</string>
+    <string name="gallery_search_empty">Ничего не найдено</string>
+    <string name="gallery_grid_columns">Столбцов в сетке: %1$d</string>
+    <string name="dialog_rename_photo">Переименовать фото</string>
+    <string name="gallery_photo">Фото</string>
+    <string name="gallery_photo_close">Закрыть фото</string>
+    <string name="gallery_delete_failed">Не удалось удалить: %1$d. Выделенные элементы можно удалить повторно.</string>
+</resources>

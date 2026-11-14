@@ -15,6 +15,10 @@ object VaultMerge {
     /** Two copies of one video share title, length and size. */
     fun videoKey(title: String, duration: Long, fileSize: Long): String = "$title\u0000$duration\u0000$fileSize"
 
+    /** Photos deduplicate independently of videos, by exact title, encoded dimensions and byte size. */
+    fun photoKey(title: String, width: Int, height: Int, fileSize: Long): String =
+        "$title\u0000$width\u0000$height\u0000$fileSize"
+
     /** The newer note wins; a note only on one side is kept. Keyed by kind and ref. */
     fun notes(current: List<NoteEntity>, incoming: List<NoteEntity>): List<NoteEntity> {
         val byKey = current.associateBy { it.kind to it.ref }.toMutableMap()

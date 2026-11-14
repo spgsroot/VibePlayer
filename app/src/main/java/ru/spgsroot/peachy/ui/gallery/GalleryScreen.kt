@@ -2,6 +2,7 @@ package ru.spgsroot.peachy.ui.gallery
 
 import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.BackHandler
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.ui.Alignment
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -28,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import ru.spgsroot.peachy.R
+import ru.spgsroot.peachy.data.db.PhotoEntity
 import ru.spgsroot.peachy.domain.model.Video
 import ru.spgsroot.peachy.compress.CompressionState
 import ru.spgsroot.peachy.ui.dialog.CompressDialog
@@ -41,10 +44,13 @@ fun GalleryScreen(
     navController: NavController,
     viewModel: GalleryViewModel = hiltViewModel()
 ) {
-    val videos by viewModel.videos.collectAsState()
-    val selectedVideoIds by viewModel.selectedVideoIds.collectAsState()
+    val items by viewModel.items.collectAsState()
+    val query by viewModel.query.collectAsState()
+    val selectedItems by viewModel.selectedItems.collectAsState()
     val videoNotes by viewModel.videoNotes.collectAsState()
-    val isSelectionMode by viewModel.isSelectionMode.collectAsState()
+    val isSelectionMode = selectedItems.isNotEmpty()
+    val videoActionsEnabled = selectedItems.allowsVideoActions()
+    BackHandler(enabled = isSelectionMode) { viewModel.clearSelection() }
     val exportProgress by viewModel.exportProgress.collectAsState()
     val exportResult by viewModel.exportResult.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -64,15 +70,42 @@ fun GalleryScreen(
             viewModel.consumeExportResult()
         }
     }
+    val deleteFailures by viewModel.deleteFailures.collectAsState()
+    val deleteFailedText = stringResource(R.string.gallery_delete_failed, deleteFailures)
+    LaunchedEffect(deleteFailures) {
+        if (deleteFailures > 0) {
+            snackbarHostState.showSnackbar(deleteFailedText)
+            viewModel.consumeDeleteFailures()
+        }
+    }
     val compression by viewModel.compression.collectAsState()
     val compressDialog by viewModel.compressDialog.collectAsState()
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("gallery", Context.MODE_PRIVATE) }
     var layout by remember { mutableStateOf(GalleryLayoutStore.load(prefs)) }
+    var gridColumns by remember { mutableIntStateOf(GalleryLayoutStore.loadGridColumns(prefs)) }
 
     var videoToRename by remember { mutableStateOf<Video?>(null) }
     var videoForThumbnail by remember { mutableStateOf<Video?>(null) }
     var videoForNote by remember { mutableStateOf<Video?>(null) }
+    var photoToRename by remember { mutableStateOf<PhotoEntity?>(null) }
+    var viewedPhotoId by rememberSaveable { mutableStateOf<Long?>(null) }
+
+    photoToRename?.let { photo ->
+        EditVideoDialog(
+            currentTitle = photo.title,
+            titleRes = R.string.dialog_rename_photo,
+            onDismiss = { photoToRename = null },
+            onConfirm = { title ->
+                viewModel.renamePhoto(photo, title)
+                photoToRename = null
+            }
+        )
+    }
+    // Resolve from the live collection, so deleting a photo also dismisses its viewer.
+    items.filterIsInstance<GalleryItem.PhotoItem>().firstOrNull { it.photo.id == viewedPhotoId }?.let {
+        PhotoViewer(it.photo, onDismiss = { viewedPhotoId = null })
+    }
 
     val thumbnailLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null && videoForThumbnail != null) {
@@ -146,7 +179,7 @@ fun GalleryScreen(
                     if (progress != null) {
                         Text(stringResource(R.string.gallery_exporting, progress.first, progress.second))
                     } else if (isSelectionMode) {
-                        Text(stringResource(R.string.gallery_selected, selectedVideoIds.size))
+                        Text(stringResource(R.string.gallery_selected, selectedItems.size))
                     } else {
                         Text(stringResource(R.string.gallery_title))
                     }
@@ -162,13 +195,13 @@ fun GalleryScreen(
                 actions = {
                     if (isSelectionMode) {
                         IconButton(
-                            enabled = exportProgress == null,
+                            enabled = videoActionsEnabled && exportProgress == null,
                             onClick = { folderLauncher.launch(null) }
                         ) {
                             Icon(Icons.Default.SaveAlt, stringResource(R.string.content_description_export_selected))
                         }
                         IconButton(
-                            enabled = compression !is CompressionState.Running,
+                            enabled = videoActionsEnabled && compression !is CompressionState.Running,
                             onClick = { viewModel.openCompress() }
                         ) {
                             Icon(Icons.Default.Compress, stringResource(R.string.content_description_compress))
@@ -176,72 +209,102 @@ fun GalleryScreen(
                         IconButton(onClick = { viewModel.deleteSelected() }) {
                             Icon(Icons.Default.Delete, stringResource(R.string.content_description_delete_selected))
                         }
-                    } else if (videos.isNotEmpty()) {
-                        LayoutMenu(layout) {
-                            layout = it
-                            GalleryLayoutStore.save(prefs, it)
-                        }
+                    } else {
+                        LayoutMenu(
+                            current = layout,
+                            gridColumns = gridColumns,
+                            onColumns = {
+                                gridColumns = it
+                                GalleryLayoutStore.saveGridColumns(prefs, it)
+                            },
+                            onPick = {
+                                layout = it
+                                GalleryLayoutStore.save(prefs, it)
+                            }
+                        )
                     }
                 }
             )
         }
     ) { padding ->
-        if (videos.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = stringResource(R.string.empty_gallery),
-                    style = MaterialTheme.typography.titleMedium
-                )
-            }
-        } else {
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(if (layout == GalleryLayout.One || layout == GalleryLayout.List) 1 else 2),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(if (layout == GalleryLayout.List) 8.dp else 12.dp)
-        ) {
-            items(videos, key = { it.id }) { video ->
-                GalleryItemCard(
-                    video = video,
-                    layout = layout,
-                    isSelected = selectedVideoIds.contains(video.id),
-                    onVideoClick = {
-                        if (isSelectionMode) {
-                            viewModel.toggleSelection(video.id)
-                        } else {
-                            viewModel.playVideo(video)
-                            navController.popBackStack()
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = viewModel::setQuery,
+                label = { Text(stringResource(R.string.gallery_search_title)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+            if (items.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        stringResource(if (query.isEmpty()) R.string.empty_gallery else R.string.gallery_search_empty),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(GallerySizing.columns(layout, gridColumns)),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(if (layout == GalleryLayout.List) 8.dp else 12.dp)
+                ) {
+                    items(items, key = { it.identity.stableKey }) { item ->
+                        when (item) {
+                            is GalleryItem.VideoItem -> {
+                                val video = item.video
+                                GalleryItemCard(
+                                    video = video,
+                                    layout = layout,
+                                    isSelected = item.identity in selectedItems,
+                                    onVideoClick = {
+                                        if (isSelectionMode) {
+                                            viewModel.toggleSelection(item.identity)
+                                        } else {
+                                            viewModel.playVideo(video)
+                                            navController.popBackStack()
+                                        }
+                                    },
+                                    onLongClick = { viewModel.toggleSelection(item.identity) },
+                                    onRenameClick = { videoToRename = video },
+                                    onChangeThumbnailClick = {
+                                        videoForThumbnail = video
+                                        thumbnailLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                                    },
+                                    hasNote = video.id in videoNotes,
+                                    onNoteClick = { videoForNote = video },
+                                    onDeleteClick = { viewModel.deleteItem(item) }
+                                )
+                            }
+                            is GalleryItem.PhotoItem -> PhotoItemCard(
+                                photo = item.photo,
+                                layout = layout,
+                                isSelected = item.identity in selectedItems,
+                                onClick = {
+                                    if (isSelectionMode) viewModel.toggleSelection(item.identity)
+                                    else viewedPhotoId = item.photo.id
+                                },
+                                onLongClick = { viewModel.toggleSelection(item.identity) },
+                                onRename = { photoToRename = item.photo },
+                                onDelete = { viewModel.deleteItem(item) }
+                            )
                         }
-                    },
-                    onLongClick = { viewModel.toggleSelection(video.id) },
-                    onRenameClick = { videoToRename = video },
-                    onChangeThumbnailClick = {
-                        videoForThumbnail = video
-                        thumbnailLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                    },
-                    hasNote = video.id in videoNotes,
-                    onNoteClick = { videoForNote = video },
-                    onDeleteClick = {
-                        viewModel.clearSelection()
-                        viewModel.toggleSelection(video.id)
-                        viewModel.deleteSelected()
                     }
-                )
+                }
             }
-        }
         }
     }
 }
 
-/** The header button for choosing how the gallery lays its videos out. */
+/** Layouts and a separately persisted grid density, including while One/List are active. */
 @Composable
-private fun LayoutMenu(current: GalleryLayout, onPick: (GalleryLayout) -> Unit) {
+private fun LayoutMenu(
+    current: GalleryLayout,
+    gridColumns: Int,
+    onColumns: (Int) -> Unit,
+    onPick: (GalleryLayout) -> Unit
+) {
     var open by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { open = true }) {
@@ -257,6 +320,16 @@ private fun LayoutMenu(current: GalleryLayout, onPick: (GalleryLayout) -> Unit) 
                     },
                     leadingIcon = { Icon(option.icon(), null) },
                     trailingIcon = { if (option == current) Icon(Icons.Default.Check, null) }
+                )
+            }
+            HorizontalDivider()
+            Column(Modifier.width(260.dp).padding(horizontal = 16.dp, vertical = 8.dp)) {
+                Text(stringResource(R.string.gallery_grid_columns, gridColumns))
+                Slider(
+                    value = gridColumns.toFloat(),
+                    onValueChange = { onColumns(GallerySizing.gridColumns(it)) },
+                    valueRange = 1f..5f,
+                    steps = 3
                 )
             }
         }

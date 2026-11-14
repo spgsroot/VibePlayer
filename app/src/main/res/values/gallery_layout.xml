@@ -2,7 +2,7 @@
 <resources>
     <string name="content_description_gallery_layout">Вид галереи</string>
     <string name="gallery_layout_large">Большие обложки</string>
-    <string name="gallery_layout_two">По две в ряд</string>
+    <string name="gallery_layout_two">Сетка</string>
     <string name="gallery_layout_one">По одной в ряд</string>
     <string name="gallery_layout_list">Список</string>
 </resources>
